@@ -21,9 +21,9 @@ La arquitectura se basará en un modelo cliente-servidor desacoplado, compuesto 
 
 Para la construcción del sistema, se utilizarán las siguientes tecnologías:
 
-* **Frontend:** Se desarrollará en **Angular**. La implementación se realizará como una **PWA (Progressive Web App)** para ofrecer una experiencia de usuario superior, permitiendo su "instalación" en la pantalla de inicio del dispositivo y optimizando su rendimiento general.
+* **Frontend:** Se desarrollará en **HTMX** com **Bootstrap**. La implementación se realizará como una **PWA (Progressive Web App)** para ofrecer una experiencia de usuario superior, permitiendo su "instalación" en la pantalla de inicio del dispositivo y optimizando su rendimiento general.
 
-* **Backend:** El backend se implementará en **Node.js**, utilizando el framework **NestJS** para garantizar una arquitectura estructurada, mantenible y escalable. Se expondrá una **API RESTful** que servirá como punto único de comunicación para el frontend, gestionando las peticiones y devolviendo los datos en formato JSON.
+* **Backend:** El backend se implementará en **python**, utilizando el framework **Django** para garantizar una arquitectura estructurada, mantenible y escalable. Se expondrá una **API RESTful** que servirá como punto único de comunicación para el frontend, gestionando las peticiones y devolviendo los datos en formato JSON.
 
 * **Base de Datos:** El sistema de gestión de base de datos seleccionado es **PostgreSQL**. Se diseñará un esquema relacional sólido que garantice la integridad, consistencia y atomicidad de los datos.
 
