@@ -1,43 +1,41 @@
 # 🧩 Proyecto: Punto PYMES  
 ## Sistema de Control de Personal  
-**Stack:** Django · Django REST Framework · HTMX · Bootstrap · PostgreSQL  
+**Stack:** Django · Django REST Framework · HTMX · Bootstrap · PostgreSQL
 
 ---
 
 ## 🗓️ SPRINT 0 — Semana 1  
-### Objetivo: Arranque técnico y primeros “spikes”
+### Objetivo: Arranque técnico
 **Meta:** Entorno listo, repositorio estructurado y primeras pruebas con las tecnologías.
 
 #### 🧠 Tareas principales
 - Configurar repositorio (GitHub/GitLab) y flujo de ramas (`main`, `dev`, `feature/*`).
-- Crear entorno de desarrollo (Python, virtualenv, PostgreSQL o Docker Compose).
+- Crear entorno de desarrollo (Python, Django, Django REST framework, HTMX, Bootstrap y PostgreSQL).
 - Instalar Django, DRF, HTMX y Bootstrap.
-- Configurar `django-environ` y `.env`.
+- Configurar el entorno de desarrollo.
 - Probar endpoints básicos (`/api/ping/`) y página inicial con HTMX.
-- Despliegue “Hello World” en un servidor de staging (Render/Railway).
+- Despliegue “Hello World” en un servidor.
 
 #### 🎯 Entregables
-- Proyecto base ejecutándose localmente y en entorno de pruebas.  
+- Proyecto base ejecutándose.  
 - Documentación de instalación en README.  
-- Primer commit funcional con CI (lint + tests).
 
 ---
 
 ## 🗓️ SPRINT 1 — Semana 2  
-### Objetivo: Spikes de aprendizaje y diseño funcional  
+### Objetivo: Investigaciones de aprendizaje y diseño funcional  
 **Meta:** Comprender el dominio y definir contratos de integración.
 
 #### 🧠 Tareas principales
-- Reunión de levantamiento de requerimientos (roles, flujos, POA, permisos).  
 - Diseñar modelo de datos preliminar y diagramas entidad-relación.  
-- Crear documentación OpenAPI v1 con endpoints planificados.  
-- Spike de conexión con página antigua (endpoint de prueba).  
-- Spike de API para futura app móvil (JWT, CORS, lectura de empleados/asistencias).
+- Crear documentación para API v1.  
+- Investigación de conexión con página antigua (endpoint de prueba).  
+- Investigación de API para futura app móvil.
 
 #### 🎯 Entregables
-- Documento OpenAPI v1 inicial.  
+- Documento API v1.  
 - Diagrama de base de datos.  
-- Contratos definidos con página antigua y app móvil.
+- Diagrama definido con conexión a app móvil.
 
 ---
 
@@ -46,7 +44,7 @@
 **Meta:** CRUD completo y control de acceso por rol.
 
 #### 🧠 Tareas principales
-- Modelo `User` extendido y `Employee` (id, nombre, cargo, depto, salario, fecha ingreso).  
+- Modelo `User` y `Employee`.
 - Implementar login/logout y permisos (Admin, RRHH, Supervisor, Empleado).  
 - CRUD de empleados (formularios modales con HTMX + Bootstrap).  
 - Endpoints REST: `/api/v1/employees/` y `/api/v1/employees/{id}`.  
@@ -117,12 +115,11 @@
 **Meta:** Entregar un MVP estable, seguro y desplegado en producción.
 
 #### 🧠 Tareas principales
-- Revisar permisos, CSRF, CORS, JWT, paginación y validaciones.  
-- Implementar `Legacy Bridge` definitivo (integración página antigua).  
-- Preparar `OpenAPI v1` final y colección Postman.  
-- Script de seed de datos demo (usuarios, roles, empleados).  
-- Despliegue en producción con Whitenoise y backups.  
-- Prueba de demo funcional (10–15 min).
+- Revisar permisos, CSRF, CORS, JWT, paginación y validaciones.   
+- Preparar `API v1` final y colección Postman.  
+- Población base de datos demo (usuarios, roles, empleados).  
+- Despliegue en producción con backups.  
+- Prueba de demo funcional.
 
 #### 🎯 Entregables
 - Sistema completo desplegado.  
@@ -135,8 +132,8 @@
 
 | Sprint | Entregable Principal | Estado Esperado |
 |:-------|:---------------------|:----------------|
-| 0 | Proyecto base + API `ping` + CI | 🟢 |
-| 1 | Modelo de datos + OpenAPI inicial + integración legacy | 🟢 |
+| 0 | Proyecto base + API + Continuos Integration | 🟢 |
+| 1 | Modelo de datos + API inicial | 🟢 |
 | 2 | Módulo de empleados + Roles | 🟢 |
 | 3 | Control de asistencia | 🟢 |
 | 4 | Permisos, vacaciones y horas extra | 🟢 |
