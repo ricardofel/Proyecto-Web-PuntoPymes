@@ -1,4 +1,5 @@
-## RETO: PUNTO PYMES
+## RETO: PUNTO PYMESs
+
 #### Objetivo: Desarrollar un **Sistema de control de personal**
 
 - Talento humano (control de actividades) 
