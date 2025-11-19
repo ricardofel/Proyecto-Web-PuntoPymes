@@ -1,0 +1,35 @@
+{% extends "usuarios/base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Listado de empleados</h2>
+    <button class="btn text-white" style="background-color: #6f42c1;" type="button"
+    onclick="location.href='form'">
+        + Agregar empleado
+    </button>
+</div>
+
+<div class="input-group mb-4">
+    <span class="input-group-text">🔍</span>
+    <input type="text" class="form-control" placeholder="Buscar empleado...">
+</div>
+
+<ul class="list-group">
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+        <div>
+            <strong>Empleado 1</strong> — Puesto — email@example.com
+        </div>
+        <a href="#" class="text-decoration-none text-muted">Ver perfil</a>
+    </li>
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+        <div>
+            <strong>Empleado 2</strong> — Puesto — email@example.com
+        </div>
+        <a href="#" class="text-decoration-none text-muted">Ver perfil</a>
+    </li>
+</ul>
+
+{% endblock %}
