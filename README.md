@@ -1,15 +1,27 @@
-## RETO: PUNTO PYMESs
+# 🟠 PuntoPymes – Sistema de Control de Personal
 
-#### Objetivo: Desarrollar un **Sistema de control de personal**
+PuntoPymes es una plataforma web para la gestión integral del talento humano en pequeñas y medianas empresas. Centraliza la información del personal (datos, cargos, departamentos, historial laboral) y facilita el control del día a día mediante registro de asistencia, seguimiento de actividades y administración de permisos, vacaciones y horas extra.
 
-- Talento humano (control de actividades) 
-- Actividades y tareas POA anual 
-- Plataforma web
-- Información del personal, cargos, departamentos, ficha del empleado, salario etc. 
-- Control de personal 
-- Crear un api para que se pueda comunicar con otras tecnologías
-- Permisos
-- Horas extras
-- Vacaciones
-- Registro de personas con app movil por GPS
-- Apis rest, node, postgrest, mongo, angular
+El sistema soporta registro de asistencia desde la web y desde una app móvil usando **GPS**, validando ubicación y hora en tiempo real. También incluye una **API REST** para integrarse con otros sistemas o aplicaciones externas.
+
+Desarrollado con **Django**, **Django REST Framework**, **HTMX**, **Tailwind CSS** y **PostgreSQL** como parte del **Reto PuntoPymes – UTPL**.
+
+---
+
+## ⭐ Características principales
+
+- Gestión de empleados y estructura organizacional.
+- Registro y control de asistencia (web y GPS).
+- Administración de permisos, vacaciones y horas extra.
+- Seguimiento básico de actividades del personal.
+- API REST limpia para integraciones externas.
+
+---
+
+## 🧩 Módulos incluidos
+
+- **Empleados:** ficha, cargos, departamentos.
+- **Asistencia:** check-in/check-out, geolocalización.
+- **Ausencias:** permisos, vacaciones, horas extra.
+- **Actividades:** tareas y acciones asignadas.
+- **API:** acceso externo a datos y registros.
