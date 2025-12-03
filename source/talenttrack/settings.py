@@ -25,7 +25,19 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # Terceros
+    "rest_framework",
+    # Apps del proyecto
     "usuarios",
+    "asistencia",
+    "auditoria",
+    "core",
+    "empleados",
+    "integraciones",
+    "kpi",
+    "notificaciones",
+    "poa",
+    "solicitudes",
 ]
 
 MIDDLEWARE = [
@@ -58,6 +70,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "talenttrack.wsgi.application"
 
+# Rest Framework Configuration
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.BasicAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
