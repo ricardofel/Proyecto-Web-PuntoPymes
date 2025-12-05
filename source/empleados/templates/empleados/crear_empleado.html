@@ -1,0 +1,30 @@
+{% extends 'core/base_dashboard.html' %}
+
+{% block page_content %}
+<div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
+    <h2 class="text-2xl font-bold mb-6 text-gray-800">Registrar Nuevo Empleado</h2>
+    
+    <form method="post">
+        {% csrf_token %} <div class="space-y-4">
+            {% for field in form %}
+            <div class="flex flex-col">
+                <label class="font-semibold text-gray-600 text-sm mb-1">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                    <span class="text-red-500 text-xs">{{ field.errors }}</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="mt-8 flex gap-4">
+            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium">
+                Guardar Empleado
+            </button>
+            <a href="{% url 'empleados:lista_empleados' %}" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 font-medium">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends 'core/base_dashboard.html' %}
+
+{% block header_title %}Directorio de Empleados{% endblock %}
+{% block header_subtitle %}Gestión de personal y contratos{% endblock %}
+
+{% block page_content %}
+<div class="bg-white p-6 rounded-lg shadow">
+    <div class="flex justify-end items-center mb-6">
+        <a href="{% url 'empleados:crear_empleado' %}"
+            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">
+            + Nuevo Empleado
+        </a>
+    </div>
+
+    <div class="overflow-x-auto border rounded-lg">
+        <table class="w-full text-left text-sm text-gray-600">
+            <thead class="bg-gray-50 text-xs uppercase font-semibold text-gray-700">
+                <tr>
+                    <th class="px-6 py-4">Colaborador</th>
+                    <th class="px-6 py-4">Puesto / Unidad</th>
+                    <th class="px-6 py-4">Contacto</th>
+                    <th class="px-6 py-4">Estado</th>
+                    <th class="px-6 py-4 text-right">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for empleado in empleados %}
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            {% if empleado.foto_url %}
+                            <img class="h-10 w-10 rounded-full object-cover" src="{{ empleado.foto_url }}" alt="">
+                            {% else %}
+                            <div
+                                class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
+                                {{ empleado.nombres|first }}{{ empleado.apellidos|first }}
+                            </div>
+                            {% endif %}
+                            <div>
+                                <div class="font-medium text-gray-900">{{ empleado.nombres }} {{ empleado.apellidos }}
+                                </div>
+                                <div class="text-xs text-gray-500">ID: {{ empleado.cedula }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="font-medium text-gray-900">{{ empleado.puesto.nombre }}</div>
+                        <div class="text-xs text-gray-500">{{ empleado.unidad_org.nombre }}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex flex-col">
+                            <span class="text-indigo-600 hover:underline cursor-pointer">{{ empleado.email }}</span>
+                            <span class="text-xs">{{ empleado.telefono|default:"Sin teléfono" }}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium 
+                            {% if empleado.estado == 'activo' %} bg-green-100 text-green-700 
+                            {% elif empleado.estado == 'baja' %} bg-red-100 text-red-700 
+                            {% else %} bg-yellow-100 text-yellow-700 {% endif %}">
+                            {{ empleado.get_estado_display }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <a href="{% url 'empleados:editar_empleado' empleado.id %}"
+                            class="text-indigo-600 hover:text-indigo-900 font-medium">Editar</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-10 text-center text-gray-500">
+                        <div class="flex flex-col items-center">
+                            <svg class="h-12 w-12 text-gray-300 mb-3" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            <p>No hay empleados registrados en el sistema.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
