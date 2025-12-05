@@ -1,5 +1,5 @@
-from django.shortcuts import render
-from .models import Empleado  # <--- 1. IMPORTANTE: Importar el modelo
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Empleado 
 from .forms import EmpleadoForm
 
 def lista_empleados_view(request):
@@ -23,3 +23,22 @@ def crear_empleado_view(request):
         form = EmpleadoForm()
 
     return render(request, 'empleados/crear_empleado.html', {'form': form})
+
+def editar_empleado_view(request, pk):
+    # 1. Buscamos el empleado por su ID (pk). Si no existe, da error 404.
+    empleado = get_object_or_404(Empleado, pk=pk)
+
+    if request.method == 'POST':
+        # 2. Cargamos el form con los datos POST y la instancia del empleado (para actualizar, no crear)
+        form = EmpleadoForm(request.POST, request.FILES, instance=empleado)
+        if form.is_valid():
+            form.save()
+            return redirect('empleados:lista_empleados')
+    else:
+        # 3. Si es GET, cargamos el formulario con los datos actuales del empleado
+        form = EmpleadoForm(instance=empleado)
+
+    return render(request, 'empleados/editar_empleado.html', {
+        'form': form,
+        'empleado': empleado
+    })
