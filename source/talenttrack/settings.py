@@ -14,8 +14,8 @@ environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 DEBUG = env("DEBUG")
 SECRET_KEY = env("SECRET_KEY")
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 # Application definition
 
@@ -26,14 +26,14 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "usuarios.apps.UsuariosConfig",
+    "empleados.apps.EmpleadosConfig",
     # Terceros
     "rest_framework",
     # Apps del proyecto
-    "usuarios",
     "asistencia",
     "auditoria",
     "core",
-    "empleados",
     "integraciones",
     "kpi",
     "notificaciones",
@@ -140,4 +140,6 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-LOGIN_URL = "/login/"
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "dashboard"
+LOGOUT_REDIRECT_URL = "login"

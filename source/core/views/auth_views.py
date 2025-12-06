@@ -1,61 +1,48 @@
-from django.shortcuts import render, redirect
+# core/views/auth_views.py
+from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
 from django.contrib.auth import get_user_model
+from django.contrib.auth.decorators import login_required
+
+User = get_user_model()
 
 
 def login_view(request):
+    # Si ya está logueado, lo mandamos al dashboard
+    if request.user.is_authenticated:
+        return redirect("dashboard")
+
     if request.method == "POST":
-        email = request.POST.get("email")
-        password = request.POST.get("password")
+        email = request.POST.get("email", "").strip().lower()
+        password = request.POST.get("password", "")
 
-        UserModel = get_user_model()
-        username = email
-
-        # Permitir login por email o username sin mentirle al usuario
-        try:
-            user_obj = UserModel.objects.get(email=email)
-            username = user_obj.get_username()
-        except UserModel.DoesNotExist:
-            # Si no existe ese email, intentará con el identificador como username
-            username = email
-
-        user = authenticate(request, username=username, password=password)
+        # OJO: aunque usamos email, el parámetro se llama username
+        user = authenticate(request, username=email, password=password)
 
         if user is not None:
-            login(request, user)
-            return redirect("dashboard")
+            # Por si acaso, respetamos el estado del usuario
+            if not getattr(user, "estado", True):
+                messages.error(
+                    request,
+                    "Tu usuario está inactivo. Contacta con el administrador.",
+                )
+            else:
+                login(request, user)
+                return redirect("dashboard")
         else:
-            return render(
-                request, "core/login.html", {"error": "Email o contraseña incorrectos."}
-            )
+            messages.error(request, "Correo o contraseña incorrectos.")
 
-    return render(request, "core/login.html")
+    return render(request, "usuarios/login.html", {})
 
 
 def logout_view(request):
     logout(request)
+    messages.success(request, "Has cerrado sesión correctamente.")
     return redirect("login")
 
 
 @login_required
 def dashboard_view(request):
-    # Roles por grupos
-    roles = list(request.user.groups.values_list("name", flat=True))
-    main_role = roles[0] if roles else "EMPLOYEE"
-
-    # Datos falsos solo para mostrar barras (no son KPIs reales)
-    meses = [
-        ("Jan", 80),
-        ("Feb", 90),
-        ("Mar", 95),
-        ("Apr", 100),
-        ("May", 105),
-        ("Jun", 110),
-    ]
-
-    context = {
-        "main_role": main_role,
-        "meses": meses,
-    }
-    return render(request, "core/dashboard.html", context)
+    # De momento lo dejamos sencillo; tú ya tienes algo aquí
+    return render(request, "core/dashboard.html")

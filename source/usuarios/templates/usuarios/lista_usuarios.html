@@ -1,0 +1,90 @@
+{% extends "core/base_dashboard.html" %} {% block header_title %}Usuarios y
+Accesos{% endblock %} {% block header_subtitle %} Gestiona los accesos y roles
+de los usuarios en el sistema. {% endblock %} {% block page_content %}
+<div class="max-w-6xl mx-auto">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-lg font-semibold text-slate-900">Gestión de Usuarios</h2>
+      <p class="text-sm text-slate-500">
+        Lista de usuarios registrados en el sistema.
+      </p>
+    </div>
+    {% if request.user.is_superuser %}
+    <a
+      href="{% url 'usuarios:crear_usuario' %}"
+      class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 shadow-sm"
+    >
+      + Nuevo usuario
+    </a>
+    {% endif %}
+  </div>
+
+  <div
+    class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden"
+  >
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50">
+        <tr>
+          <th class="px-4 py-2 text-left font-semibold text-slate-700">
+            Correo
+          </th>
+          <th class="px-4 py-2 text-left font-semibold text-slate-700">
+            Empleado
+          </th>
+          <th class="px-4 py-2 text-left font-semibold text-slate-700">
+            Roles
+          </th>
+          <th class="px-4 py-2 text-left font-semibold text-slate-700">
+            Estado
+          </th>
+          <th class="px-4 py-2 text-right font-semibold text-slate-700">
+            Acciones
+          </th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for u in usuarios %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-4 py-2 text-slate-800">{{ u.email }}</td>
+          <td class="px-4 py-2 text-slate-600">{{ u.empleado|default:"—" }}</td>
+          <td class="px-6 py-4 text-sm text-slate-600">
+            {% with rol=u.roles_asignados.first %} {% if rol %} {{ rol.nombre }}
+            {% else %} Sin rol {% endif %} {% endwith %}
+          </td>
+
+          <td class="px-4 py-2">
+            {% if u.estado %}
+            <span
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700"
+            >
+              Activo
+            </span>
+            {% else %}
+            <span
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500"
+            >
+              Inactivo
+            </span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-2 text-right">
+            <a
+              href="{% url 'usuarios:editar_usuario' u.id %}"
+              class="text-blue-600 hover:text-blue-800 text-xs font-medium"
+            >
+              Editar
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="px-4 py-6 text-center text-slate-500 text-sm">
+            No hay usuarios registrados todavía.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

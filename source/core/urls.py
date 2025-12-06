@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from core.views.auth_views import login_view, logout_view, dashboard_view
 from .views import home_views, auth_views, organization_views
 from usuarios.views import usuarios_views
@@ -8,5 +8,5 @@ urlpatterns = [
     path("logout/", logout_view, name="logout"),
     path("", dashboard_view, name="dashboard"),
     path("organizacion/", organization_views.organizacion_view, name="organizacion"),
-    path("usuarios/", usuarios_views.lista_usuarios, name="lista_usuarios"),
+    path("usuarios/", include("usuarios.urls")),
 ]

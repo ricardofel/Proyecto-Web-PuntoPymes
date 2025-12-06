@@ -21,7 +21,7 @@ class UsuarioManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
             raise ValueError(_("El usuario debe tener un email"))
-        email = self.normalize_email(email)
+        email = self.normalize_email(email).strip().lower()
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -31,6 +31,7 @@ class UsuarioManager(BaseUserManager):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("estado", True)
+        email = self.normalize_email(email).strip().lower()
         return self.create_user(email, password, **extra_fields)
 
 
@@ -73,6 +74,35 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     @property
     def is_active(self):  # type: ignore
         return self.estado
+
+        # --- Helpers de negocio / roles (no generan migraciones) ---
+
+    @property
+    def es_superadmin_negocio(self) -> bool:
+        """
+        True si tiene el rol SUPERADMIN activo en nuestra tabla rol.
+        """
+        return self.roles_asignados.filter(nombre="Superusuario", estado=True).exists()
+
+    @property
+    def es_admin_rrhh(self) -> bool:
+        """
+        True si tiene el rol ADMIN_RRHH activo.
+        """
+        return self.roles_asignados.filter(nombre="Admin RRHH", estado=True).exists()
+
+    @property
+    def puede_ver_modulo_usuarios(self) -> bool:
+        """
+        Encapsula toda la lógica de visibilidad del módulo Usuarios.
+        Así el template no se llena de condiciones largas.
+        """
+        return self.is_superuser or self.es_superadmin_negocio or self.es_admin_rrhh
+
+    def save(self, *args, **kwargs):
+        if self.email:
+            self.email = self.email.strip().lower()
+        super().save(*args, **kwargs)
 
     objects = UsuarioManager()
 
