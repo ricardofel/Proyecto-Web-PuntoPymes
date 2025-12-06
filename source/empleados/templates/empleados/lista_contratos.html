@@ -1,0 +1,101 @@
+{% extends 'core/base_dashboard.html' %}
+
+{% block header_title %}Historial Laboral{% endblock %}
+{% block header_subtitle %}Contratos y condiciones de {{ empleado.nombres }}{% endblock %}
+
+{% block page_content %}
+<div class="max-w-6xl mx-auto">
+
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800">Contratos Registrados</h2>
+            <p class="text-sm text-gray-500">Historial de vinculaciones laborales</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{% url 'empleados:editar_empleado' empleado.id %}" class="text-gray-500 hover:text-gray-700 px-4 py-2 flex items-center gap-1">
+                <span>&larr;</span> Volver al Perfil
+            </a>
+            <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium text-sm flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Nuevo Contrato
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-white border rounded-lg overflow-hidden shadow-sm">
+        <table class="w-full text-left text-sm text-gray-600">
+            <thead class="bg-gray-50 text-xs uppercase font-semibold text-gray-700 border-b">
+                <tr>
+                    <th class="px-6 py-4">Tipo de Contrato</th>
+                    <th class="px-6 py-4">Vigencia</th>
+                    <th class="px-6 py-4">Condiciones</th>
+                    <th class="px-6 py-4">Estado</th>
+                    <th class="px-6 py-4 text-right">Documento</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for contrato in contratos %}
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-6 py-4">
+                        <div class="font-medium text-gray-900">{{ contrato.tipo }}</div>
+                        <div class="text-xs text-gray-500">ID: {{ contrato.id }}</div>
+                    </td>
+                    
+                    <td class="px-6 py-4">
+                        <div class="flex flex-col gap-1">
+                            <span class="flex items-center gap-2 text-green-700">
+                                <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                                Inicio: {{ contrato.fecha_inicio|date:"d M, Y" }}
+                            </span>
+                            {% if contrato.fecha_fin %}
+                                <span class="flex items-center gap-2 text-red-700">
+                                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                                    Fin: {{ contrato.fecha_fin|date:"d M, Y" }}
+                                </span>
+                            {% else %}
+                                <span class="text-xs text-gray-400 italic ml-4">Indefinido</span>
+                            {% endif %}
+                        </div>
+                    </td>
+
+                    <td class="px-6 py-4">
+                        <div class="font-medium text-gray-900">$ {{ contrato.salario_base }}</div>
+                        <div class="text-xs text-gray-500">{{ contrato.jornada_semanal_horas }} horas/semana</div>
+                        <div class="text-xs text-indigo-500 mt-1">{{ contrato.turno.nombre }}</div>
+                    </td>
+
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium 
+                            {% if contrato.estado == 'Vigente' %} bg-green-100 text-green-700 
+                            {% else %} bg-gray-100 text-gray-600 {% endif %}">
+                            {{ contrato.estado }}
+                        </span>
+                    </td>
+
+                    <td class="px-6 py-4 text-right">
+                        {% if contrato.documento_url %}
+                            <a href="#" target="_blank" class="text-blue-600 hover:underline text-xs font-medium">Ver Documento </a>
+                        {% else %}
+                            <span class="text-gray-300 text-xs">Sin archivo</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                        <div class="flex flex-col items-center">
+                            <svg class="h-10 w-10 text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <p>Este empleado no tiene contratos registrados.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

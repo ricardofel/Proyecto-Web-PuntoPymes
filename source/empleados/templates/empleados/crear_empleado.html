@@ -1,29 +1,139 @@
 {% extends 'core/base_dashboard.html' %}
 
+{% block header_title %}Directorio de Empleados{% endblock %}
+{% block header_subtitle %}Gestión de personal y contratos{% endblock %}
+
 {% block page_content %}
-<div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
-    <h2 class="text-2xl font-bold mb-6 text-gray-800">Registrar Nuevo Empleado</h2>
+<div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md">
+    <div class="border-b pb-4 mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">Registrar Nuevo Empleado</h2>
+        <p class="text-sm text-gray-500">Complete la ficha técnica para dar de alta al colaborador.</p>
+    </div>
     
-    <form method="post">
-        {% csrf_token %} <div class="space-y-4">
-            {% for field in form %}
-            <div class="flex flex-col">
-                <label class="font-semibold text-gray-600 text-sm mb-1">{{ field.label }}</label>
-                {{ field }}
-                {% if field.errors %}
-                    <span class="text-red-500 text-xs">{{ field.errors }}</span>
-                {% endif %}
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %} 
+
+        {% if form.errors %}
+        <div class="mb-6 p-4 rounded-lg bg-red-50 border-l-4 border-red-500 text-red-700" role="alert">
+            <div class="flex items-center gap-2 mb-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+                <h3 class="font-bold">Revise los siguientes errores</h3>
             </div>
-            {% endfor %}
+            <ul class="list-disc pl-5 text-sm">
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            <div class="space-y-4">
+                <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider border-b pb-2 mb-4">Datos Corporativos</h3>
+                
+                <div class="flex flex-col">
+                    <label class="font-semibold text-gray-700 text-sm mb-1">Empresa</label>
+                    {{ form.empresa }}
+                </div>
+
+                <div class="grid grid-cols-1 gap-4">
+                    <div class="flex flex-col">
+                        <label class="font-semibold text-gray-700 text-sm mb-1">Unidad Organizacional</label>
+                        {{ form.unidad_org }}
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="font-semibold text-gray-700 text-sm mb-1">Puesto de Trabajo</label>
+                        {{ form.puesto }}
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="font-semibold text-gray-700 text-sm mb-1">Jefe Inmediato (Manager)</label>
+                        {{ form.manager }}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="flex flex-col">
+                        <label class="font-semibold text-gray-700 text-sm mb-1">Fecha de Ingreso</label>
+                        {{ form.fecha_ingreso }}
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="font-semibold text-gray-700 text-sm mb-1">Estado Inicial</label>
+                        {{ form.estado }}
+                    </div>
+                </div>
+                
+                <div class="flex flex-col">
+                    <label class="font-semibold text-gray-700 text-sm mb-1">Zona Horaria</label>
+                    {{ form.zona_horaria }}
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider border-b pb-2 mb-4">Información Personal</h3>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="flex flex-col">
+                        <label class="font-semibold text-gray-700 text-sm mb-1">Nombres</label>
+                        {{ form.nombres }}
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="font-semibold text-gray-700 text-sm mb-1">Apellidos</label>
+                        {{ form.apellidos }}
+                    </div>
+                </div>
+
+                <div class="flex flex-col">
+                    <label class="font-semibold text-gray-700 text-sm mb-1">Cédula / ID</label>
+                    {{ form.cedula }}
+                </div>
+
+                <div class="flex flex-col">
+                    <label class="font-semibold text-gray-700 text-sm mb-1">Fecha de Nacimiento</label>
+                    {{ form.fecha_nacimiento }}
+                </div>
+
+                <div class="flex flex-col">
+                    <label class="font-semibold text-gray-700 text-sm mb-1">Correo Electrónico</label>
+                    {{ form.email }}
+                </div>
+
+                <div class="flex flex-col">
+                    <label class="font-semibold text-gray-700 text-sm mb-1">Teléfono</label>
+                    {{ form.telefono }}
+                </div>
+
+                <div class="flex flex-col">
+                    <label class="font-semibold text-gray-700 text-sm mb-1">Dirección Domiciliaria</label>
+                    {{ form.direccion }}
+                </div>
+                
+                {% for field in form %}
+                    {% if field.name not in 'empresa,unidad_org,puesto,manager,fecha_ingreso,estado,zona_horaria,nombres,apellidos,cedula,fecha_nacimiento,email,telefono,direccion,foto' %}
+                        <div class="flex flex-col mt-4 hidden"> {{ field }}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
         </div>
 
-        <div class="mt-8 flex gap-4">
-            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium">
-                Guardar Empleado
-            </button>
-            <a href="{% url 'empleados:lista_empleados' %}" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 font-medium">
+        <div class="mt-10 flex items-center justify-end gap-4 border-t pt-6">
+            <a href="{% url 'empleados:lista_empleados' %}" class="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
                 Cancelar
             </a>
+            <button type="submit" class="px-6 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-md transition-colors flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+                Guardar Empleado
+            </button>
         </div>
     </form>
 </div>

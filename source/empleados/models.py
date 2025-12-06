@@ -1,3 +1,4 @@
+import os
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -39,16 +40,39 @@ class Puesto(models.Model):
     def __str__(self):
         return str(self.nombre)
 
+def ruta_foto_empleado(instance, filename):
+    # instance: es el objeto Empleado.
+    # filename: el nombre original del archivo (ej: "foto_playa.jpg").
+
+    # 1. Obtenemos la extensión del archivo original (ej: .jpg, .png)
+    ext = filename.split('.')[-1]
+
+    # 2. Creamos un nombre de carpeta único basado en el ID del empleado.
+    # Usamos ':08d' para que el ID tenga ceros a la izquierda y se vea profesional.
+    # Ejemplo: Si el ID es 5, la carpeta será 'empleado_00000005'
+    folder_name = f"empleado_{instance.id:08d}"
+
+    # 3. Creamos el nombre del archivo (puede ser igual al de la carpeta)
+    file_name = f"{folder_name}.{ext}"
+
+    # 4. Construimos la ruta final.
+    # Django creará automáticamente las carpetas que no existan.
+    # Resultado: empleados/fotos/empleado_00000005/empleado_00000005.jpg
+    return os.path.join('empleados', 'fotos', folder_name, file_name)
 
 class Empleado(models.Model):
     # Tabla empleado
+    
+    # MEJORA: Valores en TitleCase ("Activo") para que coincidan con tu HTML visual
     class Estado(models.TextChoices):
-        ACTIVO = "activo", _("Activo")
-        SUSPENDIDO = "suspendido", _("Suspendido")
-        BAJA = "baja", _("Baja")
-        LICENCIA = "licencia", _("Licencia")
+        ACTIVO = "Activo", _("Activo")
+        INACTIVO = "Inactivo", _("Inactivo") # Unifiqué BAJA a INACTIVO para consistencia
+        LICENCIA = "Licencia", _("Licencia")
+        SUSPENDIDO = "Suspendido", _("Suspendido")
 
     id = models.BigAutoField(primary_key=True)
+    
+    # Relaciones
     empresa = models.ForeignKey(
         "core.Empresa", on_delete=models.CASCADE, related_name="empleados"
     )
@@ -56,7 +80,7 @@ class Empleado(models.Model):
         "core.UnidadOrganizacional", on_delete=models.PROTECT, related_name="empleados"
     )
     puesto = models.ForeignKey(
-        Puesto, on_delete=models.PROTECT, related_name="empleados"
+        "Puesto", on_delete=models.PROTECT, related_name="empleados"
     )
     manager = models.ForeignKey(
         "self",
@@ -65,20 +89,30 @@ class Empleado(models.Model):
         blank=True,
         related_name="subordinados",
     )
+
+    # Datos Personales
     nombres = models.CharField(max_length=100)
     apellidos = models.CharField(max_length=100)
     cedula = models.CharField(max_length=20, help_text=_("DNI/Cédula/Pasaporte"))
     email = models.EmailField(
         max_length=150, unique=True, help_text=_("Correo corporativo único")
     )
-    foto_url = models.TextField(blank=True, null=True)
+    
+    # Foto (Usando tu función de ruta)
+    foto = models.ImageField(upload_to=ruta_foto_empleado, blank=True, null=True)
+    
     telefono = models.CharField(max_length=20, blank=True, null=True)
     direccion = models.TextField(blank=True, null=True)
+    
+    # Fechas
     fecha_nacimiento = models.DateField(null=True, blank=True)
     fecha_ingreso = models.DateField()
+    
+    # Estado (Usando las opciones corregidas)
     estado = models.CharField(
         max_length=20, choices=Estado.choices, default=Estado.ACTIVO
     )
+    
     zona_horaria = models.CharField(max_length=50, blank=True, null=True)
 
     class Meta:
@@ -91,6 +125,20 @@ class Empleado(models.Model):
 
     def __str__(self):
         return f"{self.nombres} {self.apellidos}"
+
+    # --- NUEVA LÓGICA DE GUARDADO AUTOMÁTICO ---
+    def save(self, *args, **kwargs):
+        # 1. Capitalizar Nombres y Apellidos (juan -> Juan)
+        if self.nombres:
+            self.nombres = self.nombres.strip().title()
+        if self.apellidos:
+            self.apellidos = self.apellidos.strip().title()
+            
+        # 2. Asegurar que el estado tenga el formato correcto (Activo, Inactivo...)
+        if self.estado:
+            self.estado = self.estado.strip().capitalize()
+
+        super().save(*args, **kwargs)
 
 
 class Contrato(models.Model):
