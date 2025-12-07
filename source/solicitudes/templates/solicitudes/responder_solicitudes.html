@@ -1,0 +1,153 @@
+{% extends 'core/base_dashboard.html' %}
+
+{% block header_title %}Solicitudes{% endblock %}
+{% block header_subtitle %}Responder todas las solicitudes{% endblock %}
+{% block page_content %}
+    
+    {# SIMULACIÓN DE DATOS QUEMADOS: Usamos {% with %} para definir las variables temporales #}
+    {% with solicitante_nombre='Javier Andrés' solicitante_apellido='López' fecha_creacion='2025-12-05 14:30' estado='pendiente' tipo='Ampliación de Plazo' asunto='Necesito 2 días adicionales para el Informe Anual' fecha_inicio='2025-12-13' fecha_fin='2025-12-15' unidad='Marketing' %}
+
+    {# Definición de la Descripción (variable multilínea) #}
+    {% with descripcion="Estimado(a) Administrador(a),\n\nSolicito una ampliación de plazo de dos (2) días hábiles para la entrega del informe de gestión anual del área de Marketing. \n\nEl motivo es que el proveedor de datos externo tuvo un retraso de 48 horas en la entrega de la data consolidada necesaria para la sección de métricas clave. Esto ha impactado directamente el cronograma original.\n\nEl nuevo plazo de entrega sería el 15 de diciembre de 2025.\n\nGracias por su comprensión.\n\nAtentamente,\nJavier López." %}
+
+    {# Contenedor principal de la página #}
+    <div class="space-y-6">
+
+        {# A. BOTONES DE ACCIÓN (Aceptar/Negar) #}
+        <div class="flex justify-end gap-3">
+            
+            {# BOTÓN ACEPTAR #}
+            <a href="#" title="Aceptar Solicitud"
+                class="inline-flex items-center px-4 py-2 bg-green-100 text-green-700 border border-green-300 rounded-lg hover:bg-green-200 transition-colors font-medium text-sm shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-5 mr-2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+                Aceptar
+            </a>
+
+            {# BOTÓN NEGAR #}
+            <a href="#" title="Negar Solicitud"
+                class="inline-flex items-center px-4 py-2 bg-red-100 text-red-700 border border-red-300 rounded-lg hover:bg-red-200 transition-colors font-medium text-sm shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-5 mr-2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+                </svg>
+                Negar
+            </a>
+            
+            {# Botón de Regresar #}
+            <a href="#" title="Volver al listado"
+                class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors font-medium text-sm shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
+                </svg>
+            </a>
+        </div>
+
+        {# B. RECUADRO CON INFORMACIÓN DE LA SOLICITUD #}
+        <div class="bg-white p-8 rounded-lg shadow-xl border border-gray-100">
+
+            {# LÓGICA DE ASIGNACIÓN DE CLASES (CORREGIDA) #}
+            {# Asignamos una clase por defecto y luego la sobrescribimos con {% with %} y {% if %} #}
+            {% with clases_estado='bg-gray-100 text-gray-700' %}
+                
+                {% if estado == 'pendiente' %} 
+                    {% with clases_estado='bg-yellow-100 text-yellow-700' %}{% endwith %}
+                {% elif estado == 'aprobada' %} 
+                    {% with clases_estado='bg-green-100 text-green-700' %}{% endwith %}
+                {% elif estado == 'rechazada' %}
+                    {% with clases_estado='bg-red-100 text-red-700' %}{% endwith %}
+                {% endif %}
+            
+                {# ENCABEZADO DE LA SOLICITUD #}
+                <div class="flex justify-between items-start pb-4 border-b border-gray-200 mb-6">
+                    
+                    {# IZQUIERDA: Nombre del Solicitante y Fecha de Creación #}
+                    <div class="space-y-0.5">
+                        <h1 class="text-2xl font-bold text-gray-900">
+                            {{ solicitante_nombre }} {{ solicitante_apellido }}
+                        </h1>
+                        <p class="text-sm text-gray-500">
+                            {{ unidad }} &bull; Creada el: {{ fecha_creacion }}
+                        </p>
+                    </div>
+
+                    {# DERECHA: Estado de la Solicitud (Usa la variable 'clases_estado') #}
+                    <div class="flex-shrink-0">
+                        <span class="inline-flex items-center justify-center px-3 py-1 text-sm font-semibold rounded-full {{ clases_estado }}">
+                            {{ estado|title }}
+                        </span>
+                    </div>
+                </div>
+            {% endwith %}
+
+            {# CUERPO: Tipo, Asunto y Descripción #}
+            <div class="space-y-6">
+                
+                {# TIPO Y ASUNTO #}
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 border-b pb-4">
+                    
+                    {# TIPO DE SOLICITUD #}
+                    <div>
+                        <p class="text-xs uppercase font-medium text-gray-500">Tipo de Solicitud</p>
+                        <p class="text-base font-medium text-gray-800">{{ tipo }}</p>
+                    </div>
+
+                    {# ASUNTO #}
+                    <div class="md:col-span-2">
+                        <p class="text-xs uppercase font-medium text-gray-500">Asunto</p>
+                        <p class="text-base font-medium text-gray-800">{{ asunto }}</p>
+                    </div>
+                </div>
+
+                {# DESCRIPCIÓN DETALLADA #}
+                <div>
+                    <p class="text-xs uppercase font-medium text-gray-500 mb-2">Descripción Detallada</p>
+                    {# whitespace-pre-wrap mantiene los saltos de línea del texto quemado #}
+                    <div class="p-4 bg-gray-50 border border-gray-200 rounded-md text-gray-700 leading-relaxed whitespace-pre-wrap">
+                        {{ descripcion }}
+                    </div>
+                </div>
+                
+                {# DATOS ADICIONALES (Periodo solicitado) #}
+                {% if fecha_inicio or fecha_fin %}
+                <div class="pt-4 border-t border-gray-200">
+                    <p class="text-xs uppercase font-medium text-gray-500 mb-1">Periodo Solicitado</p>
+                    <p class="text-sm text-gray-600">
+                        Desde: {{ fecha_inicio }} hasta {{ fecha_fin }}
+                    </p>
+                </div>
+                {% endif %}
+
+            </div>
+
+        </div>
+
+        {# 3. CONTROLES DE NAVEGACIÓN #}
+        <div class="flex justify-between items-center pt-3">
+            
+            {# BOTÓN ANTERIOR #}
+            <a href="#"
+                class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-5 mr-2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+                </svg>
+                Anterior Solicitud
+            </a>
+
+            {# BOTÓN SIGUIENTE #}
+            <a href="#"
+                class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50">
+                Siguiente Solicitud
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-5 ml-2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                </svg>
+            </a>
+            
+        </div>
+    </div>
+    
+    {# Cierre de los bloques {% with %} iniciales #}
+    {% endwith %}
+    {% endwith %}
+
+{% endblock %}
