@@ -1,7 +1,13 @@
-{% extends "core/base_dashboard.html" %} {% block header_title %}Usuarios y
-Accesos{% endblock %} {% block header_subtitle %} Gestiona los accesos y roles
-de los usuarios en el sistema. {% endblock %} {% block page_content %}
+{% extends "core/base_dashboard.html" %}
+
+{% block header_title %}Usuarios y Accesos{% endblock %}
+{% block header_subtitle %}
+  Gestiona los accesos y roles de los usuarios en el sistema.
+{% endblock %}
+
+{% block page_content %}
 <div class="max-w-6xl mx-auto">
+  <!-- Encabezado de sección -->
   <div class="flex items-center justify-between mb-4">
     <div>
       <h2 class="text-lg font-semibold text-slate-900">Gestión de Usuarios</h2>
@@ -9,79 +15,153 @@ de los usuarios en el sistema. {% endblock %} {% block page_content %}
         Lista de usuarios registrados en el sistema.
       </p>
     </div>
+
+    {# Nota: sólo el superusuario de Django puede crear usuarios #}
     {% if request.user.is_superuser %}
-    <a
-      href="{% url 'usuarios:crear_usuario' %}"
-      class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 shadow-sm"
-    >
-      + Nuevo usuario
-    </a>
+      <a
+        href="{% url 'usuarios:crear_usuario' %}"
+        class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 shadow-sm"
+      >
+        + Nuevo usuario
+      </a>
     {% endif %}
   </div>
 
-  <div
-    class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden"
-  >
+  <!-- Filtros de búsqueda -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 mb-4 p-4">
+    <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1">
+          Buscar
+        </label>
+        <input
+          type="text"
+          name="q"
+          value="{{ q }}"
+          placeholder="Correo o nombre"
+          class="w-full rounded-lg border-slate-300 text-slate-900 shadow-sm
+                 focus:border-blue-500 focus:ring-blue-500 text-sm"
+        />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1">
+          Estado
+        </label>
+        <select
+          name="estado"
+          class="w-full rounded-lg border-slate-300 text-slate-900 shadow-sm
+                 focus:border-blue-500 focus:ring-blue-500 text-sm"
+        >
+          <option value="">Todos</option>
+          <option value="activo" {% if filtro_estado == "activo" %}selected{% endif %}>
+            Activos
+          </option>
+          <option value="inactivo" {% if filtro_estado == "inactivo" %}selected{% endif %}>
+            Inactivos
+          </option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1">
+          Rol
+        </label>
+        <select
+          name="rol"
+          class="w-full rounded-lg border-slate-300 text-slate-900 shadow-sm
+                 focus:border-blue-500 focus:ring-blue-500 text-sm"
+        >
+          <option value="">Todos</option>
+          {% for rol in roles %}
+            <option value="{{ rol.nombre }}" {% if filtro_rol == rol.nombre %}selected{% endif %}>
+              {{ rol.nombre }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="flex gap-2">
+        <button
+          type="submit"
+          class="inline-flex justify-center items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 shadow-sm w-full"
+        >
+          Filtrar
+        </button>
+        <a
+          href="{% url 'usuarios:lista_usuarios' %}"
+          class="inline-flex justify-center items-center px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm font-medium hover:bg-slate-200 shadow-sm w-full"
+        >
+          Limpiar
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Tabla de usuarios -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
     <table class="min-w-full divide-y divide-slate-200 text-sm">
       <thead class="bg-slate-50">
         <tr>
-          <th class="px-4 py-2 text-left font-semibold text-slate-700">
-            Correo
-          </th>
-          <th class="px-4 py-2 text-left font-semibold text-slate-700">
-            Empleado
-          </th>
-          <th class="px-4 py-2 text-left font-semibold text-slate-700">
-            Roles
-          </th>
-          <th class="px-4 py-2 text-left font-semibold text-slate-700">
-            Estado
-          </th>
-          <th class="px-4 py-2 text-right font-semibold text-slate-700">
-            Acciones
-          </th>
+          <th class="px-4 py-2 text-left font-semibold text-slate-700">Correo</th>
+          <th class="px-4 py-2 text-left font-semibold text-slate-700">Empleado</th>
+          <th class="px-4 py-2 text-left font-semibold text-slate-700">Rol</th>
+          <th class="px-4 py-2 text-left font-semibold text-slate-700">Estado</th>
+          <th class="px-4 py-2 text-right font-semibold text-slate-700">Acciones</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-100">
         {% for u in usuarios %}
-        <tr class="hover:bg-slate-50">
-          <td class="px-4 py-2 text-slate-800">{{ u.email }}</td>
-          <td class="px-4 py-2 text-slate-600">{{ u.empleado|default:"—" }}</td>
-          <td class="px-6 py-4 text-sm text-slate-600">
-            {% with rol=u.roles_asignados.first %} {% if rol %} {{ rol.nombre }}
-            {% else %} Sin rol {% endif %} {% endwith %}
-          </td>
+          <tr class="hover:bg-slate-50">
+            <td class="px-4 py-2 text-slate-800">
+              {{ u.email }}
+            </td>
 
-          <td class="px-4 py-2">
-            {% if u.estado %}
-            <span
-              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700"
-            >
-              Activo
-            </span>
-            {% else %}
-            <span
-              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500"
-            >
-              Inactivo
-            </span>
-            {% endif %}
-          </td>
-          <td class="px-4 py-2 text-right">
-            <a
-              href="{% url 'usuarios:editar_usuario' u.id %}"
-              class="text-blue-600 hover:text-blue-800 text-xs font-medium"
-            >
-              Editar
-            </a>
-          </td>
-        </tr>
+            <td class="px-4 py-2 text-slate-600">
+              {{ u.empleado|default:"—" }}
+            </td>
+
+            <td class="px-6 py-4 text-sm text-slate-600">
+              {% with rol=u.roles_asignados.first %}
+                {% if rol %}
+                  {{ rol.nombre }}
+                {% else %}
+                  Sin rol
+                {% endif %}
+              {% endwith %}
+            </td>
+
+            <td class="px-4 py-2">
+              {% if u.estado %}
+                <span
+                  class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700"
+                >
+                  Activo
+                </span>
+              {% else %}
+                <span
+                  class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500"
+                >
+                  Inactivo
+                </span>
+              {% endif %}
+            </td>
+
+            <td class="px-4 py-2 text-right">
+              <a
+                href="{% url 'usuarios:editar_usuario' u.id %}"
+                class="text-blue-600 hover:text-blue-800 text-xs font-medium"
+              >
+                Editar
+              </a>
+            </td>
+          </tr>
         {% empty %}
-        <tr>
-          <td colspan="5" class="px-4 py-6 text-center text-slate-500 text-sm">
-            No hay usuarios registrados todavía.
-          </td>
-        </tr>
+          <tr>
+            <td colspan="5" class="px-4 py-6 text-center text-slate-500 text-sm">
+              No hay usuarios registrados todavía.
+            </td>
+          </tr>
         {% endfor %}
       </tbody>
     </table>

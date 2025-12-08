@@ -12,9 +12,7 @@ class UsuarioForm(forms.ModelForm):
     # Campo "ficticio" para seleccionar roles en la interfaz
     roles = forms.ModelChoiceField(
         queryset=Rol.objects.filter(estado=True),
-        widget=forms.RadioSelect(  # o forms.Select si prefieres un combo
-            attrs={"class": "form-radio text-blue-600"}
-        ),
+        widget=forms.RadioSelect(attrs={"class": "form-radio text-blue-600"}),
         required=False,
         label="Asignar Rol",
     )
@@ -23,13 +21,13 @@ class UsuarioForm(forms.ModelForm):
         email = self.cleaned_data.get("email", "")
         email_normalizado = email.strip()
 
-        # ❌ Bloquear si trae mayúsculas
+        # Bloquear si trae mayúsculas
         if any(c.isupper() for c in email_normalizado):
             raise forms.ValidationError(
                 "El correo debe escribirse solo en minúsculas (ej: usuario@empresa.com)."
             )
 
-        # ✅ Devolvemos en minúsculas por seguridad
+        # Devolvemos en minúsculas por seguridad
         return email_normalizado.lower()
 
     class Meta:
@@ -65,22 +63,23 @@ class UsuarioForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # Limitar el combo de empleados
         if self.instance.pk:
-            # Estamos editando un usuario existente:
-            # mostrar empleados SIN usuario o el empleado YA asociado
+            # Editando: empleados sin usuario o el ya asociado
             self.fields["empleado"].queryset = Empleado.objects.filter(
                 models.Q(usuario__isnull=True) | models.Q(usuario=self.instance)
             )
         else:
-            # Estamos creando un usuario nuevo:
-            # solo empleados que aún NO tienen usuario
+            # Creando: solo empleados que aún NO tienen usuario
             self.fields["empleado"].queryset = Empleado.objects.filter(
                 usuario__isnull=True
             )
-        # Si estamos editando un usuario existente, marcamos sus roles actuales
+
+        # Si estamos editando un usuario existente, marcamos su rol actual
         if self.instance.pk:
-            roles_actual = Rol.objects.filter(usuariorol__usuario=self.instance).first()
-            self.fields["roles"].initial = roles_actual
+            rol_actual = Rol.objects.filter(usuariorol__usuario=self.instance).first()
+            self.fields["roles"].initial = rol_actual
 
     def save(self, commit=True):
         """
@@ -110,7 +109,7 @@ class UsuarioForm(forms.ModelForm):
                 # Creamos la relación 1 a 1 en la tabla pivote
                 UsuarioRol.objects.create(usuario=user, rol=rol_seleccionado)
 
-                # 🔁 Mapear rol de negocio → flags de Django
+                # Mapear rol de negocio → flags de Django
                 if rol_seleccionado.nombre == "Superusuario":
                     user.is_superuser = True
                     user.is_staff = True
@@ -123,22 +122,16 @@ class UsuarioForm(forms.ModelForm):
 
                 user.save(update_fields=["is_superuser", "is_staff"])
 
-                # --- Sincronizar estado con el Empleado, si existe ---
-        empleado = getattr(user, "empleado", None)
-        if empleado:
-            from empleados.models import Empleado  # import local para evitar ciclos
+            # --- Sincronizar estado con el Empleado, si existe ---
+            empleado = getattr(user, "empleado", None)
+            if empleado is not None:
+                nuevo_estado = (
+                    Empleado.Estado.ACTIVO if user.estado else Empleado.Estado.INACTIVO
+                )
 
-            if user.estado:
-                # Si el usuario está activo → ponemos el empleado en ACTIVO
-                if empleado.estado_inicial != Empleado.estado:
-                    empleado.estado_inicial = Empleado.estado
-                    empleado.save(update_fields=["estado_inicial"])
-            else:
-                # Si desactivas el usuario desde aquí,
-                # lo pasamos a INACTIVO (en vez de licencia/suspendido)
-                if empleado.estado_inicial == Empleado.estado:
-                    empleado.estado_inicial = Empleado.estado
-                    empleado.save(update_fields=["estado_inicial"])
+                if empleado.estado != nuevo_estado:
+                    empleado.estado = nuevo_estado
+                    empleado.save(update_fields=["estado"])
 
         return user
 

@@ -3,7 +3,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
-from usuarios.decorators import solo_admin_usuarios
+from django.db.models import Q
+from usuarios.models import Rol
+from usuarios.decorators import solo_superusuario_o_admin_rrhh
 
 from ..forms import UsuarioForm
 
@@ -11,27 +13,57 @@ User = get_user_model()
 
 
 @login_required
-@solo_admin_usuarios
+@solo_superusuario_o_admin_rrhh
 def lista_usuarios(request):
     """
-    Vista de listado de usuarios.
-    Por ahora solo carga todos los usuarios y los pasa a la plantilla.
+    Listado de usuarios con búsqueda y filtros por estado y rol.
     """
+    q = request.GET.get("q", "").strip()
+    filtro_estado = request.GET.get("estado", "").strip()
+    filtro_rol = request.GET.get("rol", "").strip()
+
     usuarios = (
         User.objects.select_related("empleado")
         .prefetch_related("roles_asignados")
         .all()
     )
 
+    # Búsqueda por correo o nombre del empleado
+    if q:
+        usuarios = usuarios.filter(
+            Q(email__icontains=q)
+            | Q(empleado__nombres__icontains=q)
+            | Q(empleado__apellidos__icontains=q)
+        )
+
+    # Filtro por estado (activo / inactivo)
+    if filtro_estado == "activo":
+        usuarios = usuarios.filter(estado=True)
+    elif filtro_estado == "inactivo":
+        usuarios = usuarios.filter(estado=False)
+
+    # Filtro por rol
+    if filtro_rol:
+        usuarios = usuarios.filter(roles_asignados__nombre=filtro_rol)
+
+    usuarios = usuarios.distinct()
+
+    # Roles disponibles para el combo de filtros
+    roles = Rol.objects.filter(estado=True).order_by("nombre")
+
     context = {
         "usuarios": usuarios,
         "titulo": "Gestión de Usuarios",
+        "q": q,
+        "filtro_estado": filtro_estado,
+        "filtro_rol": filtro_rol,
+        "roles": roles,
     }
     return render(request, "usuarios/lista_usuarios.html", context)
 
 
 @login_required
-@solo_admin_usuarios
+@solo_superusuario_o_admin_rrhh
 def gestionar_usuario(request, user_id=None):
     """
     Crear o editar un usuario.

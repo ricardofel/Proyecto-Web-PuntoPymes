@@ -6,6 +6,7 @@ from usuarios.views import usuarios_views
 urlpatterns = [
     path("login/", login_view, name="login"),
     path("logout/", logout_view, name="logout"),
+    path("password-change/", auth_views.password_change_view, name="password_change"),
     path("", dashboard_view, name="dashboard"),
     path("organizacion/", organization_views.organizacion_view, name="organizacion"),
     path("usuarios/", include("usuarios.urls")),
