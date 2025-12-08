@@ -7,4 +7,4 @@ class UsuariosConfig(AppConfig):
     name = "usuarios"
 
     def ready(self):
-        import usuarios.signals  # noqa
+        import usuarios.signals

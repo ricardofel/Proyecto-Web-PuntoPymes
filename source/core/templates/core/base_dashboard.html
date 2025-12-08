@@ -362,6 +362,18 @@
         </div>
       </header>
 
+      {% if messages %}
+      <div class="max-w-6xl mx-auto mt-3 space-y-2">
+        {% for message in messages %}
+        <div
+          class="px-4 py-2 rounded-xl text-sm {% if message.tags == 'error' %} bg-red-50 text-red-700 border border-red-200 {% elif message.tags == 'success' %} bg-green-50 text-green-700 border border-green-200 {% else %} bg-slate-50 text-slate-700 border border-slate-200 {% endif %}"
+        >
+          {{ message }}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
       <!-- CONTENIDO VARIABLE -->
       <main class="flex-1 p-6">{% block page_content %}{% endblock %}</main>
     </div>

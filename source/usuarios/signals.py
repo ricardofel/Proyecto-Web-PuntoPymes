@@ -87,3 +87,30 @@ def crear_usuario_para_empleado(sender, instance, created, **kwargs):
         user.is_superuser = False
         user.is_staff = False
         user.save(update_fields=["is_superuser", "is_staff"])
+
+
+@receiver(post_save, sender=User)
+def sync_superuser_role(sender, instance, created, **kwargs):
+    """
+    Si un usuario es superuser de Django, nos aseguramos de que tenga
+    también el rol de negocio 'Superusuario' y el vínculo en UsuarioRol.
+    Cubre superusuarios creados desde shell o admin.
+    """
+    if not instance.is_superuser:
+        return
+
+    # Rol de negocio
+    rol_super, _ = Rol.objects.get_or_create(
+        nombre="Superusuario",
+        defaults={"descripcion": "Super Administrador del sistema", "estado": True},
+    )
+
+    # Si ya tiene ese rol, no hacemos nada
+    if UsuarioRol.objects.filter(usuario=instance, rol=rol_super).exists():
+        return
+
+    # Si tenía otro rol, podrías decidir mantenerlo o limpiarlo.
+    # Aquí lo dejamos coexistir, pero si quieres estricto, puedes borrar anteriores:
+    # UsuarioRol.objects.filter(usuario=instance).delete()
+
+    UsuarioRol.objects.create(usuario=instance, rol=rol_super)

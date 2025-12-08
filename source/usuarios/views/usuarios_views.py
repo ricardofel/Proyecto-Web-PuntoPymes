@@ -77,20 +77,31 @@ def gestionar_usuario(request, user_id=None):
         usuario = None
         titulo = "Crear Nuevo Usuario"
 
+    # 🛡️ Si el usuario objetivo es superuser y quien edita NO lo es → bloqueo
+    if usuario and usuario.is_superuser and not request.user.is_superuser:
+        messages.error(
+            request,
+            "No tienes permisos para editar a un superadministrador del sistema.",
+        )
+        return redirect("usuarios:lista_usuarios")
+
     if request.method == "POST":
-        form = UsuarioForm(request.POST, instance=usuario)
+        form = UsuarioForm(
+            request.POST,
+            instance=usuario,
+            usuario_actual=request.user,  # 👈 importante
+        )
         if form.is_valid():
-            user = form.save()
+            form.save()
             mensaje = (
                 "Usuario creado exitosamente."
                 if usuario is None
                 else "Usuario actualizado exitosamente."
             )
             messages.success(request, mensaje)
-            # Ojo: usa el namespace 'usuarios' si lo registraste así en urls.py
             return redirect("usuarios:lista_usuarios")
     else:
-        form = UsuarioForm(instance=usuario)
+        form = UsuarioForm(instance=usuario, usuario_actual=request.user)
 
     context = {
         "form": form,
