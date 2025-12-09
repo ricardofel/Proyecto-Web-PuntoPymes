@@ -1,0 +1,90 @@
+{% extends 'core/base_dashboard.html' %}
+
+{% block header_title %}Nueva Solicitud{% endblock %}
+{% block header_subtitle %}Envía tu requerimiento al administrador{% endblock %}
+
+{% block page_content %}
+
+<div class="max-w-3xl mx-auto">
+    
+    {# B. RECUADRO CON EL FORMULARIO #}
+    <div class="bg-white p-8 rounded-lg shadow-xl border border-gray-100">
+
+        <h2 class="text-xl font-semibold text-gray-800 border-b pb-4 mb-6">Detalles de la Solicitud</h2>
+
+        {# INICIO DEL FORMULARIO #}
+        <form method="post" enctype="multipart/form-data" action="">
+            {% csrf_token %} <div class="space-y-6">
+
+                {# 1. TIPO DE SOLICITUD (DESPLEGABLE) #}
+                <div>
+                    <label for="tipo_solicitud" class="block text-sm font-medium text-gray-700 mb-1">
+                        Tipo de Solicitud <span class="text-red-500">*</span>
+                    </label>
+                    <select id="tipo_solicitud" name="tipo_solicitud" required
+                        class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        <option value="" disabled selected>Selecciona un tipo...</option>
+                        <option value="permiso_ausencia">Permiso de Ausencia</option>
+                        <option value="vacaciones">Vacaciones</option>
+                        <option value="ampliacion_plazo">Ampliación de Plazo de Entrega</option>
+                        <option value="reembolso">Reembolso de Gastos</option>
+                        <option value="otro">Otro (Especificar en descripción)</option>
+                    </select>
+                </div>
+
+                {# 2. ASUNTO (CAMPO DE TEXTO CORTO) #}
+                <div>
+                    <label for="asunto" class="block text-sm font-medium text-gray-700 mb-1">
+                        Asunto <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="asunto" name="asunto" required maxlength="100"
+                        class="block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        placeholder="Ejemplo: Solicitud de 3 días de vacaciones en Junio">
+                    <p class="mt-1 text-xs text-gray-500">Máximo 100 caracteres.</p>
+                </div>
+
+                {# 3. DESCRIPCIÓN (TEXTAREA GRANDE) #}
+                <div>
+                    <label for="descripcion" class="block text-sm font-medium text-gray-700 mb-1">
+                        Descripción <span class="text-red-500">*</span>
+                    </label>
+                    <textarea id="descripcion" name="descripcion" rows="5" required
+                        class="block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        placeholder="Proporciona todos los detalles, fechas exactas, motivos y cualquier información relevante para procesar tu solicitud."></textarea>
+                </div>
+
+                {# 4. ARCHIVOS ADJUNTOS (INPUT DE TIPO FILE) #}
+                <div>
+                    <label for="archivos_adjuntos" class="block text-sm font-medium text-gray-700 mb-1">
+                        Archivos Adjuntos (Opcional)
+                    </label>
+                    <input type="file" id="archivos_adjuntos" name="archivos_adjuntos" multiple
+                        class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors cursor-pointer">
+                    <p class="mt-1 text-xs text-gray-500">Puedes adjuntar documentos PDF, imágenes o capturas de pantalla.</p>
+                </div>
+
+            </div>
+
+            <div class="pt-8 border-t border-gray-200 mt-8 flex justify-end gap-3">
+                
+                {# BOTÓN CANCELAR/REGRESAR #}
+                <a href=""
+                    class="inline-flex items-center px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors font-medium text-sm shadow-sm">
+                    Cancelar
+                </a>
+
+                {# BOTÓN ENVIAR #}
+                <button type="submit"
+                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                    
+                    Enviar Solicitud
+                </button>
+            </div>
+            
+        </form>
+        {# FIN DEL FORMULARIO #}
+
+    </div>
+</div>
+
+{% endblock %}
