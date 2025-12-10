@@ -1,27 +1,24 @@
 {% extends 'core/base_dashboard.html' %}
 {% load static %}
+
 {% block header_title %}Solicitudes{% endblock %}
 {% block header_subtitle %}Gestor de solicitudes{% endblock %}
 
 {% block page_content %}
 <div class="bg-white p-6 rounded-lg shadow">
 
-    {# CABECERA: Solo Formulario de Búsqueda #}
+    {# CABECERA: Formulario de Búsqueda #}
     <div class="flex justify-start items-center mb-6">
-        
         <form method="get" class="relative w-full sm:max-w-md group" action="">
             <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                <svg aria-hidden="true" class="w-4 h-4 text-gray-400 group-hover:text-gray-500 transition-colors"
-                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                <svg aria-hidden="true" class="w-4 h-4 text-gray-400 group-hover:text-gray-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                 </svg>
             </div>
             <input type="text" name="q" value="{{ query|default_if_none:'' }}" 
                 class="block w-full py-2 pl-9 pr-3 text-sm text-gray-700 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all placeholder-gray-400 shadow-sm"
                 placeholder="Buscar por empleado, tipo o motivo..." required>
         </form>
-
     </div>
 
     {# TABLA DE SOLICITUDES #}
@@ -34,61 +31,56 @@
                     <th class="px-6 py-4">Solicitante</th>
                     <th class="px-6 py-4">Días / Período</th>
                     <th class="px-6 py-4 text-center">Estado</th>
-                    {# Columna vacía para el icono de acción #}
                     <th class="px-6 py-4"></th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
                 
-                {# INICIO DEL BUCLE DE DJANGO #}
                 {% for solicitud in solicitudes %}
                 <tr class="hover:bg-gray-50 transition">
                     
-                    {# TIPO DE SOLICITUD (ausencia__nombre) #}
+                    {# TIPO DE SOLICITUD #}
                     <td class="px-6 py-4 font-medium text-gray-900">{{ solicitud.ausencia.nombre }}</td>
 
                     {# ASUNTO / ID #}
                     <td class="px-6 py-4">
-                        <div class="font-medium text-gray-900">{{ solicitud.motivo|truncatechars:50 }}</div>
+                        <div class="font-medium text-gray-900">{{ solicitud.motivo|truncatechars:30 }}</div>
                         <div class="text-xs text-gray-500">ID: #{{ solicitud.id }}</div>
                     </td>
                     
-                    {# SOLICITANTE (empleado) #}
+                    {# SOLICITANTE #}
                     <td class="px-6 py-4">
-                        {# Asumiendo que el modelo Empleado tiene un método __str__ o campos como 'nombre' y 'departamento' #}
                         <div class="font-medium text-gray-900">{{ solicitud.empleado }}</div> 
                         <div class="text-xs text-gray-500">
-                             {{ solicitud.empleado.cargo_o_departamento|default:"Sin Departamento" }}
+                             {{ solicitud.empleado.cargo_o_departamento|default:"Empleado" }}
                         </div>
                     </td>
                     
                     {# DÍAS / PERÍODO #}
                     <td class="px-6 py-4">
                         <div class="text-sm text-gray-600">
-                            {{ solicitud.fecha_inicio|date:"d M y" }} - {{ solicitud.fecha_fin|date:"d M y" }}
+                            {{ solicitud.fecha_inicio|date:"d M" }} - {{ solicitud.fecha_fin|date:"d M" }}
                         </div>
                         <div class="text-xs text-gray-500">
-                            {{ solicitud.dias_habiles }} días hábiles
+                            {{ solicitud.dias_habiles }} días
                         </div>
                     </td>
 
-                    {# ESTADO #}
-                    {% with estado=solicitud.estado %}
-                        <td class="px-6 py-4 text-center">
-                            <span class="inline-flex items-center justify-center w-24 px-2 py-1 rounded-full text-xs font-medium 
-                                {% if estado == 'pendiente' %}bg-yellow-100 text-yellow-700
-                                {% elif estado == 'aprobado' %}bg-green-100 text-green-700
-                                {% elif estado == 'rechazado' %}bg-red-100 text-red-700
-                                {% else %}bg-gray-100 text-gray-700
-                                {% endif %}">
-                                {{ solicitud.get_estado_display }} {# Muestra el nombre legible del estado #}
-                            </span>
-                        </td>
-                    {% endwith %}
+                    {# ESTADO (Visualización de colores) #}
+                    <td class="px-6 py-4 text-center">
+                        {% with estado=solicitud.estado %}
+                        <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                            {% if estado == 'pendiente' %}bg-yellow-100 text-yellow-800
+                            {% elif estado == 'aprobado' %}bg-green-100 text-green-800
+                            {% elif estado == 'rechazado' %}bg-red-100 text-red-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ solicitud.get_estado_display }}
+                        </span>
+                        {% endwith %}
+                    </td>
 
-                    {# COLUMNA DE ACCIÓN: BOTÓN DE ICONO ENMARCADO #}
+                    {# COLUMNA DE ACCIÓN: EL ENLACE CLAVE #}
                     <td class="px-6 py-4 text-right">
-                        {# Asegúrate de que 'solicitudes:responder_solicitudes' acepta el ID de la solicitud #}
                         <a href="{% url 'solicitudes:responder_solicitudes' solicitud.id %}" title="Gestionar Solicitud"
                             class="inline-flex items-center justify-center p-1.5 border border-gray-300 rounded-md shadow-sm bg-white text-gray-500 hover:bg-gray-50 hover:text-indigo-600 transition-all">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
@@ -99,24 +91,18 @@
                     </td>
                 </tr>
                 {% empty %}
-                {# Mensaje si no hay solicitudes #}
                 <tr>
                     <td colspan="6" class="px-6 py-10 text-center text-gray-500">
-                        <p class="text-lg font-semibold">🎉 ¡No hay solicitudes pendientes!</p>
-                        <p>Cuando los empleados envíen una solicitud, aparecerá aquí.</p>
+                        No hay solicitudes pendientes.
                     </td>
                 </tr>
                 {% endfor %}
-                {# FIN DEL BUCLE DE DJANGO #}
-
             </tbody>
         </table>
     </div>
     
-    {# Botón de vista de empleado (mantener o ajustar según tu estructura de URLs) #}
     <a href="{% url 'solicitudes:vista_empleado' %}" 
-        id="fixed-add-button"
-        class="fixed z-50 bottom-6 right-6 inline-flex items-center p-4 border border-transparent text-lg font-bold rounded-full shadow-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-indigo-500 transition-all transform hover:scale-105">
+        class="fixed z-50 bottom-6 right-6 inline-flex items-center p-4 border border-transparent text-lg font-bold rounded-full shadow-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition-all hover:scale-105">
         Vista Empleado      
     </a>
 </div>

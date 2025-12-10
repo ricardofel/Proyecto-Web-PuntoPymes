@@ -7,8 +7,7 @@ urlpatterns = [
     # Ruta principal (Lista)
     path('', views.lista_solicitudes_view, name='lista_solicitudes'),
     
-    # 📌 CORRECCIÓN IMPORTANTE AQUÍ:
-    # Hemos agregado <int:solicitud_id> para que la URL acepte el ID (ej: responder/2/)
+    # Ruta de detalle que recibe el ID (ej: /responder/5/)
     path('responder/<int:solicitud_id>/', views.responer_solicitudes_view, name='responder_solicitudes'),
     
     # Vista de empleado
