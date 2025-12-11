@@ -17,13 +17,8 @@ class UsuarioRolInline(admin.TabularInline):
 
 @admin.register(Usuario)
 class UsuarioAdmin(BaseUserAdmin):
-    """
-    Admin para tu modelo de Usuario basado en email.
-    """
-
     model = Usuario
 
-    # Qué columnas se ven en la lista de usuarios
     list_display = (
         "email",
         "estado",
@@ -32,21 +27,13 @@ class UsuarioAdmin(BaseUserAdmin):
         "ultimo_login",
         "fecha_creacion",
     )
-    list_filter = (
-        "estado",
-        "is_staff",
-        "is_superuser",
-    )
 
-    # Para buscar usuarios
-    search_fields = (
-        "email",
-        "empleado__nombres",
-        "empleado__apellidos",
-    )
+    list_filter = ("estado", "is_staff", "is_superuser")
+    search_fields = ("email", "empleado__nombres", "empleado__apellidos")
     ordering = ("email",)
 
-    # Campos que se muestran al editar un usuario
+    readonly_fields = ("last_login", "fecha_creacion")
+
     fieldsets = (
         (None, {"fields": ("email", "password")}),
         ("Empleado vinculado", {"fields": ("empleado",)}),
@@ -73,7 +60,6 @@ class UsuarioAdmin(BaseUserAdmin):
         ),
     )
 
-    # Campos que se muestran al crear un usuario desde el admin
     add_fieldsets = (
         (
             None,
