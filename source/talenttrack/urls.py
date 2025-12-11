@@ -11,13 +11,10 @@ from django.urls import path, include
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("empleados/", include("empleados.urls")), 
+    path("empleados/", include("empleados.urls")),
     path("", include("core.urls")),
     path("api/", include("talenttrack.api_router")),
-    
-    # 📌 CAMBIO CLAVE: Agregamos el argumento namespace='solicitudes'
     path('solicitudes/', include('solicitudes.urls', namespace='solicitudes')),
-    
 ]
 
 if settings.DEBUG:

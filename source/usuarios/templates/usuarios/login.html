@@ -1,0 +1,98 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>TalentTrack – Iniciar sesión</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+
+  <body class="min-h-screen bg-slate-100 flex items-center justify-center">
+    <div class="w-full max-w-md">
+      <!-- Tarjeta -->
+      <div class="bg-white shadow-lg rounded-2xl px-8 py-8">
+        <!-- Logo + título -->
+        <div class="text-center mb-6">
+          <div class="flex justify-center mb-3">
+            <img
+              src="{% static 'core/img/talenttrack_logo.svg' %}"
+              alt="TalentTrack"
+              class="h-10 w-auto"
+            />
+          </div>
+          <h1 class="text-xl font-semibold text-slate-900">Iniciar sesión</h1>
+          <p class="text-sm text-slate-500">
+            Accede al sistema de gestión TalentTrack
+          </p>
+        </div>
+
+        <!-- Mensajes (éxito / error) -->
+        {% if messages %}
+        <div class="mb-4 space-y-2">
+          {% for message in messages %}
+          <div
+            class="text-sm px-4 py-3 rounded-xl border {% if message.tags == 'error' %} bg-red-50 text-red-700 border-red-200 {% else %} bg-blue-50 text-blue-700 border-blue-200 {% endif %}"
+          >
+            {{ message }}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- FORMULARIO -->
+        <form method="post" class="space-y-5">
+          {% csrf_token %}
+
+          <!-- Correo -->
+          <div class="space-y-1">
+            <label
+              for="id_email"
+              class="block text-sm font-medium text-slate-700"
+            >
+              Correo electrónico
+            </label>
+            <input
+              id="id_email"
+              type="email"
+              name="email"
+              required
+              value="{{ request.POST.email|default:'' }}"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="ej: usuario@empresa.com"
+            />
+          </div>
+
+          <!-- Contraseña -->
+          <div class="space-y-1">
+            <label
+              for="id_password"
+              class="block text-sm font-medium text-slate-700"
+            >
+              Contraseña
+            </label>
+            <input
+              id="id_password"
+              type="password"
+              name="password"
+              required
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="••••••••"
+            />
+          </div>
+
+          <!-- Botón -->
+          <div class="pt-2">
+            <button
+              type="submit"
+              class="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-sm"
+            >
+              Entrar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>
