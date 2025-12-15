@@ -7,12 +7,13 @@
 <div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md">
     <div class="border-b pb-4 mb-6">
         <h2 class="text-2xl font-bold text-gray-800">Registrar Nuevo Empleado</h2>
-        <p class="text-sm text-gray-500">Complete la ficha técnica para dar de alta al colaborador.</p>
+        <p class="text-sm text-gray-500">Complete la ficha técnica para dar de alta al colaborador y crear su usuario.</p>
     </div>
     
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %} 
 
+        {# BLOQUE DE ERRORES #}
         {% if form.errors %}
         <div class="mb-6 p-4 rounded-lg bg-red-50 border-l-4 border-red-500 text-red-700" role="alert">
             <div class="flex items-center gap-2 mb-1">
@@ -36,6 +37,7 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             
+            {# COLUMNA IZQUIERDA: DATOS DE LA EMPRESA #}
             <div class="space-y-4">
                 <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider border-b pb-2 mb-4">Datos Corporativos</h3>
                 
@@ -70,12 +72,35 @@
                     </div>
                 </div>
                 
-                <div class="flex flex-col">
+                {# --- NUEVO CAMPO: SELECCIÓN DE ROL --- #}
+                <div class="flex flex-col bg-blue-50 p-3 rounded-md border border-blue-100 mt-2">
+                    <label for="rol_usuario" class="font-semibold text-blue-800 text-sm mb-1">
+                        Rol de Sistema (Permisos) <span class="text-red-500">*</span>
+                    </label>
+                    <select name="rol_usuario" id="rol_usuario" required
+                        class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        
+                        {# Iteramos los roles que enviamos desde la vista #}
+                        {% for rol in roles_disponibles %}
+                            <option value="{{ rol.id }}" {% if rol.nombre == 'Empleado' %}selected{% endif %}>
+                                {{ rol.nombre }}
+                            </option>
+                        {% empty %}
+                            <option value="">No hay roles definidos</option>
+                        {% endfor %}
+
+                    </select>
+                    <p class="text-xs text-blue-600 mt-1">Define el nivel de acceso en la plataforma.</p>
+                </div>
+                {# ------------------------------------- #}
+
+                <div class="flex flex-col mt-2">
                     <label class="font-semibold text-gray-700 text-sm mb-1">Zona Horaria</label>
                     {{ form.zona_horaria }}
                 </div>
             </div>
 
+            {# COLUMNA DERECHA: DATOS PERSONALES #}
             <div class="space-y-4">
                 <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider border-b pb-2 mb-4">Información Personal</h3>
                 
@@ -103,6 +128,7 @@
                 <div class="flex flex-col">
                     <label class="font-semibold text-gray-700 text-sm mb-1">Correo Electrónico</label>
                     {{ form.email }}
+                    <p class="text-xs text-gray-500 mt-1">Este correo será el usuario de acceso.</p>
                 </div>
 
                 <div class="flex flex-col">
@@ -115,10 +141,10 @@
                     {{ form.direccion }}
                 </div>
                 
+                {# Renderizado de campos ocultos o extra que no pusimos explícitamente #}
                 {% for field in form %}
                     {% if field.name not in 'empresa,unidad_org,puesto,manager,fecha_ingreso,estado,zona_horaria,nombres,apellidos,cedula,fecha_nacimiento,email,telefono,direccion,foto' %}
-                        <div class="flex flex-col mt-4 hidden"> {{ field }}
-                        </div>
+                        <div class="flex flex-col mt-4 hidden"> {{ field }} </div>
                     {% endif %}
                 {% endfor %}
             </div>

@@ -1,4 +1,4 @@
-# usuarios/signals.py
+# source/usuarios/signals.py
 import logging
 
 from django.contrib.auth.signals import user_logged_in, user_login_failed
@@ -13,15 +13,11 @@ from .models import Rol, UsuarioRol
 logger = logging.getLogger("auth")
 User = get_user_model()
 
-
 def _get_client_ip(request):
-    if not request:
-        return None
+    if not request: return None
     xff = request.META.get("HTTP_X_FORWARDED_FOR")
-    if xff:
-        return xff.split(",")[0].strip()
+    if xff: return xff.split(",")[0].strip()
     return request.META.get("REMOTE_ADDR")
-
 
 @receiver(user_logged_in)
 def log_user_login(sender, request, user, **kwargs):
@@ -29,88 +25,59 @@ def log_user_login(sender, request, user, **kwargs):
     ua = request.META.get("HTTP_USER_AGENT", "") if request else ""
     logger.info("LOGIN OK user=%s ip=%s ua=%s", user.email, ip, ua)
 
-
 @receiver(user_login_failed)
 def log_user_login_failed(sender, credentials, request, **kwargs):
     ip = _get_client_ip(request)
     ua = request.META.get("HTTP_USER_AGENT", "") if request else ""
-    email = credentials.get("username")  # aquí llega el email
+    email = credentials.get("username")
     logger.warning("LOGIN FAIL email=%s ip=%s ua=%s", email, ip, ua)
-
 
 @receiver(post_save, sender=Empleado)
 def crear_usuario_para_empleado(sender, instance, created, **kwargs):
     """
-    Cuando se crea un Empleado, se crea (si aplica) un Usuario vinculado 1–1.
-    - Usa el correo del empleado.
-    - Crea el usuario con password inutilizable.
-    - Lo deja con estado=False (no puede loguearse aún).
-    - Le asigna el rol 'Empleado' si existe.
+    Crea usuario automáticamente. CORREGIDO para usar 'estado' en lugar de 'is_active'.
     """
-
-    # Solo cuando se crea (no en cada update)
     if not created:
         return
 
-    # Si ya tiene usuario vinculado, no hacemos nada
+    # Si ya tiene usuario, no hacemos nada
     if hasattr(instance, "usuario") and instance.usuario is not None:
         return
 
-    # ⚠️ AJUSTA ESTE NOMBRE AL CAMPO REAL DEL MODELO Empleado
-    # ejemplo: instance.email, instance.correo, instance.correo_electronico, etc.
     email_empleado = instance.email
-
     if not email_empleado:
-        # Sin correo, no creamos usuario
         return
 
     email_normalizado = email_empleado.strip().lower()
 
-    # Evitar duplicar usuario si ya existe ese correo
     if User.objects.filter(email=email_normalizado).exists():
         return
 
-    # Crear usuario vinculado al empleado
+    # --- AQUÍ ESTABA EL ERROR ---
+    # Usamos 'estado=False' porque tu modelo Usuario NO tiene campo is_active escribible.
     user = User.objects.create_user(
         email=email_normalizado,
-        password=None,  # password inutilizable, no puede entrar aún
+        password=None, 
         empleado=instance,
-        estado=False,  # acceso desactivado hasta que RRHH lo active
+        estado=False,  # <--- CORRECCIÓN: Usamos tu campo personalizado 'estado'
     )
 
-    # Asignar rol por defecto: 'Empleado'
-    rol_empleado = Rol.objects.filter(nombre="Empleado", estado=True).first()
+    rol_empleado = Rol.objects.filter(nombre="Empleado").first()
     if rol_empleado:
         UsuarioRol.objects.create(usuario=user, rol=rol_empleado)
-
-        # Mapear a flags de Django
+        
         user.is_superuser = False
         user.is_staff = False
         user.save(update_fields=["is_superuser", "is_staff"])
 
-
 @receiver(post_save, sender=User)
 def sync_superuser_role(sender, instance, created, **kwargs):
-    """
-    Si un usuario es superuser de Django, nos aseguramos de que tenga
-    también el rol de negocio 'Superusuario' y el vínculo en UsuarioRol.
-    Cubre superusuarios creados desde shell o admin.
-    """
     if not instance.is_superuser:
         return
-
-    # Rol de negocio
     rol_super, _ = Rol.objects.get_or_create(
         nombre="Superusuario",
-        defaults={"descripcion": "Super Administrador del sistema", "estado": True},
+        defaults={"descripcion": "Super Admin", "estado": True},
     )
-
-    # Si ya tiene ese rol, no hacemos nada
     if UsuarioRol.objects.filter(usuario=instance, rol=rol_super).exists():
         return
-
-    # Si tenía otro rol, podrías decidir mantenerlo o limpiarlo.
-    # Aquí lo dejamos coexistir, pero si quieres estricto, puedes borrar anteriores:
-    # UsuarioRol.objects.filter(usuario=instance).delete()
-
     UsuarioRol.objects.create(usuario=instance, rol=rol_super)
