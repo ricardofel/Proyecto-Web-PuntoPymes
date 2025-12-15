@@ -104,6 +104,12 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
             self.email = self.email.strip().lower()
         super().save(*args, **kwargs)
 
+    @property
+    def empresa(self):
+        if self.empleado and self.empleado.empresa_id:
+            return self.empleado.empresa
+        return None
+
     objects = UsuarioManager()
 
     USERNAME_FIELD = "email"
@@ -151,3 +157,10 @@ class UsuarioRol(models.Model):
 
     def __str__(self):
         return f"{self.usuario} - {self.rol}"
+
+
+class UsuarioQuerySet(models.QuerySet):
+    def para_empresa(self, empresa):
+        if empresa is None:
+            return self.none()
+        return self.filter(empleado__empresa=empresa)
