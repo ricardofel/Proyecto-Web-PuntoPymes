@@ -48,7 +48,6 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
-    "empresas.middleware.EmpresaActualMiddleware",
 ]
 
 ROOT_URLCONF = "talenttrack.urls"
