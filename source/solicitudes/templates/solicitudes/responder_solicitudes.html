@@ -14,11 +14,19 @@
                 Volver
             </a>
             
+            {# Rechazar #}
             <button type="button" onclick="abrirModal('rechazar')" class="inline-flex items-center px-4 py-2 bg-red-100 text-red-700 border border-red-300 rounded-lg hover:bg-red-200 font-medium text-sm shadow-sm transition-transform active:scale-95">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 Negar
             </button>
 
+            {# Devolver (NUEVO) #}
+            <button type="button" onclick="abrirModal('devolver')" class="inline-flex items-center px-4 py-2 bg-yellow-100 text-yellow-700 border border-yellow-300 rounded-lg hover:bg-yellow-200 font-medium text-sm shadow-sm transition-transform active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
+                Devolver
+            </button>
+
+            {# Aprobar #}
             <button type="button" onclick="abrirModal('aprobar')" class="inline-flex items-center px-4 py-2 bg-green-100 text-green-700 border border-green-300 rounded-lg hover:bg-green-200 font-medium text-sm shadow-sm transition-transform active:scale-95">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
                 Aceptar
@@ -42,6 +50,7 @@
                         {% if solicitud.estado == 'pendiente' %}bg-yellow-100 text-yellow-800
                         {% elif solicitud.estado == 'aprobado' %}bg-green-100 text-green-800
                         {% elif solicitud.estado == 'rechazado' %}bg-red-100 text-red-800
+                        {% elif solicitud.estado == 'devuelto' %}bg-orange-100 text-orange-800
                         {% else %}bg-gray-100 text-gray-800{% endif %}">
                         {{ solicitud.get_estado_display }}
                     </span>
@@ -109,7 +118,7 @@
         </div>
     </div>
 
-    {# 5. SCRIPT (MODIFICADO) #}
+    {# 5. SCRIPT #}
     <script>
         const modal = document.getElementById('confirmation-modal');
         const inputAccion = document.getElementById('input-accion');
@@ -132,9 +141,20 @@
                 
                 modalIconBg.className = 'mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10';
                 modalIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />';
-                modalIcon.classList.replace('text-red-600', 'text-green-600');
+                modalIcon.className = 'h-6 w-6 text-green-600';
                 btnConfirmar.className = 'w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm';
             
+            } else if (tipo === 'devolver') {
+                inputAccion.value = 'devolver';
+                modalTitle.textContent = 'Devolver Solicitud';
+                modalMessage.textContent = '¿Devolver para correcciones? El empleado podrá editarla.';
+                
+                modalIconBg.className = 'mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10';
+                modalIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />';
+                modalIcon.className = 'h-6 w-6 text-yellow-600';
+                btnConfirmar.className = 'w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-yellow-600 text-base font-medium text-white hover:bg-yellow-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm';
+                txtComentarioModal.placeholder = 'Indique qué debe corregir...';
+
             } else {
                 inputAccion.value = 'rechazar'; 
                 modalTitle.textContent = 'Rechazar Solicitud';
@@ -142,7 +162,7 @@
                 
                 modalIconBg.className = 'mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10';
                 modalIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />';
-                modalIcon.classList.replace('text-green-600', 'text-red-600');
+                modalIcon.className = 'h-6 w-6 text-red-600';
                 btnConfirmar.className = 'w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm';
             }
             modal.classList.remove('hidden');
