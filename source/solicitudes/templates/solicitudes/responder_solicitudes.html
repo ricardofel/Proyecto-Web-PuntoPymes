@@ -125,8 +125,6 @@
         function abrirModal(tipo) {
             txtComentarioModal.value = ''; 
 
-            // 📌 CAMBIO CLAVE AQUÍ:
-            // Usamos 'aprobar' y 'rechazar' (verbos) porque eso es lo que tu modelo AprobacionAusencia espera.
             if (tipo === 'aprobar') {
                 inputAccion.value = 'aprobar'; 
                 modalTitle.textContent = 'Aprobar Solicitud';
@@ -138,7 +136,7 @@
                 btnConfirmar.className = 'w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm';
             
             } else {
-                inputAccion.value = 'rechazar'; // Enviamos 'rechazar' al backend
+                inputAccion.value = 'rechazar'; 
                 modalTitle.textContent = 'Rechazar Solicitud';
                 modalMessage.textContent = '¿Confirma que desea RECHAZAR esta solicitud?';
                 

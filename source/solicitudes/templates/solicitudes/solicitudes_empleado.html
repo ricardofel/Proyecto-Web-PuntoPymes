@@ -147,19 +147,19 @@
 </div>
 
 <script>
-    // 1. Alternar Menú
+    
     function toggleMenu(menuId) {
-        // Cierra los otros
+        
         const allMenus = document.querySelectorAll('[id^="menu-"]');
         allMenus.forEach(menu => {
             if (menu.id !== menuId) menu.classList.add('hidden');
         });
-        // Abre/Cierra el actual
+        
         const menu = document.getElementById(menuId);
         menu.classList.toggle('hidden');
     }
 
-    // 2. Cerrar al hacer clic fuera
+    
     window.onclick = function(event) {
         if (!event.target.closest('.relative.inline-block')) {
             const allMenus = document.querySelectorAll('[id^="menu-"]');
@@ -169,15 +169,15 @@
         }
     }
 
-    // 3. Abrir Modal de Eliminación (Recibe la URL limpia)
+    
     function openDeleteModal(actionUrl) {
         const modal = document.getElementById('deleteModal');
         const form = document.getElementById('deleteForm');
-        form.action = actionUrl; // Asigna la ruta de Django al form
+        form.action = actionUrl; 
         modal.classList.remove('hidden');
     }
 
-    // 4. Cerrar Modal
+    
     function closeDeleteModal() {
         document.getElementById('deleteModal').classList.add('hidden');
     }

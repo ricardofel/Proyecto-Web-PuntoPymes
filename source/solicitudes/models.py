@@ -1,11 +1,11 @@
 from decimal import Decimal
 from django.db import models
-from django.utils import timezone # 📌 ¡IMPORTANTE! Nueva importación
+from django.utils import timezone 
 from django.utils.translation import gettext_lazy as _
 
 
 class TipoAusencia(models.Model):
-    # Tabla ausencia
+
     id = models.BigAutoField(primary_key=True)
     empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     nombre = models.CharField(max_length=100)
@@ -24,7 +24,7 @@ class TipoAusencia(models.Model):
 
 
 class RegistroVacaciones(models.Model):
-    # Tabla registro_vacaciones
+
     id = models.BigAutoField(primary_key=True)
     empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     empleado = models.ForeignKey(
@@ -52,7 +52,7 @@ class RegistroVacaciones(models.Model):
 
 
 class SolicitudAusencia(models.Model):
-    # Tabla solicitud_ausencia
+
     class Estado(models.TextChoices):
         PENDIENTE = "pendiente", _("Pendiente")
         APROBADO = "aprobado", _("Aprobado")
@@ -83,7 +83,7 @@ class SolicitudAusencia(models.Model):
 
 
 class AprobacionAusencia(models.Model):
-    # Tabla aprobacion_ausencia
+
     
     class AccionChoices(models.TextChoices):
         APROBAR = "aprobar", _("Aprobar")
@@ -102,7 +102,7 @@ class AprobacionAusencia(models.Model):
         help_text=_("Aprobar o rechazar la solicitud")
     ) 
     
-    # 📌 CAMBIO CLAVE: Usamos default=timezone.now en lugar de auto_now_add=True
+
     fecha_accion = models.DateTimeField(default=timezone.now) 
     comentario = models.TextField(blank=True, null=True)
 

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
-# Importamos todos los modelos
+
 from .models import (
     TipoAusencia, 
     SolicitudAusencia, 
@@ -9,7 +9,7 @@ from .models import (
 )
 
 
-## 1. ⚙️ Configuración para TipoAusencia
+
 @admin.register(TipoAusencia)
 class TipoAusenciaAdmin(admin.ModelAdmin):
     list_display = (
@@ -30,7 +30,7 @@ class TipoAusenciaAdmin(admin.ModelAdmin):
 
 
 
-## 2. 📅 Configuración para SolicitudAusencia
+
 @admin.register(SolicitudAusencia)
 class SolicitudAusenciaAdmin(admin.ModelAdmin):
     list_display = (
@@ -60,7 +60,6 @@ class SolicitudAusenciaAdmin(admin.ModelAdmin):
 
 
 
-## 3. 🧑‍⚖️ Configuración para AprobacionAusencia
 @admin.register(AprobacionAusencia)
 class AprobacionAusenciaAdmin(admin.ModelAdmin):
     list_display = (
@@ -70,9 +69,7 @@ class AprobacionAusenciaAdmin(admin.ModelAdmin):
         "fecha_accion",
         "comentario",
     )
-    # 📌 CAMBIO CLAVE: Eliminamos 'fecha_accion' de readonly_fields.
-    # Ahora será editable y tendrá un valor por defecto gracias al cambio en models.py.
-    # readonly_fields = ("fecha_accion",) 
+
     
     list_filter = ("accion", "aprobador", "fecha_accion")
     search_fields = (
@@ -84,7 +81,6 @@ class AprobacionAusenciaAdmin(admin.ModelAdmin):
 
 
 
-## 4. 🏖️ Configuración para RegistroVacaciones
 @admin.register(RegistroVacaciones)
 class RegistroVacacionesAdmin(admin.ModelAdmin):
     list_display = (
