@@ -1,0 +1,52 @@
+<div
+  class="modal fade"
+  id="modalObjetivoCrear"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <form
+        method="post"
+        hx-post="{% url 'poa:objetivo_crear' %}"
+        hx-target="#poa-dashboard"
+        hx-swap="innerHTML"
+        hx-on="htmx:afterRequest: bootstrap.Modal.getInstance(document.getElementById('modalObjetivoCrear')).hide()"
+      >
+        {% csrf_token %}
+        <input type="hidden" name="anio" value="{{ anio_actual }}" />
+
+        <div class="modal-header">
+          <h5 class="modal-title">Nuevo objetivo</h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Cerrar"
+          ></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="space-y-3">
+            <div>{{ form.nombre.label_tag }} {{ form.nombre }}</div>
+
+            <div>{{ form.descripcion.label_tag }} {{ form.descripcion }}</div>
+
+            <div>{{ form.estado.label_tag }} {{ form.estado }}</div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
