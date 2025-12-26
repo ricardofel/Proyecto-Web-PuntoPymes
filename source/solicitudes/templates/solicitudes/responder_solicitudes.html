@@ -1,0 +1,178 @@
+{% extends 'core/base_dashboard.html' %}
+
+{% block header_title %}Solicitudes{% endblock %}
+{% block header_subtitle %}Responder solicitud #{{ solicitud.id }}{% endblock %}
+
+{% block page_content %}
+    
+    <div class="space-y-6 relative">
+
+        {# 1. BOTONES DE ACCIÓN #}
+        {% if solicitud.estado == 'pendiente' %}
+        <div class="flex justify-end gap-3">
+            <a href="{% url 'solicitudes:lista_solicitudes' %}" class="inline-flex items-center px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm shadow-sm">
+                Volver
+            </a>
+            
+            {# Rechazar #}
+            <button type="button" onclick="abrirModal('rechazar')" class="inline-flex items-center px-4 py-2 bg-red-100 text-red-700 border border-red-300 rounded-lg hover:bg-red-200 font-medium text-sm shadow-sm transition-transform active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                Negar
+            </button>
+
+            {# Devolver (NUEVO) #}
+            <button type="button" onclick="abrirModal('devolver')" class="inline-flex items-center px-4 py-2 bg-yellow-100 text-yellow-700 border border-yellow-300 rounded-lg hover:bg-yellow-200 font-medium text-sm shadow-sm transition-transform active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
+                Devolver
+            </button>
+
+            {# Aprobar #}
+            <button type="button" onclick="abrirModal('aprobar')" class="inline-flex items-center px-4 py-2 bg-green-100 text-green-700 border border-green-300 rounded-lg hover:bg-green-200 font-medium text-sm shadow-sm transition-transform active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                Aceptar
+            </button>
+        </div>
+        {% else %}
+        <div class="flex justify-end">
+             <a href="{% url 'solicitudes:lista_solicitudes' %}" class="text-indigo-600 hover:text-indigo-900 font-medium">← Volver al listado</a>
+        </div>
+        {% endif %}
+
+        {# 2. DATOS DE LA SOLICITUD #}
+        <div class="bg-white p-8 rounded-lg shadow-xl border border-gray-100">
+            <div class="flex justify-between items-start pb-4 border-b border-gray-200 mb-6">
+                <div class="space-y-0.5">
+                    <h1 class="text-2xl font-bold text-gray-900">{{ solicitud.empleado }}</h1>
+                    <p class="text-sm text-gray-500">{{ solicitud.empleado.cargo_o_departamento|default:"General" }} &bull; {{ solicitud.fecha_creacion|date:"d/m/Y" }}</p>
+                </div>
+                <div class="flex-shrink-0">
+                    <span class="inline-flex items-center justify-center px-3 py-1 text-sm font-semibold rounded-full 
+                        {% if solicitud.estado == 'pendiente' %}bg-yellow-100 text-yellow-800
+                        {% elif solicitud.estado == 'aprobado' %}bg-green-100 text-green-800
+                        {% elif solicitud.estado == 'rechazado' %}bg-red-100 text-red-800
+                        {% elif solicitud.estado == 'devuelto' %}bg-orange-100 text-orange-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ solicitud.get_estado_display }}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 border-b pb-4">
+                    <div>
+                        <p class="text-xs uppercase font-medium text-gray-500">Tipo</p>
+                        <p class="text-base font-medium text-gray-800">{{ solicitud.ausencia.nombre }}</p>
+                    </div>
+                    <div class="md:col-span-2">
+                        <p class="text-xs uppercase font-medium text-gray-500">Asunto</p>
+                        <p class="text-base font-medium text-gray-800">{{ solicitud.motivo|truncatechars:100 }}</p>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-xs uppercase font-medium text-gray-500 mb-2">Descripción</p>
+                    <div class="p-4 bg-gray-50 border border-gray-200 rounded-md text-gray-700 whitespace-pre-wrap">{{ solicitud.motivo }}</div>
+                </div>
+                <div class="pt-4 border-t border-gray-200">
+                    <p class="text-sm text-gray-600">Periodo: <b>{{ solicitud.fecha_inicio|date:"d M" }}</b> - <b>{{ solicitud.fecha_fin|date:"d M" }}</b> ({{ solicitud.dias_habiles }} días)</p>
+                </div>
+            </div>
+        </div>
+
+        {# 3. FORMULARIO OCULTO #}
+        <form id="form-gestion" method="POST" action="{% url 'solicitudes:responder_solicitudes' solicitud.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="accion" id="input-accion" value="">
+            <input type="hidden" name="comentario" id="input-comentario" value="">
+        </form>
+
+    </div>
+
+    {# 4. MODAL #}
+    <div id="confirmation-modal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="cerrarModal()"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div id="modal-icon-bg" class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <svg id="modal-icon" class="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"></svg>
+                        </div>
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Confirmar Acción</h3>
+                            <div class="mt-2">
+                                <p class="text-sm text-gray-500" id="modal-message">¿Estás seguro?</p>
+                                <div class="mt-4">
+                                    <label for="txt-comentario" class="block text-sm font-medium text-gray-700">Comentario (Opcional)</label>
+                                    <textarea id="txt-comentario" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2" placeholder="Escribe un motivo..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" onclick="confirmarEnvio()" id="btn-confirmar" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">Confirmar</button>
+                    <button type="button" onclick="cerrarModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# 5. SCRIPT #}
+    <script>
+        const modal = document.getElementById('confirmation-modal');
+        const inputAccion = document.getElementById('input-accion');
+        const inputComentario = document.getElementById('input-comentario');
+        
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalIconBg = document.getElementById('modal-icon-bg');
+        const modalIcon = document.getElementById('modal-icon');
+        const btnConfirmar = document.getElementById('btn-confirmar');
+        const txtComentarioModal = document.getElementById('txt-comentario');
+
+        function abrirModal(tipo) {
+            txtComentarioModal.value = ''; 
+
+            if (tipo === 'aprobar') {
+                inputAccion.value = 'aprobar'; 
+                modalTitle.textContent = 'Aprobar Solicitud';
+                modalMessage.textContent = '¿Confirma que desea APROBAR esta solicitud?';
+                
+                modalIconBg.className = 'mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10';
+                modalIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />';
+                modalIcon.className = 'h-6 w-6 text-green-600';
+                btnConfirmar.className = 'w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm';
+            
+            } else if (tipo === 'devolver') {
+                inputAccion.value = 'devolver';
+                modalTitle.textContent = 'Devolver Solicitud';
+                modalMessage.textContent = '¿Devolver para correcciones? El empleado podrá editarla.';
+                
+                modalIconBg.className = 'mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10';
+                modalIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />';
+                modalIcon.className = 'h-6 w-6 text-yellow-600';
+                btnConfirmar.className = 'w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-yellow-600 text-base font-medium text-white hover:bg-yellow-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm';
+                txtComentarioModal.placeholder = 'Indique qué debe corregir...';
+
+            } else {
+                inputAccion.value = 'rechazar'; 
+                modalTitle.textContent = 'Rechazar Solicitud';
+                modalMessage.textContent = '¿Confirma que desea RECHAZAR esta solicitud?';
+                
+                modalIconBg.className = 'mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10';
+                modalIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />';
+                modalIcon.className = 'h-6 w-6 text-red-600';
+                btnConfirmar.className = 'w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm';
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function cerrarModal() { modal.classList.add('hidden'); }
+
+        function confirmarEnvio() {
+            inputComentario.value = txtComentarioModal.value;
+            document.getElementById('form-gestion').submit();
+        }
+    </script>
+{% endblock %}
