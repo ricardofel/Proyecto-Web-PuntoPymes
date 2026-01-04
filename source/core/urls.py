@@ -10,4 +10,5 @@ urlpatterns = [
     path("", dashboard_view, name="dashboard"),
     path("organizacion/", organization_views.organizacion_view, name="organizacion"),
     path("usuarios/", include("usuarios.urls")),
+    path('asistencia/', include('asistencia.urls')),
 ]

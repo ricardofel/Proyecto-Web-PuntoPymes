@@ -1,0 +1,187 @@
+{% extends 'core/base_dashboard.html' %}
+{% load static %}
+
+{% block header_title %}Control de Asistencia{% endblock %}
+{% block header_subtitle %}Resumen de puntualidad y jornadas{% endblock %}
+
+{% block page_content %}
+{# Pre-calculamos la URL base #}
+{% url 'asistencia:dashboard' as dashboard_url %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    {# --- COLUMNA IZQUIERDA: PERFIL DEL EMPLEADO --- #}
+    <div class="bg-white rounded-2xl shadow-sm p-6 lg:col-span-1 border border-gray-100 h-fit">
+        
+        {# Selector de Empleado #}
+        {% if empleados_list %}
+        <div class="mb-6">
+            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Analizando a:</label>
+            
+            <form id="formEmpleado">
+                {# Asignamos un ID para manejarlo con JS limpio #}
+                <select name="empleado_id" id="selectorEmpleado"
+                    class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-gray-50 text-gray-700 font-medium">
+                    
+                    {% for emp in empleados_list %}
+                        <option value="{{ emp.id }}" {% if emp.id == empleado.id %}selected{% endif %}>
+                            {{ emp.nombres }} {{ emp.apellidos }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+
+            {# SCRIPT DE CAMBIO DE EMPLEADO (Sin errores de sintaxis) #}
+            <script>
+                document.getElementById('selectorEmpleado').addEventListener('change', function() {
+                    var baseUrl = "{{ dashboard_url }}";
+                    var mes = "{{ request.GET.mes|default:'' }}";
+                    var anio = "{{ request.GET.anio|default:'' }}";
+                    var empleadoId = this.value;
+
+                    // Construimos la URL limpia
+                    var finalUrl = baseUrl + '?mes=' + mes + '&anio=' + anio + '&empleado_id=' + empleadoId;
+                    
+                    // Redireccionamos
+                    window.location.href = finalUrl;
+                });
+            </script>
+        </div>
+        {% endif %}
+
+        <div class="flex flex-col items-center text-center">
+            {# Foto #}
+            <div class="h-24 w-24 rounded-full bg-indigo-100 flex items-center justify-center mb-4 overflow-hidden border-4 border-white shadow-md">
+                {% if empleado.foto %}
+                    <img src="{{ empleado.foto.url }}" alt="Foto" class="h-full w-full object-cover">
+                {% else %}
+                    <span class="text-2xl font-bold text-indigo-600">{{ empleado.nombres.0 }}{{ empleado.apellidos.0 }}</span>
+                {% endif %}
+            </div>
+            
+            <h2 class="text-xl font-bold text-gray-900">{{ empleado.nombres }} {{ empleado.apellidos }}</h2>
+            <p class="text-sm text-indigo-600 font-medium">{{ empleado.puesto.nombre|default:"Puesto no definido" }}</p>
+            
+            <div class="mt-6 w-full space-y-4 text-left">
+                <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                    <div class="p-2 bg-white rounded-md shadow-sm mr-3">
+                        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-400 font-bold uppercase">Departamento</p>
+                        <p class="text-sm font-semibold text-gray-700">{{ empleado.unidad_org.nombre|default:"General" }}</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center p-3 bg-blue-50 rounded-lg border border-blue-100">
+                    <div class="p-2 bg-white rounded-md shadow-sm mr-3">
+                        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div>
+                        <p class="text-xs text-blue-400 font-bold uppercase">Turno Asignado</p>
+                        <p class="text-sm font-bold text-blue-700">
+                            {{ empleado.hora_entrada_teorica|time:"H:i" }} - {{ empleado.hora_salida_teorica|time:"H:i" }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex gap-2 w-full">
+                <div class="flex-1 bg-green-50 rounded-lg p-2 text-center">
+                    <span class="block text-xs text-green-600 font-bold">PUNTUAL</span>
+                    <span class="text-green-500">●</span>
+                </div>
+                <div class="flex-1 bg-orange-50 rounded-lg p-2 text-center">
+                    <span class="block text-xs text-orange-600 font-bold">ATRASO</span>
+                    <span class="text-orange-500">●</span>
+                </div>
+                <div class="flex-1 bg-red-50 rounded-lg p-2 text-center">
+                    <span class="block text-xs text-red-600 font-bold">FALTA</span>
+                    <span class="text-red-500">●</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# --- COLUMNA DERECHA: CALENDARIO --- #}
+    <div class="bg-white rounded-2xl shadow-sm p-8 lg:col-span-2 border border-gray-100 min-h-[500px]">
+        
+        {# Cabecera del Calendario #}
+        <div class="flex items-center justify-between mb-8">
+            <h3 class="text-2xl font-bold text-gray-800 capitalize">{{ mes_actual }} <span class="text-gray-400">{{ anio_actual }}</span></h3>
+            
+            <div class="flex items-center space-x-2">
+                <a href="{{ request.path }}{{ link_anterior }}&empleado_id={{ empleado.id }}" class="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </a>
+                <span class="text-sm font-medium text-gray-500">Navegar</span>
+                <a href="{{ request.path }}{{ link_siguiente }}&empleado_id={{ empleado.id }}" class="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </a>
+            </div>
+        </div>
+
+        {# Grid de Días de la Semana #}
+        <div class="grid grid-cols-7 mb-4 text-center">
+            <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Dom</div>
+            <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Lun</div>
+            <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Mar</div>
+            <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Mié</div>
+            <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Jue</div>
+            <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Vie</div>
+            <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Sáb</div>
+        </div>
+
+        {# Grid del Calendario #}
+        <div class="grid grid-cols-7 gap-y-6 gap-x-2">
+            {% for semana in calendario %}
+                {% for dia in semana %}
+                    <div class="flex flex-col items-center justify-start h-14">
+                        {% if dia %}
+                            {# Definición de Colores según Estado #}
+                            {% if dia.estado == 'puntual' %}
+                                <div class="w-10 h-10 flex items-center justify-center rounded-full bg-green-500 text-white font-bold shadow-md transition-transform hover:scale-110 cursor-pointer" title="Entrada: {{ dia.objeto.hora_primera_entrada|time:'H:i' }}">
+                                    {{ dia.numero }}
+                                </div>
+                            {% elif dia.estado == 'atraso' %}
+                                <div class="w-10 h-10 flex items-center justify-center rounded-full bg-orange-500 text-white font-bold shadow-md transition-transform hover:scale-110 cursor-pointer" title="Atraso registrado">
+                                    {{ dia.numero }}
+                                </div>
+                            {% elif dia.estado == 'falta' %}
+                                <div class="w-10 h-10 flex items-center justify-center rounded-full bg-red-500 text-white font-bold shadow-md transition-transform hover:scale-110 cursor-pointer" title="Falta injustificada">
+                                    {{ dia.numero }}
+                                </div>
+                            {% elif dia.estado == 'permiso' %}
+                                <div class="w-10 h-10 flex items-center justify-center rounded-full bg-blue-500 text-white font-bold shadow-md transition-transform hover:scale-110 cursor-pointer" title="Permiso / Justificado">
+                                    {{ dia.numero }}
+                                </div>
+                            {% elif dia.estado == 'incompleto' %}
+                                <div class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-400 text-white font-bold shadow-sm" title="Jornada incompleta">
+                                    {{ dia.numero }}
+                                </div>
+                            {% elif dia.estado == 'sin_registro' %}
+                                <div class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-400 font-medium border border-dashed border-gray-300">
+                                    {{ dia.numero }}
+                                </div>
+                            {% else %}
+                                {# Futuro #}
+                                <div class="w-10 h-10 flex items-center justify-center rounded-full text-gray-300 font-normal">
+                                    {{ dia.numero }}
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            {# Celda vacía (días de otro mes) #}
+                            <div class="w-10 h-10"></div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+        
+        <div class="mt-8 pt-6 border-t border-gray-100 flex justify-between items-center">
+            <p class="text-sm text-gray-500">Resumen mensual</p>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

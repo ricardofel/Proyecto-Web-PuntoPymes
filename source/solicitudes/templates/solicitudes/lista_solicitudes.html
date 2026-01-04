@@ -7,6 +7,7 @@
 {% block page_content %}
 <div class="bg-white p-6 rounded-lg shadow">
 
+    {# CABECERA #}
     <div class="flex justify-start items-center mb-6">
         <form method="get" class="relative w-full sm:max-w-md group" action="">
             <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -20,6 +21,7 @@
         </form>
     </div>
 
+    {# TABLA #}
     <div class="overflow-x-auto border rounded-lg">
         <table class="w-full text-left text-sm text-gray-600">
             <thead class="bg-gray-50 text-xs uppercase font-semibold text-gray-700">
@@ -29,7 +31,7 @@
                     <th class="px-6 py-4">Solicitante</th>
                     <th class="px-6 py-4">Días / Período</th>
                     <th class="px-6 py-4 text-center">Estado</th>
-                    <th class="px-6 py-4"></th>
+                    <th class="px-6 py-4 text-right">Acciones</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
@@ -61,13 +63,31 @@
                         {% endwith %}
                     </td>
                     <td class="px-6 py-4 text-right">
-                        <a href="{% url 'solicitudes:responder_solicitudes' solicitud.id %}" title="Gestionar Solicitud"
-                            class="inline-flex items-center justify-center p-1.5 border border-gray-300 rounded-md shadow-sm bg-white text-gray-500 hover:bg-gray-50 hover:text-indigo-600 transition-all">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.437 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                            </svg>
-                        </a>
+                        <div class="flex items-center justify-end gap-2">
+                            
+                            {# --- NUEVO: BOTÓN DE COMENTARIO --- #}
+                            {% with ultimo=solicitud.aprobaciones.last %}
+                                {% if ultimo and ultimo.comentario %}
+                                <button type="button" 
+                                    onclick="verComentario('{{ ultimo.comentario|escapejs }}', '{{ ultimo.get_accion_display }}', '{{ ultimo.aprobador.nombres }}')"
+                                    class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                                    title="Ver último comentario">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
+                                    </svg>
+                                </button>
+                                {% endif %}
+                            {% endwith %}
+
+                            {# --- BOTÓN GESTIONAR --- #}
+                            <a href="{% url 'solicitudes:responder_solicitudes' solicitud.id %}" title="Gestionar Solicitud"
+                                class="inline-flex items-center justify-center p-1.5 border border-gray-300 rounded-md shadow-sm bg-white text-gray-500 hover:bg-gray-50 hover:text-indigo-600 transition-all">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.437 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                </svg>
+                            </a>
+                        </div>
                     </td>
                 </tr>
                 {% empty %}
@@ -79,4 +99,46 @@
         </table>
     </div>
 </div>
+
+
+<div id="commentModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="cerrarComentario()"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+        <div class="relative inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                        <svg class="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
+                        </svg>
+                    </div>
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Historial de Comentarios</h3>
+                        <div class="mt-1">
+                            <p class="text-xs text-gray-400" id="modal-autor">...</p>
+                        </div>
+                        <div class="mt-4 bg-gray-50 p-3 rounded-md border border-gray-100">
+                            <p class="text-sm text-gray-600 italic" id="modal-texto-comentario">...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" onclick="cerrarComentario()" class="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function verComentario(texto, accion, autor) {
+        document.getElementById('modal-texto-comentario').innerText = texto;
+        document.getElementById('modal-autor').innerText = 'Última acción: ' + accion + ' | Realizada por: ' + autor;
+        document.getElementById('commentModal').classList.remove('hidden');
+    }
+    function cerrarComentario() {
+        document.getElementById('commentModal').classList.add('hidden');
+    }
+</script>
 {% endblock %}
