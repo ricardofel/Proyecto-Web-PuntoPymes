@@ -1,6 +1,6 @@
 import os
 from django.db import models
-from django.utils import timezone # <--- IMPORTANTE: Necesario para manejos de tiempo
+from django.utils import timezone 
 from django.utils.translation import gettext_lazy as _
 
 """
@@ -14,7 +14,7 @@ Ver diccionario de datos en:
 docs/Arquitectura_Estructura_TalentTrack.md
 """
 
-
+# --- 1. MODELO PUESTO ---
 class Puesto(models.Model):
     # Tabla puesto
     id = models.BigAutoField(primary_key=True)
@@ -41,6 +41,8 @@ class Puesto(models.Model):
     def __str__(self):
         return str(self.nombre)
 
+
+# --- UTILIDAD PARA FOTOS ---
 def ruta_foto_empleado(instance, filename):
     # instance: es el objeto Empleado.
     # filename: el nombre original del archivo (ej: "foto_playa.jpg").
@@ -58,6 +60,8 @@ def ruta_foto_empleado(instance, filename):
     # 4. Construimos la ruta final.
     return os.path.join('empleados', 'fotos', folder_name, file_name)
 
+
+# --- 2. MODELO EMPLEADO (MODIFICADO) ---
 class Empleado(models.Model):
     # Tabla empleado
     
@@ -66,6 +70,17 @@ class Empleado(models.Model):
         INACTIVO = "Inactivo", _("Inactivo") 
         LICENCIA = "Licencia", _("Licencia")
         SUSPENDIDO = "Suspendido", _("Suspendido")
+
+    # --- DEFINICIÓN DE DÍAS (Para usar en el Formulario) ---
+    DIAS_SEMANA = [
+        ('LUN', 'Lunes'),
+        ('MAR', 'Martes'),
+        ('MIE', 'Miércoles'),
+        ('JUE', 'Jueves'),
+        ('VIE', 'Viernes'),
+        ('SAB', 'Sábado'),
+        ('DOM', 'Domingo'),
+    ]
 
     id = models.BigAutoField(primary_key=True)
     
@@ -116,10 +131,13 @@ class Empleado(models.Model):
     # Estos campos definen el "Deber Ser" para calcular puntualidad (Verde/Naranja)
     hora_entrada_teorica = models.TimeField(default="09:00", help_text="Hora esperada de entrada")
     hora_salida_teorica = models.TimeField(default="18:00", help_text="Hora esperada de salida")
+    
+    # CAMBIO IMPORTANTE: Este campo guarda los días como TEXTO separado por comas
+    # Ejemplo en BD: "LUN,MAR,MIE,JUE,VIE"
     dias_laborales = models.CharField(
         max_length=50, 
-        default="Lunes a Viernes", 
-        help_text="Texto informativo para el dashboard"
+        default="LUN,MAR,MIE,JUE,VIE", 
+        help_text="Lista de códigos de días laborales separados por comas"
     )
     # -----------------------------------------------------
 
@@ -152,6 +170,7 @@ class Empleado(models.Model):
         return f"{self.nombres} {self.apellidos}"
 
 
+# --- 3. MODELO CONTRATO (RECUPERADO) ---
 class Contrato(models.Model):
     # Tabla contrato
     class Estado(models.TextChoices):
