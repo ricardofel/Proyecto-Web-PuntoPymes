@@ -1,0 +1,103 @@
+<div class="modal fade" id="modalActividadCrear" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div id="modal-actividad-content" class="modal-content">
+      
+      {% if success %}
+        <div hx-swap-oob="innerHTML:#metas-container">{{ lista_html|safe }}</div>
+        <script>
+          (function() {
+            var el = document.getElementById('modalActividadCrear');
+            var m = bootstrap.Modal.getInstance(el);
+            if (!m) m = new bootstrap.Modal(el);
+            m.hide();
+            
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              showConfirmButton: false,
+              timer: 3000,
+              timerProgressBar: true,
+              icon: 'success',
+              title: '{% if is_edit %}¡Actividad actualizada!{% else %}¡Actividad creada!{% endif %}'
+            });
+          })();
+        </script>
+      {% endif %}
+
+<form
+        id="form-actividad-crear"
+        method="post"
+        hx-post="{% if is_edit %}{{ edit_url }}{% else %}{% url 'poa:actividad_crear' meta_id %}{% endif %}"
+        hx-target="#modal-actividad-content"
+        hx-select="#modal-actividad-content"
+        hx-swap="outerHTML"
+      >
+        {% csrf_token %}
+
+        <div class="modal-header bg-slate-50">
+          <h5 class="modal-title text-base font-bold text-slate-800">
+            {% if is_edit %}Editar Actividad{% else %}Nueva Actividad{% endif %}
+            <span class="block text-xs text-slate-500 font-normal mt-1">
+              {% if not is_edit %}Para: {{ meta_nombre }}{% endif %}
+            </span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+
+        <div class="modal-body">
+          {% if form.non_field_errors %}
+          <div class="alert alert-danger p-2 text-sm mb-3">
+            {{ form.non_field_errors|join:", " }}
+          </div>
+          {% endif %}
+
+          <div class="space-y-3">
+            {% if form.ejecutores %}
+            <div>
+              <label class="form-label text-xs font-bold text-slate-600">Asignar a:</label>
+              {{ form.ejecutores }}
+              <div class="text-danger text-xs mt-1">{{ form.ejecutores.errors }}</div>
+            </div>
+            {% endif %}
+            
+            <div>
+              <label class="form-label text-xs font-bold text-slate-600">Nombre</label>
+              {{ form.nombre }}
+              <div class="text-danger text-xs mt-1">{{ form.nombre.errors }}</div>
+            </div>
+
+            <div>
+              <label class="form-label text-xs font-bold text-slate-600">Descripción</label>
+              {{ form.descripcion }}
+              <div class="text-danger text-xs mt-1">{{ form.descripcion.errors }}</div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="form-label text-xs font-bold text-slate-600">Inicio</label>
+                {{ form.fecha_inicio }}
+                <div class="text-danger text-xs mt-1">{{ form.fecha_inicio.errors }}</div>
+              </div>
+              <div>
+                <label class="form-label text-xs font-bold text-slate-600">Fin</label>
+                {{ form.fecha_fin }}
+                <div class="text-danger text-xs mt-1">{{ form.fecha_fin.errors }}</div>
+              </div>
+            </div>
+
+            <div>
+              <label class="form-label text-xs font-bold text-slate-600">Estado Inicial</label>
+              {{ form.estado }}
+              <div class="text-danger text-xs mt-1">{{ form.estado.errors }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-sm btn-primary">Guardar Actividad</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

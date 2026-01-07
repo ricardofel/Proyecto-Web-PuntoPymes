@@ -1,0 +1,104 @@
+<div class="modal fade" id="modalMetaCrear" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div id="modal-meta-content" class="modal-content">
+      
+      {% if success %}
+        <div hx-swap-oob="innerHTML:#metas-container">{{ lista_html|safe }}</div>
+        
+        <div hx-swap-oob="innerHTML:#objetivo-header">{{ header_html|safe }}</div>
+
+        <script>
+          (function() {
+             var el = document.getElementById('modalMetaCrear');
+             var m = bootstrap.Modal.getInstance(el);
+             if (!m) m = new bootstrap.Modal(el);
+             m.hide();
+             
+             Swal.fire({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                icon: 'success',
+                title: '{% if is_edit %}¡Meta actualizada!{% else %}¡Meta creada!{% endif %}'
+             });
+          })();
+        </script>
+      {% endif %}
+
+<form
+        id="form-meta-crear"
+        method="post"
+        hx-post="{% if is_edit %}{{ edit_url }}{% else %}{% url 'poa:meta_crear' objetivo.id %}{% endif %}"
+        hx-target="#modal-meta-content"
+        hx-select="#modal-meta-content"
+        hx-swap="outerHTML"
+      >
+        {% csrf_token %}
+
+        <div class="modal-header">
+          <h5 class="modal-title">{% if is_edit %}Editar meta{% else %}Nueva meta{% endif %}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+
+        <div class="modal-body">
+          {% if meta_form.non_field_errors %}
+          <div class="alert alert-danger">
+            {{ meta_form.non_field_errors|join:", " }}
+          </div>
+          {% endif %}
+
+          <div class="space-y-3">
+            <div>
+                {{ meta_form.nombre.label_tag }} {{ meta_form.nombre }}
+                <div class="text-danger text-xs mt-1">{{ meta_form.nombre.errors }}</div>
+            </div>
+
+            <div>
+              {{ meta_form.descripcion.label_tag }} {{ meta_form.descripcion }}
+              <div class="text-danger text-xs mt-1">{{ meta_form.descripcion.errors }}</div>
+            </div>
+
+            <div>
+              {{ meta_form.indicador.label_tag }} {{ meta_form.indicador }}
+              <div class="text-danger text-xs mt-1">{{ meta_form.indicador.errors }}</div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                {{ meta_form.valor_esperado.label_tag }} {{ meta_form.valor_esperado }}
+                <div class="text-danger text-xs mt-1">{{ meta_form.valor_esperado.errors }}</div>
+              </div>
+              <div>
+                {{ meta_form.valor_actual.label_tag }} {{ meta_form.valor_actual }}
+                <div class="text-danger text-xs mt-1">{{ meta_form.valor_actual.errors }}</div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                {{ meta_form.fecha_inicio.label_tag }} {{ meta_form.fecha_inicio }}
+                <div class="text-danger text-xs mt-1">{{ meta_form.fecha_inicio.errors }}</div>
+              </div>
+              <div>
+                {{ meta_form.fecha_fin.label_tag }} {{ meta_form.fecha_fin }}
+                <div class="text-danger text-xs mt-1">{{ meta_form.fecha_fin.errors }}</div>
+              </div>
+            </div>
+
+            <div>
+                {{ meta_form.estado.label_tag }} {{ meta_form.estado }}
+                <div class="text-danger text-xs mt-1">{{ meta_form.estado.errors }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
