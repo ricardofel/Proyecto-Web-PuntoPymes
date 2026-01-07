@@ -12,4 +12,8 @@ urlpatterns = [
     path("usuarios/", include("usuarios.urls")),
     path("poa/", include(("poa.urls", "poa"), namespace="poa")),
     path('asistencia/', include('asistencia.urls')),
-]
+    path("kpi/", include("kpi.urls")),
+    path('api/kpi/', include('kpi.api.urls')),
+    path('api/usuarios/', include('usuarios.api.urls')),
+    path('api/poa/', include('poa.api.urls')),
+    ]

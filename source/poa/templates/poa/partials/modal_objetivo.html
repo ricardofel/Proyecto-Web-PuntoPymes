@@ -8,17 +8,10 @@
           (function() {
             var el = document.getElementById('modalObjetivoCrear');
             var m = bootstrap.Modal.getInstance(el);
-            if (!m) m = new bootstrap.Modal(el);
-            m.hide();
-            
+            if (m) m.hide();
             Swal.fire({
-              toast: true,
-              position: 'top-end',
-              showConfirmButton: false,
-              timer: 3000,
-              timerProgressBar: true,
-              icon: 'success',
-              title: '¡Objetivo creado correctamente!'
+              toast: true, position: 'top-end', showConfirmButton: false, timer: 3000,
+              timerProgressBar: true, icon: 'success', title: '¡Operación exitosa!'
             });
           })();
         </script>
@@ -27,7 +20,7 @@
       <form
         id="form-objetivo-crear"
         method="post"
-        hx-post="{% url 'poa:objetivo_crear' %}"
+        hx-post="{% if is_edit %}{{ edit_url }}{% else %}{% url 'poa:objetivo_crear' %}{% endif %}"
         hx-target="#modal-objetivo-content"
         hx-select="#modal-objetivo-content"
         hx-swap="outerHTML"
@@ -36,33 +29,26 @@
         <input type="hidden" name="anio" value="{{ anio_actual }}" />
 
         <div class="modal-header">
-          <h5 class="modal-title">Nuevo objetivo</h5>
+          <h5 class="modal-title">{% if is_edit %}Editar Objetivo{% else %}Nuevo Objetivo{% endif %}</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
 
         <div class="modal-body">
           {% if form.non_field_errors %}
-          <div class="alert alert-danger d-flex align-items-center">
-            <div>{{ form.non_field_errors|join:", " }}</div>
-          </div>
+          <div class="alert alert-danger">{{ form.non_field_errors|join:", " }}</div>
           {% endif %}
 
           <div class="space-y-3">
             <div>
-              {{ form.nombre.label_tag }}
-              {{ form.nombre }}
+              {{ form.nombre.label_tag }} {{ form.nombre }}
               <div class="text-danger text-sm mt-1">{{ form.nombre.errors }}</div>
             </div>
-
             <div>
-              {{ form.descripcion.label_tag }}
-              {{ form.descripcion }}
+              {{ form.descripcion.label_tag }} {{ form.descripcion }}
               <div class="text-danger text-sm mt-1">{{ form.descripcion.errors }}</div>
             </div>
-
             <div>
-              {{ form.estado.label_tag }}
-              {{ form.estado }}
+              {{ form.estado.label_tag }} {{ form.estado }}
               <div class="text-danger text-sm mt-1">{{ form.estado.errors }}</div>
             </div>
           </div>

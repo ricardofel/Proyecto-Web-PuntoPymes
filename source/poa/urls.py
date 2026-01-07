@@ -13,6 +13,8 @@ from .views.poa_view import (
     actividad_editar_view,
     actividad_eliminar_view,
     actividad_estado_view,
+    objetivo_editar_view,
+    objetivo_eliminar_view,
 )
 
 app_name = "poa"
@@ -38,4 +40,7 @@ urlpatterns = [
     path("actividades/<int:pk>/editar/", actividad_editar_view, name="actividad_editar"),
     path("actividades/<int:pk>/eliminar/", actividad_eliminar_view, name="actividad_eliminar"),
     path("actividades/<int:pk>/estado/", actividad_estado_view, name="actividad_estado"),
+    path("objetivos/<int:pk>/editar/", objetivo_editar_view, name="objetivo_editar"),
+    path("objetivos/<int:pk>/eliminar/", objetivo_eliminar_view, name="objetivo_eliminar"),
+
 ]
