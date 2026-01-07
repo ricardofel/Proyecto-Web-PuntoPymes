@@ -1,7 +1,10 @@
 from django import forms
-# ✅ AQUÍ ESTÁ LA CLAVE: Agregamos 'Actividad' a la importación
 from .models import Objetivo, MetaTactico, Actividad
 from empleados.models import Empleado 
+
+# Definimos un estilo común de Tailwind para no repetir código
+TAILWIND_INPUT = "w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+
 class ObjetivoForm(forms.ModelForm):
     class Meta:
         model = Objetivo
@@ -9,16 +12,16 @@ class ObjetivoForm(forms.ModelForm):
 
         widgets = {
             "nombre": forms.TextInput(
-                attrs={"class": "form-control", "placeholder": "Nombre del objetivo"}
+                attrs={"class": TAILWIND_INPUT, "placeholder": "Nombre del objetivo"}
             ),
             "descripcion": forms.Textarea(
                 attrs={
-                    "class": "form-control",
+                    "class": TAILWIND_INPUT,
                     "rows": 3,
                     "placeholder": "Descripción opcional",
                 }
             ),
-            "estado": forms.Select(attrs={"class": "form-select"}),
+            "estado": forms.Select(attrs={"class": TAILWIND_INPUT}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -43,31 +46,31 @@ class MetaTacticoForm(forms.ModelForm):
 
         widgets = {
             "nombre": forms.TextInput(
-                attrs={"class": "form-control", "placeholder": "Nombre de la meta"}
+                attrs={"class": TAILWIND_INPUT, "placeholder": "Nombre de la meta"}
             ),
             "descripcion": forms.Textarea(
                 attrs={
-                    "class": "form-control",
+                    "class": TAILWIND_INPUT,
                     "rows": 3,
                     "placeholder": "Descripción (opcional)",
                 }
             ),
             "indicador": forms.TextInput(
-                attrs={"class": "form-control", "placeholder": "Indicador (opcional)"}
+                attrs={"class": TAILWIND_INPUT, "placeholder": "Indicador (opcional)"}
             ),
             "valor_esperado": forms.NumberInput(
-                attrs={"class": "form-control", "step": "0.01", "placeholder": "0.00"}
+                attrs={"class": TAILWIND_INPUT, "step": "0.01", "placeholder": "0.00"}
             ),
             "valor_actual": forms.NumberInput(
-                attrs={"class": "form-control", "step": "0.01", "placeholder": "0.00"}
+                attrs={"class": TAILWIND_INPUT, "step": "0.01", "placeholder": "0.00"}
             ),
             "fecha_inicio": forms.DateInput(
-                attrs={"class": "form-control", "type": "date"}
+                attrs={"class": TAILWIND_INPUT, "type": "date"}
             ),
             "fecha_fin": forms.DateInput(
-                attrs={"class": "form-control", "type": "date"}
+                attrs={"class": TAILWIND_INPUT, "type": "date"}
             ),
-            "estado": forms.Select(attrs={"class": "form-select"}),
+            "estado": forms.Select(attrs={"class": TAILWIND_INPUT}),
         }
 
 class ActividadForm(forms.ModelForm):
@@ -83,20 +86,29 @@ class ActividadForm(forms.ModelForm):
         ]
         widgets = {
             "nombre": forms.TextInput(
-                attrs={"class": "form-control", "placeholder": "Nombre de la actividad"}
+                attrs={"class": TAILWIND_INPUT, "placeholder": "Nombre de la actividad"}
             ),
             "descripcion": forms.Textarea(
                 attrs={
-                    "class": "form-control",
+                    "class": TAILWIND_INPUT,
                     "rows": 2,
                     "placeholder": "Detalles operativos...",
                 }
             ),
             "fecha_inicio": forms.DateInput(
-                attrs={"class": "form-control", "type": "date"}
+                attrs={"class": TAILWIND_INPUT, "type": "date"}
             ),
             "fecha_fin": forms.DateInput(
-                attrs={"class": "form-control", "type": "date"}
+                attrs={"class": TAILWIND_INPUT, "type": "date"}
             ),
-            "estado": forms.Select(attrs={"class": "form-select"}),
+            "estado": forms.Select(attrs={"class": TAILWIND_INPUT}),
+            
+            # 👇 AQUÍ ESTÁ EL ARREGLO FINAL
+            "ejecutores": forms.SelectMultiple(
+                attrs={
+                    # Usamos 'w-full' para que ocupe todo el ancho y no se salga
+                    "class": "w-full rounded-md border border-slate-300 p-2 text-sm focus:ring-2 focus:ring-blue-500", 
+                    "style": "height: 120px;", # Altura fija para que se vea ordenado
+                }
+            ),
         }

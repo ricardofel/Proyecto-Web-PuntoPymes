@@ -3,7 +3,7 @@ from django.db import models
 from empleados.models import Empleado  
 from core.models import Empresa        
 
-# 1. TIPO DE AUSENCIA
+# 1. TIPO DE AUSENCIA 
 class TipoAusencia(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
     nombre = models.CharField(max_length=100)
