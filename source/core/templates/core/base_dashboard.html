@@ -19,70 +19,48 @@
       html { font-size: 14px; }
       @media (min-width: 1024px) { html { font-size: 14px; } }
 
-      /* =========================================
-         👇 BOOTSTRAP MODAL FIX (Para Tailwind)
-         Restauramos la funcionalidad de los modales
-         sin importar todo el CSS de Bootstrap.
-         ========================================= */
+      /* === FIX MODALES (Para que no salgan flotando) === */
       .modal {
-        display: none; /* Oculto por defecto */
-        position: fixed;
-        top: 0; left: 0; z-index: 1055;
-        width: 100%; height: 100%;
-        overflow-x: hidden; overflow-y: auto;
-        outline: 0;
-        background-color: rgba(0, 0, 0, 0.5); /* Fondo oscuro (Backdrop) */
+        display: none; position: fixed; top: 0; left: 0; z-index: 1055;
+        width: 100%; height: 100%; overflow-x: hidden; overflow-y: auto;
+        outline: 0; background-color: rgba(0, 0, 0, 0.5);
       }
-      .modal.show {
-        display: block; /* Visible solo cuando tiene la clase 'show' */
-      }
+      .modal.show { display: block; }
       .modal-dialog {
-        position: relative;
-        width: auto;
-        margin: 1.75rem auto;
-        pointer-events: none;
-        max-width: 600px; /* Ancho máximo cómodo */
-        transition: transform .3s ease-out;
-        transform: translate(0, -50px); /* Efecto de entrada */
+        position: relative; width: auto; margin: 1.75rem auto; pointer-events: none;
+        max-width: 600px; transition: transform .3s ease-out; transform: translate(0, -50px);
       }
-      .modal.show .modal-dialog {
-        transform: none;
-      }
+      .modal.show .modal-dialog { transform: none; }
       .modal-content {
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        width: 100%;
-        pointer-events: auto;
-        background-color: #fff;
-        background-clip: padding-box;
-        border: 1px solid rgba(0,0,0,.2);
-        border-radius: 0.5rem;
-        outline: 0;
+        position: relative; display: flex; flex-direction: column; width: 100%;
+        pointer-events: auto; background-color: #fff; background-clip: padding-box;
+        border: 1px solid rgba(0,0,0,.2); border-radius: 0.5rem; outline: 0;
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
       }
-      /* Centrado vertical */
-      .modal-dialog-centered {
-        display: flex;
-        align-items: center;
-        min-height: calc(100% - 3.5rem);
-      }
-      /* ========================================= */
+      .modal-dialog-centered { display: flex; align-items: center; min-height: calc(100% - 3.5rem); }
 
-      /* Estilos del Sidebar */
+      /* === FIX SIDEBAR (Para que el botón funcione) === */
       #sidebar { transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-      #sidebar.is-collapsed { width: 4rem; }
-      #sidebar.is-collapsed .sidebar-text { display: none; }
+      
+      /* 👇 ESTO ES LO QUE ARREGLA EL CLIC DEL BOTÓN */
+      #sidebar.is-collapsed:hover .sidebar-toggle { opacity: 1; pointer-events: auto; }
+      #sidebar:not(.is-collapsed) .sidebar-toggle { opacity: 1; pointer-events: auto; }
+      
+      #sidebar.is-collapsed #logoSmall { display: block; }
+      #sidebar.is-collapsed .sidebar-toggle { display: none; }
+      
+      #sidebar.is-collapsed:hover #logoSmall { display: none; }
+      #sidebar.is-collapsed:hover .sidebar-toggle { display: flex; }
       
       #sidebar:not(.is-collapsed) #logoSmall { display: none; }
-      #sidebar.is-collapsed #logoFull { display: none; }
-      #sidebar.is-collapsed #logoSmall { display: block; margin: 0 auto; }
+      #sidebar:not(.is-collapsed) .sidebar-toggle { display: flex; }
       
-      .sidebar-toggle { opacity: 0; transition: opacity 0.2s; }
-      #sidebar:hover .sidebar-toggle, #sidebar:not(.is-collapsed) .sidebar-toggle { opacity: 1; }
+      #sidebar:not(.is-collapsed) .sidebar-toggle svg { transform: rotate(180deg); }
+      .sidebar-toggle svg { transition: transform 0.2s ease; }
       
       [x-cloak] { display: none !important; }
     </style>
+  {% block extra_css %}{% endblock %}
   </head>
 
   <body class="bg-slate-100 min-h-screen">
@@ -578,5 +556,6 @@
       const saved = localStorage.getItem("sidebarCollapsed");
       setCollapsed(saved === "1");
     </script>
+    {% block extra_js %}{% endblock %}
   </body>
 </html>
