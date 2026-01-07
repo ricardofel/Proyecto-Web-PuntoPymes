@@ -8,6 +8,7 @@ from django.contrib.auth import get_user_model
 
 from .models import Empleado, Contrato 
 from .forms import EmpleadoForm
+# Mantenemos tus modelos personalizados de Usuarios
 from usuarios.models import Rol, UsuarioRol 
 
 # ---------------------------------------------------------
@@ -16,12 +17,14 @@ from usuarios.models import Rol, UsuarioRol
 def lista_empleados_view(request):
     empleados = Empleado.objects.all().order_by('-id')
     busqueda = request.GET.get('q')
+    
     if busqueda:
         empleados = empleados.filter(
             Q(nombres__icontains=busqueda) | 
             Q(apellidos__icontains=busqueda) |
             Q(cedula__icontains=busqueda)
         )
+    
     return render(request, 'empleados/lista_empleados.html', {'empleados': empleados})
 
 # ---------------------------------------------------------
@@ -31,13 +34,14 @@ def crear_empleado_view(request):
     if request.method == 'POST':
         form = EmpleadoForm(request.POST, request.FILES)
         
-        # 1. Capturamos el Rol elegido en el HTML
+        # 1. Capturamos el Rol elegido en el HTML (Select manual)
         rol_id = request.POST.get('rol_usuario')
 
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    # A. Guardar Empleado
+                    # A. Guardar Empleado 
+                    # (Esto dispara el form.save() que convierte los checkboxes a texto "LUN,MAR...")
                     empleado = form.save()
                     
                     email = form.cleaned_data.get('email') or empleado.email
@@ -51,59 +55,59 @@ def crear_empleado_view(request):
                         
                         # B. Gestión del Usuario (Crear o Vincular)
                         if User.objects.filter(email=email).exists():
-                            # CASO 1: El usuario YA EXISTE
+                            # CASO 1: El usuario YA EXISTE -> Lo actualizamos
                             user = User.objects.get(email=email)
-                            
-                            # Forzamos el cambio de contraseña para que coincida con la nueva
                             user.set_password(password_acceso)
-                            
                             user.estado = True 
-                            user.empleado = empleado
-                            user.save()
                             
-                            # Mensaje con la clave (Actualizado)
-                            messages.success(request, f"Usuario vinculado y actualizado. Clave: {password_acceso}")
+                            # Si tu modelo User tiene campo 'empleado', lo vinculamos
+                            if hasattr(user, 'empleado'):
+                                user.empleado = empleado
+                            
+                            user.save()
+                            messages.success(request, f"Usuario vinculado. Clave actualizada: {password_acceso}")
                         else:
-                            # CASO 2: Usuario NUEVO
+                            # CASO 2: Usuario NUEVO -> Lo creamos
                             user = User.objects.create_user(
                                 username=email,
                                 email=email,
                                 password=password_acceso,
                                 estado=True 
                             )
-                            user.empleado = empleado
+                            if hasattr(user, 'empleado'):
+                                user.empleado = empleado
                             user.save()
-                            
-                            # Mensaje con la clave (Nuevo)
                             messages.success(request, f"Usuario creado. Clave: {password_acceso}")
 
-                        # C. ASIGNACIÓN DE ROL
-                        rol_seleccionado = None
-                        if rol_id:
-                            rol_seleccionado = Rol.objects.filter(id=rol_id).first()
-                        
-                        # Fallback: Si no hay rol, 'Empleado' por defecto
-                        if not rol_seleccionado:
-                            rol_seleccionado = Rol.objects.filter(nombre="Empleado").first()
-
-                        if rol_seleccionado:
-                            # Borramos roles previos para evitar duplicados/mezclas
-                            UsuarioRol.objects.filter(usuario=user).delete()
+                        # C. ASIGNACIÓN DE ROL (Tabla intermedia UsuarioRol)
+                        if user:
+                            rol_seleccionado = None
+                            if rol_id:
+                                rol_seleccionado = Rol.objects.filter(id=rol_id).first()
                             
-                            # Creamos la relación nueva
-                            UsuarioRol.objects.create(usuario=user, rol=rol_seleccionado)
+                            # Fallback: Si no hay rol seleccionado, buscar 'Empleado' por defecto
+                            if not rol_seleccionado:
+                                rol_seleccionado = Rol.objects.filter(nombre="Empleado").first()
+
+                            if rol_seleccionado:
+                                # Borramos roles previos para evitar duplicados
+                                UsuarioRol.objects.filter(usuario=user).delete()
+                                # Asignamos el nuevo
+                                UsuarioRol.objects.create(usuario=user, rol=rol_seleccionado)
 
                     else:
                         messages.warning(request, "Empleado creado SIN usuario (falta email).")
 
+                return redirect('empleados:lista_empleados')
+
             except Exception as e:
                 messages.error(request, f"Error en el proceso: {e}")
-            
-            return redirect('empleados:lista_empleados')
+        else:
+             messages.error(request, "El formulario contiene errores. Revísalos abajo.")
     else:
         form = EmpleadoForm()
 
-    # Enviamos roles activos al template
+    # IMPORTANTE: Enviamos roles al template para llenar el <select>
     roles_disponibles = Rol.objects.filter(estado=True)
 
     return render(request, 'empleados/crear_empleado.html', {
@@ -116,14 +120,26 @@ def crear_empleado_view(request):
 # ---------------------------------------------------------
 def editar_empleado_view(request, pk):
     empleado = get_object_or_404(Empleado, pk=pk)
+    
     if request.method == 'POST':
+        # Al editar, el form cargará los checkboxes marcados automáticamente
         form = EmpleadoForm(request.POST, request.FILES, instance=empleado)
         if form.is_valid():
             form.save()
+            messages.success(request, "Datos actualizados correctamente.")
             return redirect('empleados:lista_empleados')
     else:
         form = EmpleadoForm(instance=empleado)
-    return render(request, 'empleados/editar_empleado.html', {'form': form, 'empleado': empleado})
+
+    # También enviamos roles aquí por si el HTML de edición los requiere
+    roles_disponibles = Rol.objects.filter(estado=True)
+
+    return render(request, 'empleados/editar_empleado.html', {
+        'form': form, 
+        'empleado': empleado,
+        'roles_disponibles': roles_disponibles,
+        'es_edicion': True
+    })
 
 # ---------------------------------------------------------
 # 4. CONTRATOS
@@ -140,11 +156,14 @@ def lista_contratos_view(request, empleado_id):
 def actualizar_foto_view(request, pk):
     empleado = get_object_or_404(Empleado, pk=pk)
     if 'foto' in request.FILES:
+        # Borrado de foto anterior para no llenar el disco
         if empleado.foto and os.path.isfile(empleado.foto.path):
             try: os.remove(empleado.foto.path)
             except: pass
+            
         empleado.foto = request.FILES['foto']
         empleado.save()
+        messages.success(request, "Foto actualizada.")
     return redirect('empleados:editar_empleado', pk=pk)
 
 # ---------------------------------------------------------
@@ -154,12 +173,20 @@ def actualizar_foto_view(request, pk):
 def cambiar_estado_empleado_view(request, pk):
     empleado = get_object_or_404(Empleado, pk=pk)
     nuevo_estado = request.POST.get('nuevo_estado')
+    
     if nuevo_estado in ['Activo', 'Inactivo', 'Licencia', 'Suspendido']:
         empleado.estado = nuevo_estado
         empleado.save()
         
-        if hasattr(empleado, 'usuario') and empleado.usuario:
-            empleado.usuario.estado = (nuevo_estado == 'Activo')
-            empleado.usuario.save()
+        # Actualizar también el estado del usuario de sistema si existe
+        # (Depende de si tu User tiene un campo 'empleado' vinculado o si lo buscas por email)
+        User = get_user_model()
+        usuario_asociado = User.objects.filter(email=empleado.email).first()
+        
+        if usuario_asociado:
+            usuario_asociado.estado = (nuevo_estado == 'Activo')
+            usuario_asociado.save()
+            
+        messages.success(request, f"Estado cambiado a {nuevo_estado}")
             
     return redirect('empleados:editar_empleado', pk=pk)

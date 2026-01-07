@@ -1,7 +1,9 @@
 from django.urls import path
+from . import views
 
-app_name = "asistencia"
+app_name = 'asistencia'
 
 urlpatterns = [
-    # TODO: rutas de vistas web relacionadas con asistencia.
+    path('dashboard/', views.dashboard_asistencia_view, name='dashboard'),
+    path('dashboard/<int:empleado_id>/', views.dashboard_asistencia_view, name='dashboard_empleado'),
 ]

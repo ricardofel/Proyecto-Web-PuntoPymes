@@ -1,5 +1,6 @@
 import os
 from django.db import models
+from django.utils import timezone 
 from django.utils.translation import gettext_lazy as _
 
 """
@@ -13,7 +14,7 @@ Ver diccionario de datos en:
 docs/Arquitectura_Estructura_TalentTrack.md
 """
 
-
+# --- 1. MODELO PUESTO ---
 class Puesto(models.Model):
     # Tabla puesto
     id = models.BigAutoField(primary_key=True)
@@ -40,6 +41,8 @@ class Puesto(models.Model):
     def __str__(self):
         return str(self.nombre)
 
+
+# --- UTILIDAD PARA FOTOS ---
 def ruta_foto_empleado(instance, filename):
     # instance: es el objeto Empleado.
     # filename: el nombre original del archivo (ej: "foto_playa.jpg").
@@ -49,26 +52,35 @@ def ruta_foto_empleado(instance, filename):
 
     # 2. Creamos un nombre de carpeta único basado en el ID del empleado.
     # Usamos ':08d' para que el ID tenga ceros a la izquierda y se vea profesional.
-    # Ejemplo: Si el ID es 5, la carpeta será 'empleado_00000005'
     folder_name = f"empleado_{instance.id:08d}"
 
     # 3. Creamos el nombre del archivo (puede ser igual al de la carpeta)
     file_name = f"{folder_name}.{ext}"
 
     # 4. Construimos la ruta final.
-    # Django creará automáticamente las carpetas que no existan.
-    # Resultado: empleados/fotos/empleado_00000005/empleado_00000005.jpg
     return os.path.join('empleados', 'fotos', folder_name, file_name)
 
+
+# --- 2. MODELO EMPLEADO (MODIFICADO) ---
 class Empleado(models.Model):
     # Tabla empleado
     
-    # MEJORA: Valores en TitleCase ("Activo") para que coincidan con tu HTML visual
     class Estado(models.TextChoices):
         ACTIVO = "Activo", _("Activo")
-        INACTIVO = "Inactivo", _("Inactivo") # Unifiqué BAJA a INACTIVO para consistencia
+        INACTIVO = "Inactivo", _("Inactivo") 
         LICENCIA = "Licencia", _("Licencia")
         SUSPENDIDO = "Suspendido", _("Suspendido")
+
+    # --- DEFINICIÓN DE DÍAS (Para usar en el Formulario) ---
+    DIAS_SEMANA = [
+        ('LUN', 'Lunes'),
+        ('MAR', 'Martes'),
+        ('MIE', 'Miércoles'),
+        ('JUE', 'Jueves'),
+        ('VIE', 'Viernes'),
+        ('SAB', 'Sábado'),
+        ('DOM', 'Domingo'),
+    ]
 
     id = models.BigAutoField(primary_key=True)
     
@@ -98,7 +110,7 @@ class Empleado(models.Model):
         max_length=150, unique=True, help_text=_("Correo corporativo único")
     )
     
-    # Foto (Usando tu función de ruta)
+    # Foto
     foto = models.ImageField(upload_to=ruta_foto_empleado, blank=True, null=True)
     
     telefono = models.CharField(max_length=20, blank=True, null=True)
@@ -108,12 +120,26 @@ class Empleado(models.Model):
     fecha_nacimiento = models.DateField(null=True, blank=True)
     fecha_ingreso = models.DateField()
     
-    # Estado (Usando las opciones corregidas)
+    # Estado
     estado = models.CharField(
         max_length=20, choices=Estado.choices, default=Estado.ACTIVO
     )
     
     zona_horaria = models.CharField(max_length=50, blank=True, null=True)
+
+    # --- NUEVOS CAMPOS PARA EL DASHBOARD DE ASISTENCIA ---
+    # Estos campos definen el "Deber Ser" para calcular puntualidad (Verde/Naranja)
+    hora_entrada_teorica = models.TimeField(default="09:00", help_text="Hora esperada de entrada")
+    hora_salida_teorica = models.TimeField(default="18:00", help_text="Hora esperada de salida")
+    
+    # CAMBIO IMPORTANTE: Este campo guarda los días como TEXTO separado por comas
+    # Ejemplo en BD: "LUN,MAR,MIE,JUE,VIE"
+    dias_laborales = models.CharField(
+        max_length=50, 
+        default="LUN,MAR,MIE,JUE,VIE", 
+        help_text="Lista de códigos de días laborales separados por comas"
+    )
+    # -----------------------------------------------------
 
     class Meta:
         db_table = "empleado"
@@ -126,21 +152,25 @@ class Empleado(models.Model):
     def __str__(self):
         return f"{self.nombres} {self.apellidos}"
 
-    # --- NUEVA LÓGICA DE GUARDADO AUTOMÁTICO ---
+    # Lógica de guardado automático (Capitalización)
     def save(self, *args, **kwargs):
-        # 1. Capitalizar Nombres y Apellidos (juan -> Juan)
         if self.nombres:
             self.nombres = self.nombres.strip().title()
         if self.apellidos:
             self.apellidos = self.apellidos.strip().title()
             
-        # 2. Asegurar que el estado tenga el formato correcto (Activo, Inactivo...)
         if self.estado:
             self.estado = self.estado.strip().capitalize()
 
         super().save(*args, **kwargs)
 
+    # Helper para mostrar nombre completo en templates
+    @property
+    def nombre_completo(self):
+        return f"{self.nombres} {self.apellidos}"
 
+
+# --- 3. MODELO CONTRATO (RECUPERADO) ---
 class Contrato(models.Model):
     # Tabla contrato
     class Estado(models.TextChoices):
@@ -153,6 +183,8 @@ class Contrato(models.Model):
     empleado = models.ForeignKey(
         Empleado, on_delete=models.CASCADE, related_name="contratos"
     )
+    # Nota: Asegúrate de que la app 'asistencia' y el modelo 'Turno' existan
+    # Si no existen aún, comenta esta línea temporalmente.
     turno = models.ForeignKey(
         "asistencia.Turno", on_delete=models.PROTECT, related_name="contratos"
     )

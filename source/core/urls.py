@@ -11,4 +11,5 @@ urlpatterns = [
     path("organizacion/", organization_views.organizacion_view, name="organizacion"),
     path("usuarios/", include("usuarios.urls")),
     path("poa/", include(("poa.urls", "poa"), namespace="poa")),
+    path('asistencia/', include('asistencia.urls')),
 ]
