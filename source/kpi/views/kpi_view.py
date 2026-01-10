@@ -164,3 +164,36 @@ def kpi_recalcular_view(request, pk: int):
         messages.success(request, f"¡Recálculo exitoso! Valor: {valor_calculado}")
         
     return redirect("kpi:kpi_detalle", pk=pk)
+
+@login_required
+def kpi_editar_view(request, pk):
+    empresa = _empresa_actual(request)
+    kpi = get_object_or_404(KPI, pk=pk, empresa=empresa)
+    
+    if request.method == "POST":
+        form = KPIForm(request.POST, instance=kpi)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Indicador actualizado correctamente.")
+            return redirect("kpi:kpi_detalle", pk=pk)
+    else:
+        # Reusamos el KPIForm que ya tienes estilizado
+        form = KPIForm(instance=kpi)
+    
+    # Reusamos el modal, pero necesitamos una plantilla simple o renderizarlo en el dashboard
+    # Para simplificar, lo mandamos al dashboard abriendo el modal con datos (avanzado) 
+    # O creamos una vista simple. Haremos una vista simple de edición.
+    return render(request, "kpi/form_kpi.html", {"form": form, "titulo": "Editar KPI"})
+
+@login_required
+def kpi_eliminar_view(request, pk):
+    empresa = _empresa_actual(request)
+    kpi = get_object_or_404(KPI, pk=pk, empresa=empresa)
+    
+    if request.method == "POST":
+        kpi.delete()
+        messages.success(request, "Indicador eliminado correctamente.")
+        return redirect("kpi:dashboard")
+        
+    # Pantalla de confirmación simple
+    return render(request, "kpi/confirmar_eliminar.html", {"kpi": kpi})

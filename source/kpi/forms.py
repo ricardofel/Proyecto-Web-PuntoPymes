@@ -42,10 +42,20 @@ class KPIForm(forms.ModelForm):
 class KPIResultadoForm(forms.ModelForm):
     class Meta:
         model = KPIResultado
-        fields = ["periodo", "valor", "observacion"]
+        fields = ['periodo', 'valor', 'observacion']
         widgets = {
-            # Input tipo "month" para seleccionar Enero 2026 fácilmente
-            "periodo": forms.TextInput(attrs={"type": "month", "class": "form-control"}),
-            "valor": forms.NumberInput(attrs={"class": "form-control", "step": "0.01", "placeholder": "0.00"}),
-            "observacion": forms.Textarea(attrs={"class": "form-control", "rows": 2, "placeholder": "Opcional: ¿Por qué este resultado?"}),
+             'periodo': forms.TextInput(attrs={
+                 'type': 'month', 
+                 'class': 'w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-600'
+             }),
+             'valor': forms.NumberInput(attrs={
+                 'class': 'w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-bold text-blue-600 focus:outline-none focus:border-blue-500', 
+                 'step': '0.01',
+                 'placeholder': '0.00'
+             }),
+             'observacion': forms.Textarea(attrs={
+                 'class': 'w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 placeholder-slate-400', 
+                 'rows': 2,
+                 'placeholder': 'Notas sobre esta medición...'
+             }),
         }
