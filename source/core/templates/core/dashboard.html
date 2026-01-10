@@ -1,119 +1,95 @@
-{% extends "core/base_dashboard.html" %} {% block page_content %}
+{% extends "core/base_dashboard.html" %}
 
-<!-- Tarjetas superiores -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-  <div class="bg-white rounded-2xl shadow-sm p-4 flex flex-col gap-2">
-    <div class="flex justify-between items-center">
-      <span class="text-xs font-medium text-slate-500">Total de empleados</span>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke-width="1.5"
-        stroke="currentColor"
-        class="size-6"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"
-        />
-      </svg>
-    </div>
-    <div class="text-2xl font-semibold text-slate-900">248</div>
-  </div>
+{% block title %}Inicio{% endblock %}
 
-  <div class="bg-white rounded-2xl shadow-sm p-4 flex flex-col gap-2">
-    <div class="flex justify-between items-center">
-      <span class="text-xs font-medium text-slate-500">Presentes hoy</span>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke-width="1.5"
-        stroke="currentColor"
-        class="size-6"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-        />
-      </svg>
-    </div>
-    <div class="text-2xl font-semibold text-slate-900">232</div>
-  </div>
+{% block header_title %}Bienvenido, {{ request.user.empleado.nombres|default:request.user.email }}!{% endblock %}
+{% block header_subtitle %}Panel de gestión personal Talent Track.{% endblock %}
 
-  <div class="bg-white rounded-2xl shadow-sm p-4 flex flex-col gap-2">
-    <div class="flex justify-between items-center">
-      <span class="text-xs font-medium text-slate-500"
-        >Permisos pendientes</span
-      >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke-width="1.5"
-        stroke="currentColor"
-        class="size-6"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-        />
-      </svg>
-    </div>
-    <div class="text-2xl font-semibold text-slate-900">12</div>
-  </div>
+{% block page_content %}
 
-  <div class="bg-white rounded-2xl shadow-sm p-4 flex flex-col gap-2">
-    <div class="flex justify-between items-center">
-      <span class="text-xs font-medium text-slate-500"
-        >KPI de desempeño promedio</span
-      >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke-width="1.5"
-        stroke="currentColor"
-        class="size-6"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5m.75-9 3-3 2.148 2.148A12.061 12.061 0 0 1 16.5 7.605"
-        />
-      </svg>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    
+    <div class="lg:col-span-2 space-y-4">
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
+                <h2 class="font-bold text-slate-800 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                    Centro de Avisos
+                </h2>
+                <a href="{% url 'notificaciones:listar' %}" class="text-xs font-bold text-blue-600 hover:text-blue-700">Ver historial</a>
+            </div>
+
+            <div class="divide-y divide-slate-50">
+                {% for n in notificaciones_recientes %}
+                <div class="p-5 hover:bg-slate-50/50 transition-all">
+                    <div class="flex gap-4">
+                        <div class="mt-1">
+                            <div class="w-2 h-2 rounded-full {% if n.tipo == 'success' %}bg-green-500{% elif n.tipo == 'warning' %}bg-amber-500{% else %}bg-blue-500{% endif %}"></div>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-start mb-1">
+                                <h3 class="text-sm font-bold text-slate-800">{{ n.titulo }}</h3>
+                                <span class="text-[10px] text-slate-400">{{ n.fecha_creacion|timesince }}</span>
+                            </div>
+                            <p class="text-sm text-slate-600 leading-snug">{{ n.mensaje }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="py-20 text-center">
+                    <p class="text-slate-400 text-xs italic">Sin actividad reciente en el sistema.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
-    <div class="text-2xl font-semibold text-slate-900">87%</div>
-  </div>
+
+    <div class="space-y-6">
+        
+        <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
+            <h2 class="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-6 text-center">Perfil de Usuario</h2>
+            
+            <div class="flex flex-col items-center text-center">
+                <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 p-1 mb-4 shadow-lg">
+                    <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-blue-600">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                    </div>
+                </div>
+                
+                <h3 class="text-base font-bold text-slate-800 mb-1">
+                    {{ request.user.empleado.nombres|default:"" }} {{ request.user.empleado.apellidos|default:request.user.email }}
+                </h3>
+                <p class="text-xs text-slate-500 mb-6">{{ request.user.email }}</p>
+                
+                <div class="w-full pt-6 border-t border-slate-50">
+                    <div class="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-2xl shadow-xl shadow-slate-200">
+                        <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+                        <span class="text-[10px] font-bold uppercase tracking-widest">
+                            Acceso: {% if request.user.is_superuser %}Master Admin{% else %}Colaborador{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm text-center">
+            <p id="reloj-v2" class="text-4xl font-bold text-slate-800 tracking-tighter mb-1">00:00</p>
+            <p id="fecha-v2" class="text-[10px] uppercase tracking-[0.2em] text-blue-500 font-extrabold">Cargando...</p>
+        </div>
+    </div>
 </div>
 
-<!-- Gráfico de KPIs (placeholder) -->
-<div class="bg-white rounded-2xl shadow-sm p-5">
-  <div class="flex justify-between items-center mb-4">
-    <div>
-      <h2 class="text-sm font-semibold text-slate-900">
-        Tendencia de KPI de desempeño
-      </h2>
-      <p class="text-xs text-slate-500">
-        Desempeño del equipo en los últimos 6 meses
-      </p>
-    </div>
-  </div>
-
-  <div class="flex items-end gap-4 mt-6">
-    {% for mes in meses %}
-    <div class="flex flex-col items-center gap-2">
-      <div
-        class="w-14 rounded-lg bg-gradient-to-t from-blue-500 to-blue-400 {{ mes.height_class }}"
-      ></div>
-      <span class="text-xs text-slate-500">{{ mes.label }}</span>
-    </div>
-    {% endfor %}
-  </div>
-</div>
+<script>
+    function updateDashboardClock() {
+        const now = new Date();
+        const clock = document.getElementById('reloj-v2');
+        const dateDisplay = document.getElementById('fecha-v2');
+        
+        clock.textContent = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false });
+        dateDisplay.textContent = now.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
+    }
+    setInterval(updateDashboardClock, 1000);
+    updateDashboardClock();
+</script>
 
 {% endblock %}
