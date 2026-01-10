@@ -2,7 +2,7 @@
 
 {% block title %}Inicio{% endblock %}
 
-{% block header_title %}Bienvenido, {{ request.user.empleado.nombres|default:request.user.email }}!{% endblock %}
+{% block header_title %}¡Bienvenido, {{ nombre_display }}!{% endblock %}
 {% block header_subtitle %}Panel de gestión personal Talent Track.{% endblock %}
 
 {% block page_content %}
@@ -37,7 +37,7 @@
                 </div>
                 {% empty %}
                 <div class="py-20 text-center">
-                    <p class="text-slate-400 text-xs italic">Sin actividad reciente en el sistema.</p>
+                    <p class="text-slate-400 text-xs italic">Sin actividad reciente.</p>
                 </div>
                 {% endfor %}
             </div>
@@ -46,28 +46,25 @@
 
     <div class="space-y-6">
         
-        <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
-            <h2 class="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-6 text-center">Perfil de Usuario</h2>
+        <div class="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm text-center">
+            <div class="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 mx-auto mb-4 border-4 border-white shadow-md">
+                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            </div>
             
-            <div class="flex flex-col items-center text-center">
-                <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 p-1 mb-4 shadow-lg">
-                    <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-blue-600">
-                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                    </div>
-                </div>
+            <h3 class="text-base font-bold text-slate-800 mb-1">{{ nombre_display }}</h3>
+            <p class="text-xs text-slate-400 mb-6">{{ request.user.email }}</p>
+            
+            <div class="space-y-2 pt-6 border-t border-slate-50">
+                <p class="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-3">Rol en el Sistema</p>
                 
-                <h3 class="text-base font-bold text-slate-800 mb-1">
-                    {{ request.user.empleado.nombres|default:"" }} {{ request.user.empleado.apellidos|default:request.user.email }}
-                </h3>
-                <p class="text-xs text-slate-500 mb-6">{{ request.user.email }}</p>
-                
-                <div class="w-full pt-6 border-t border-slate-50">
-                    <div class="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-2xl shadow-xl shadow-slate-200">
-                        <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
-                        <span class="text-[10px] font-bold uppercase tracking-widest">
-                            Acceso: {% if request.user.is_superuser %}Master Admin{% else %}Colaborador{% endif %}
+                <div class="flex flex-wrap justify-center gap-2">
+                    {% for rol in mis_roles %}
+                        <span class="px-4 py-1.5 bg-slate-900 text-white text-[10px] font-bold rounded-xl shadow-lg shadow-slate-200 uppercase tracking-widest">
+                            {{ rol }}
                         </span>
-                    </div>
+                    {% empty %}
+                        <span class="text-[10px] text-slate-400 italic">Usuario sin rol asignado</span>
+                    {% endfor %}
                 </div>
             </div>
         </div>
@@ -82,11 +79,8 @@
 <script>
     function updateDashboardClock() {
         const now = new Date();
-        const clock = document.getElementById('reloj-v2');
-        const dateDisplay = document.getElementById('fecha-v2');
-        
-        clock.textContent = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false });
-        dateDisplay.textContent = now.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
+        document.getElementById('reloj-v2').textContent = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false });
+        document.getElementById('fecha-v2').textContent = now.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
     }
     setInterval(updateDashboardClock, 1000);
     updateDashboardClock();
