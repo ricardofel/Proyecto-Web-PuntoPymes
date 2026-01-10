@@ -17,4 +17,5 @@ urlpatterns = [
     path('api/usuarios/', include('usuarios.api.urls')),
     path('api/poa/', include('poa.api.urls')),
     path('integraciones/', include('integraciones.urls')),
+    path('auditoria/', include('auditoria.urls')),
     ]
