@@ -63,12 +63,13 @@
             <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide">Unidades Registradas</h3>
             
             {% if empresa_actual %}
-            <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm">
+            <a href="{% url 'crear_unidad' %}?empresa_id={{ empresa_actual.id }}" 
+               class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
                 Nueva Unidad
-            </button>
+            </a>
             {% endif %}
         </div>
 
@@ -123,11 +124,11 @@
                         </td>
 
                         <td class="px-6 py-3 align-middle text-right">
-                            <button class="text-gray-400 hover:text-blue-600 p-1 rounded-md hover:bg-blue-100 transition-all">
+                            <a href="{% url 'editar_unidad' unidad.id %}" class="text-gray-400 hover:text-blue-600 p-1 rounded-md hover:bg-blue-100 transition-all inline-block" title="Editar">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
-                            </button>
+                            </a>
                         </td>
                     </tr>
                     {% endfor %}

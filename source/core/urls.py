@@ -17,4 +17,6 @@ urlpatterns = [
     path('api/usuarios/', include('usuarios.api.urls')),
     path('api/poa/', include('poa.api.urls')),
     path('integraciones/', include('integraciones.urls')),
+    path('organizacion/crear/', organization_views.crear_unidad, name='crear_unidad'),
+    path('organizacion/editar/<int:pk>/', organization_views.editar_unidad, name='editar_unidad'),
     ]
