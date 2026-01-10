@@ -1,0 +1,105 @@
+{% extends "core/base_dashboard.html" %}
+
+{% block header_title %}POA{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{% endblock %}
+
+{% block page_content %}
+<div class="max-w-6xl mx-auto space-y-4">
+
+  <!-- Encabezado -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-lg font-semibold text-slate-900">Gestión del POA</h2>
+      <p class="text-sm text-slate-500">
+        Visualiza y administra objetivos estratégicos por año.
+      </p>
+    </div>
+
+    <button
+      class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 shadow-sm"
+      data-bs-toggle="modal"
+      data-bs-target="#modalObjetivoCrear"
+    >
+      + Nuevo objetivo
+    </button>
+  </div>
+
+  <!-- Filtros (HTMX) -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+    <form
+      class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end"
+      hx-get="{% url 'poa:dashboard' %}"
+      hx-target="#poa-dashboard"
+      hx-push-url="true"
+      hx-trigger="submit, change from:select"
+    >
+
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1">Año</label>
+        <select
+          name="anio"
+          class="w-full rounded-lg border-slate-300 text-slate-900 shadow-sm
+                 focus:border-blue-500 focus:ring-blue-500 text-sm"
+        >
+          {% for a in anios %}
+            <option value="{{ a }}" {% if a == anio_actual %}selected{% endif %}>{{ a }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1">Buscar objetivo</label>
+        <input
+          type="text"
+          name="q"
+          value="{{ q }}"
+          placeholder="Nombre del objetivo"
+          class="w-full rounded-lg border-slate-300 text-slate-900 shadow-sm
+                 focus:border-blue-500 focus:ring-blue-500 text-sm"
+        />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1">Estado</label>
+        <select
+          name="estado"
+          class="w-full rounded-lg border-slate-300 text-slate-900 shadow-sm
+                 focus:border-blue-500 focus:ring-blue-500 text-sm"
+        >
+          <option value="">Todos</option>
+          <option value="activo">Activo</option>
+          <option value="cerrado">Cerrado</option>
+          <option value="archivado">Archivado</option>
+        </select>
+      </div>
+
+      <div class="flex gap-2">
+        <button
+          type="submit"
+          class="inline-flex justify-center items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 shadow-sm w-full"
+        >
+          Filtrar
+        </button>
+        <a
+          href="{% url 'poa:poa' %}"
+          class="inline-flex justify-center items-center px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm font-medium hover:bg-slate-200 shadow-sm w-full"
+        >
+          Limpiar
+        </a>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- DASHBOARD HTMX -->
+  <div id="poa-dashboard">
+    {% include "poa/partials/dashboard_cards.html" %}
+  </div>
+
+</div>
+
+{% include "poa/partials/modal_objetivo.html" %}
+{% endblock %}

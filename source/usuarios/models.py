@@ -5,8 +5,10 @@ from django.contrib.auth.models import (
     PermissionsMixin,
 )
 from django.utils.translation import gettext_lazy as _
-# Importamos Q para búsquedas avanzadas si fuera necesario, 
+
+# Importamos Q para búsquedas avanzadas si fuera necesario,
 # pero con filtros encadenados basta para este caso.
+
 
 class UsuarioManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -53,11 +55,11 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
 
     @property
-    def is_active(self): 
+    def is_active(self):
         return self.estado
 
     # --- AQUÍ ESTÁ LA CORRECCIÓN CLAVE ---
-    
+
     @property
     def es_superadmin_negocio(self) -> bool:
         """
@@ -66,7 +68,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         """
         return self.roles_asignados.filter(
             models.Q(nombre__icontains="super") | models.Q(nombre__icontains="gerente"),
-            estado=True
+            estado=True,
         ).exists()
 
     @property
@@ -77,8 +79,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         """
         # Usamos __icontains para que ignore mayúsculas/minúsculas
         return self.roles_asignados.filter(
-            nombre__icontains="rrhh", 
-            estado=True
+            nombre__icontains="rrhh", estado=True
         ).exists()
 
     @property
@@ -89,6 +90,12 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         if self.email:
             self.email = self.email.strip().lower()
         super().save(*args, **kwargs)
+
+    @property
+    def empresa(self):
+        if self.empleado and self.empleado.empresa_id:
+            return self.empleado.empresa
+        return None
 
     objects = UsuarioManager()
 
@@ -134,3 +141,10 @@ class UsuarioRol(models.Model):
 
     def __str__(self):
         return f"{self.usuario} - {self.rol}"
+
+
+class UsuarioQuerySet(models.QuerySet):
+    def para_empresa(self, empresa):
+        if empresa is None:
+            return self.none()
+        return self.filter(empleado__empresa=empresa)

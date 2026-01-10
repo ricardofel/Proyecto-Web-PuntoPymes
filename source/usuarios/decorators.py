@@ -32,7 +32,7 @@ def solo_admin_rrhh(view_func):
         if not user.is_authenticated or not getattr(user, "es_admin_rrhh", False):
             raise PermissionDenied  # 403
 
-        return view_func(request, *args, **kwargs)
+        return view_func(reques, *args, **kwargs)
 
     return _wrapped_view
 

@@ -1,0 +1,61 @@
+{% extends "core/base_dashboard.html" %}
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+{% block header_title %}POA{% endblock %}
+{% block header_subtitle %}Detalle del objetivo{% endblock %}
+
+{% block page_content %}
+<div class="max-w-6xl mx-auto space-y-6">
+
+  <div id="objetivo-header" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+    {% include "poa/partials/objetivo_header.html" %}
+  </div>
+
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h3 class="text-lg font-semibold text-slate-900">Metas Tácticas</h3>
+        <p class="text-sm text-slate-500">Desglose de metas para cumplir este objetivo.</p>
+      </div>
+      
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 shadow-sm transition"
+        data-bs-toggle="modal"
+        data-bs-target="#modalMetaCrear"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+        </svg>
+        Nueva meta
+      </button>
+    </div>
+
+    <div
+      id="metas-container"
+      hx-get="{% url 'poa:objetivo_metas' objetivo.id %}"
+      hx-trigger="load"
+      hx-target="#metas-container"
+      hx-swap="innerHTML"
+    >
+      <div class="flex flex-col items-center justify-center py-12 text-slate-400">
+        <div class="spinner-border text-blue-600 mb-3" role="status"></div>
+        <p class="text-sm">Cargando metas...</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% include "poa/partials/modal_meta.html" %}
+
+<div id="modal-actividad-container"></div>
+
+<script>
+  document.body.addEventListener('htmx:configRequest', (event) => {
+    event.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+  });
+</script>
+
+{% endblock %}

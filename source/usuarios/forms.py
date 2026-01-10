@@ -103,6 +103,14 @@ class UsuarioForm(forms.ModelForm):
             old_user = User.objects.get(pk=user.pk)
             user.password = old_user.password
 
+        # Manejo de usuarios
+        if user.pk:
+            old_user = User.objects.get(pk=user.pk)
+
+            # Si el campo 'empleado' no vino en el POST o no se cambió, lo conservamos
+            if "empleado" not in self.data or "empleado" not in self.changed_data:
+                user.empleado = old_user.empleado
+
         # ⚠ Proteger flags si quien edita NO es superuser
         if not (self.usuario_actual and self.usuario_actual.is_superuser):
             if user.pk:

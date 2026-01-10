@@ -1,5 +1,7 @@
 from decimal import Decimal
+
 from django.db import models
+from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _
 
 """
@@ -15,16 +17,23 @@ Ver diccionario de datos Tablas 18 a 23.
 
 
 class Objetivo(models.Model):
-    # Tabla objetivo (Estratégico)
+    ESTADO_CHOICES = (
+        ("activo", "Activo"),
+        ("cerrado", "Cerrado"),
+        ("archivado", "Archivado"),
+    )
+
     id = models.BigAutoField(primary_key=True)
     empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     nombre = models.CharField(max_length=150)
     descripcion = models.TextField(blank=True, null=True)
     anio = models.IntegerField(help_text=_("Año fiscal (ej: 2025)"))
-    estado = models.CharField(max_length=20, default="activo")
+
+    # ✅ AHORA tiene choices (el Select ya tendrá opciones)
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default="activo")
+
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
-    # Relación ManyToMany a través de tabla intermedia explícita
     equipo = models.ManyToManyField(
         "empleados.Empleado", through="ObjetivoEmpleado", related_name="objetivos"
     )
@@ -35,9 +44,24 @@ class Objetivo(models.Model):
     def __str__(self):
         return f"{self.nombre} ({self.anio})"
 
+    @property
+    def avance(self) -> int:
+        agg = self.metas_tacticas.aggregate(
+            total_esperado=Sum("valor_esperado"),
+            total_actual=Sum("valor_actual"),
+        )
+        total_esperado = agg["total_esperado"] or Decimal("0")
+        total_actual = agg["total_actual"] or Decimal("0")
+
+        if total_esperado <= 0:
+            return 0
+
+        pct = (total_actual / total_esperado) * Decimal("100")
+        pct = max(Decimal("0"), min(Decimal("100"), pct))
+        return int(pct)
+
 
 class ObjetivoEmpleado(models.Model):
-    # Tabla objetivo_empleado (Asignación)
     id = models.BigAutoField(primary_key=True)
     objetivo = models.ForeignKey(Objetivo, on_delete=models.CASCADE)
     empleado = models.ForeignKey("empleados.Empleado", on_delete=models.CASCADE)
@@ -61,9 +85,13 @@ class ObjetivoEmpleado(models.Model):
 
 
 class MetaTactico(models.Model):
-    # Tabla meta (Táctico)
-    # NOTA: Se llama MetaTactico en Python para evitar conflicto con 'class Meta',
-    # pero en BD se llamará 'meta' tal como pide el diccionario.
+    ESTADO_CHOICES = (
+        ("pendiente", "Pendiente"),
+        ("en_progreso", "En progreso"),
+        ("cumplida", "Cumplida"),
+        ("vencida", "Vencida"),
+    )
+
     id = models.BigAutoField(primary_key=True)
     objetivo = models.ForeignKey(
         Objetivo, on_delete=models.CASCADE, related_name="metas_tacticas"
@@ -71,27 +99,32 @@ class MetaTactico(models.Model):
     nombre = models.CharField(max_length=150)
     descripcion = models.TextField(blank=True, null=True)
     indicador = models.CharField(max_length=100, blank=True, null=True)
+
     valor_esperado = models.DecimalField(max_digits=10, decimal_places=2)
     valor_actual = models.DecimalField(
         max_digits=10, decimal_places=2, default=Decimal(0)
     )
+
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField()
-    estado = models.CharField(max_length=20, default="pendiente")
+
+    # ✅ choices también aquí
+    estado = models.CharField(
+        max_length=20, choices=ESTADO_CHOICES, default="pendiente"
+    )
 
     equipo = models.ManyToManyField(
         "empleados.Empleado", through="MetaEmpleado", related_name="metas"
     )
 
     class Meta:
-        db_table = "meta"  # <-- Aquí garantizamos el cumplimiento del PDF
+        db_table = "meta"
 
     def __str__(self):
         return str(self.nombre)
 
 
 class MetaEmpleado(models.Model):
-    # Tabla meta_empleado
     id = models.BigAutoField(primary_key=True)
     meta = models.ForeignKey(MetaTactico, on_delete=models.CASCADE)
     empleado = models.ForeignKey("empleados.Empleado", on_delete=models.CASCADE)
@@ -107,7 +140,13 @@ class MetaEmpleado(models.Model):
 
 
 class Actividad(models.Model):
-    # Tabla actividad (Operativo)
+    ESTADO_CHOICES = (
+        ("pendiente", "Pendiente"),
+        ("en_progreso", "En progreso"),
+        ("completada", "Completada"),
+        ("cancelada", "Cancelada"),
+    )
+
     id = models.BigAutoField(primary_key=True)
     meta = models.ForeignKey(
         MetaTactico, on_delete=models.CASCADE, related_name="actividades"
@@ -116,8 +155,12 @@ class Actividad(models.Model):
     descripcion = models.TextField(blank=True, null=True)
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField()
+
     porcentaje_avance = models.IntegerField(default=0)
-    estado = models.CharField(max_length=20, default="pendiente")
+
+    estado = models.CharField(
+        max_length=20, choices=ESTADO_CHOICES, default="pendiente"
+    )
 
     ejecutores = models.ManyToManyField(
         "empleados.Empleado", through="ActividadEmpleado", related_name="actividades"
@@ -131,7 +174,6 @@ class Actividad(models.Model):
 
 
 class ActividadEmpleado(models.Model):
-    # Tabla actividad_empleado (Ejecutores)
     id = models.BigAutoField(primary_key=True)
     actividad = models.ForeignKey(Actividad, on_delete=models.CASCADE)
     empleado = models.ForeignKey("empleados.Empleado", on_delete=models.CASCADE)

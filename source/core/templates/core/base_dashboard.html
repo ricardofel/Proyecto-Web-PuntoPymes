@@ -3,84 +3,72 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>{% block title %}Talent Track – Panel{% endblock %}</title>
 
-    <link
-      rel="icon"
-      type="image/png"
-      href="{% static 'core/img/talentrack_small.svg' %}"
-    />
+    <link rel="icon" type="image/png" href="{% static 'core/img/talentrack_small.svg' %}" />
+
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-      html {
-        font-size: 16px;
-      }
+      html { font-size: 14px; }
+      @media (min-width: 1024px) { html { font-size: 14px; } }
 
-      @media (min-width: 1024px) {
-        html {
-          font-size: 13px;
-        }
+      /* === FIX MODALES (Para que no salgan flotando) === */
+      .modal {
+        display: none; position: fixed; top: 0; left: 0; z-index: 1055;
+        width: 100%; height: 100%; overflow-x: hidden; overflow-y: auto;
+        outline: 0; background-color: rgba(0, 0, 0, 0.5);
       }
+      .modal.show { display: block; }
+      .modal-dialog {
+        position: relative; width: auto; margin: 1.75rem auto; pointer-events: none;
+        max-width: 600px; transition: transform .3s ease-out; transform: translate(0, -50px);
+      }
+      .modal.show .modal-dialog { transform: none; }
+      .modal-content {
+        position: relative; display: flex; flex-direction: column; width: 100%;
+        pointer-events: auto; background-color: #fff; background-clip: padding-box;
+        border: 1px solid rgba(0,0,0,.2); border-radius: 0.5rem; outline: 0;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      }
+      .modal-dialog-centered { display: flex; align-items: center; min-height: calc(100% - 3.5rem); }
 
-      /* Toggle estilo ChatGPT:
-         - Si está colapsado, el botón aparece al hacer hover sobre el sidebar
-         - Si está expandido, el botón siempre visible
-      */
-      #sidebar.is-collapsed:hover .sidebar-toggle {
-        opacity: 1;
-        pointer-events: auto;
-      }
-      #sidebar:not(.is-collapsed) .sidebar-toggle {
-        opacity: 1;
-        pointer-events: auto;
-      }
-      /* ESTADO COLAPSADO */
-      #sidebar.is-collapsed #logoSmall {
-        display: block;
-      }
-
-      #sidebar.is-collapsed .sidebar-toggle {
-        display: none;
-      }
-
-      /* HOVER EN COLAPSADO → INTERCAMBIO */
-      #sidebar.is-collapsed:hover #logoSmall {
-        display: none;
-      }
-
-      #sidebar.is-collapsed:hover .sidebar-toggle {
-        display: flex;
-      }
-
-      /* ESTADO EXPANDIDO */
-      #sidebar:not(.is-collapsed) #logoSmall {
-        display: none;
-      }
-
-      #sidebar:not(.is-collapsed) .sidebar-toggle {
-        display: flex;
-      }
-
-      /* Flecha rota cuando el sidebar está desplegado */
-      #sidebar:not(.is-collapsed) .sidebar-toggle svg {
-        transform: rotate(180deg);
-      }
-      .sidebar-toggle svg {
-        transition: transform 0.2s ease;
-      }
+      /* === FIX SIDEBAR (Para que el botón funcione) === */
+      #sidebar { transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+      
+      /* 👇 ESTO ES LO QUE ARREGLA EL CLIC DEL BOTÓN */
+      #sidebar.is-collapsed:hover .sidebar-toggle { opacity: 1; pointer-events: auto; }
+      #sidebar:not(.is-collapsed) .sidebar-toggle { opacity: 1; pointer-events: auto; }
+      
+      #sidebar.is-collapsed #logoSmall { display: block; }
+      #sidebar.is-collapsed .sidebar-toggle { display: none; }
+      
+      #sidebar.is-collapsed:hover #logoSmall { display: none; }
+      #sidebar.is-collapsed:hover .sidebar-toggle { display: flex; }
+      
+      #sidebar:not(.is-collapsed) #logoSmall { display: none; }
+      #sidebar:not(.is-collapsed) .sidebar-toggle { display: flex; }
+      
+      #sidebar:not(.is-collapsed) .sidebar-toggle svg { transform: rotate(180deg); }
+      .sidebar-toggle svg { transition: transform 0.2s ease; }
+      
+      [x-cloak] { display: none !important; }
     </style>
+  {% block extra_css %}{% endblock %}
   </head>
 
   <body class="bg-slate-100 min-h-screen">
     <div class="min-h-screen flex">
-      <!-- MENU LATERAL -->
       <aside
         id="sidebar"
         class="w-64 bg-white border-r border-slate-200 flex flex-col transition-all duration-200 ease-in-out"
       >
-        <!-- Header sidebar: logo dinámico + botón hover -->
         <div
           id="sidebarHeader"
           class="h-16 border-b border-slate-100 flex items-center justify-between px-3"
@@ -89,7 +77,6 @@
             href="{% url 'dashboard' %}"
             class="flex items-center gap-2 overflow-hidden"
           >
-            <!-- Logo pequeño (solo colapsado) -->
             <img
               id="logoSmall"
               src="{% static 'core/img/talentrack_small.svg' %}"
@@ -97,7 +84,6 @@
               class="h-8 w-8 hidden"
             />
 
-            <!-- Logo completo (solo expandido) -->
             <img
               id="logoFull"
               src="{% static 'core/img/talenttrack_logo.svg' %}"
@@ -106,7 +92,6 @@
             />
           </a>
 
-          <!-- Botón toggle: hover cuando colapsado, siempre visible cuando expandido -->
           <button
             type="button"
             id="sidebarToggle"
@@ -132,7 +117,6 @@
         </div>
 
         <nav id="sidebarNav" class="flex-1 px-3 py-4 space-y-1 text-sm">
-          <!-- Panel -->
           <a
             href="{% url 'dashboard' %}"
             title="Panel"
@@ -155,7 +139,6 @@
             <span class="sidebar-text">Panel</span>
           </a>
 
-          <!-- Asistencia -->
           <a
             href="{% url 'asistencia:inicio' %}"
             title="Asistencia del equipo"
@@ -178,7 +161,6 @@
             <span class="sidebar-text">Asistencia del equipo</span>
           </a>
 
-          <!-- Empleados -->
           <a
             href="{% url 'empleados:lista_empleados' %}"
             title="Empleados"
@@ -201,7 +183,6 @@
             <span class="sidebar-text">Empleados</span>
           </a>
 
-          <!-- Solicitudes -->
           <a
             href="{% url 'solicitudes:lista_solicitudes' %}"
             title="Solicitudes"
@@ -244,7 +225,6 @@
             <span class="sidebar-text">Solicitudes</span>
           </a>
 
-          <!-- Organización -->
           <a
             href="{% url 'organizacion' %}"
             title="Organización"
@@ -267,7 +247,6 @@
             <span class="sidebar-text">Organización</span>
           </a>
 
-          <!-- Usuarios -->
           {% if request.user.puede_ver_modulo_usuarios %}
           <a
             href="{% url 'usuarios:lista_usuarios' %}"
@@ -292,10 +271,9 @@
           </a>
           {% endif %}
 
-          <!-- KPI -->
           <a
-            href="#"
-            title="KPI y evaluaciones"
+            href="{% url 'kpi:dashboard' %}"
+            title="KPI"
             class="flex items-center gap-3 px-3 py-2 rounded-lg font-medium transition-colors {% if 'kpi' in request.path %} bg-blue-50 text-blue-600 {% else %} text-slate-600 hover:bg-slate-100 {% endif %}"
           >
             <svg
@@ -312,10 +290,9 @@
                 d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z"
               />
             </svg>
-            <span class="sidebar-text">KPI y evaluaciones</span>
+            <span class="sidebar-text">KPI</span>
           </a>
 
-          <!-- Reportes -->
           <a
             href="#"
             title="Reportes"
@@ -337,11 +314,10 @@
             </svg>
             <span class="sidebar-text">Reportes</span>
           </a>
-
-          <!-- Integración -->
+          {% if request.user.is_superuser %}
           <a
-            href="#"
-            title="Integración ERP"
+            href="{% url 'integraciones:dashboard' %}"
+            title="Integraciones"
             class="flex items-center gap-3 px-3 py-2 rounded-lg font-medium transition-colors {% if 'integracion' in request.path %} bg-blue-50 text-blue-600 {% else %} text-slate-600 hover:bg-slate-100 {% endif %}"
           >
             <svg
@@ -358,14 +334,50 @@
                 d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244"
               />
             </svg>
-            <span class="sidebar-text">Integración ERP</span>
+            <span class="sidebar-text">Integraciones</span>
+          </a>
+          {% endif %}
+          <a
+            href="{% url 'poa:poa' %}"
+            title="POA"
+            class="flex items-center gap-3 px-3 py-2 rounded-lg font-medium transition-colors {% if 'poa' in request.path %} bg-blue-50 text-blue-600 {% else %} text-slate-600 hover:bg-slate-100 {% endif %}"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+              class="size-6"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M8.25 3.75h7.5c.621 0 1.125.504 1.125 1.125v14.25c0 .621-.504 1.125-1.125 1.125h-7.5c-.621 0-1.125-.504-1.125-1.125V4.875c0-.621.504-1.125 1.125-1.125Z"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9.75 8.25h4.5"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9.75 11.25h4.5"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9.75 14.25h4.5"
+              />
+            </svg>
+
+            <span class="sidebar-text">POA</span>
           </a>
         </nav>
       </aside>
 
-      <!-- CONTENIDO PRINCIPAL -->
       <div id="mainContent" class="flex-1 flex flex-col">
-        <!-- TOPBAR -->
         <header
           class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6"
         >
@@ -482,7 +494,9 @@
         </div>
         {% endif %}
 
-        <main class="flex-1 p-6">{% block page_content %}{% endblock %}</main>
+        <main class="flex-1 p-6 w-full">
+          <div class="w-full">{% block page_content %}{% endblock %}</div>
+        </main>
       </div>
     </div>
 
@@ -542,5 +556,6 @@
       const saved = localStorage.getItem("sidebarCollapsed");
       setCollapsed(saved === "1");
     </script>
+    {% block extra_js %}{% endblock %}
   </body>
 </html>

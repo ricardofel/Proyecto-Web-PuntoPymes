@@ -96,6 +96,35 @@ DATABASES = {
     }
 }
 
+# --- AUDITORÍA: LOGGING A ARCHIVO (Sin Base de Datos) ---
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'auditoria_fmt': {
+            'format': '[%(asctime)s] %(levelname)s | %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
+    },
+    'handlers': {
+        'archivo_log': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'auditoria_sistema.log'),
+            'formatter': 'auditoria_fmt',
+            'encoding': 'utf-8',
+        },
+    },
+    'loggers': {
+        'auditoria_app': {  # Nombre clave del espía
+            'handlers': ['archivo_log'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
 AUTH_USER_MODEL = "usuarios.Usuario"
 
 # Password validation

@@ -1,0 +1,97 @@
+{% extends "core/base_dashboard.html" %}
+
+{% block header_title %}KPIs{% endblock %}
+{% block header_subtitle %}Tablero de Control{% endblock %}
+
+{% block page_content %}
+<div class="max-w-7xl mx-auto space-y-6">
+
+    <div class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+        <div>
+            <h2 class="text-lg font-bold text-slate-900">Mis Indicadores</h2>
+            <p class="text-sm text-slate-500">Monitoreo de rendimiento clave.</p>
+        </div>
+        
+        <div class="flex gap-3">
+            <a href="{% url 'kpi:kpi_generar_defaults' %}" class="btn btn-white text-slate-600 border border-slate-200 btn-sm hover:bg-slate-50 flex items-center gap-2" title="Generar indicadores faltantes">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
+                Restaurar Estándar
+            </a>
+
+            <button class="btn btn-primary btn-sm flex items-center gap-2" data-bs-toggle="modal" data-bs-target="#modalKpiCrear">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Nuevo KPI
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for kpi in kpis %}
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition relative group">
+            
+            <div class="flex justify-between items-start mb-2">
+                <div class="overflow-hidden">
+                    <h3 class="font-bold text-slate-800 text-lg truncate pr-2" title="{{ kpi.nombre }}">
+                        {{ kpi.nombre }}
+                    </h3>
+                    <span class="text-[10px] font-bold text-slate-500 uppercase bg-slate-100 px-2 py-0.5 rounded tracking-wide">
+                        {{ kpi.frecuencia }}
+                    </span>
+                </div>
+                <div class="flex-shrink-0 w-3 h-3 rounded-full mt-1.5
+                    {% if kpi.color_estado == 'green' %}bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]
+                    {% elif kpi.color_estado == 'red' %}bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]
+                    {% else %}bg-slate-300{% endif %}">
+                </div>
+            </div>
+
+            <p class="text-sm text-slate-500 line-clamp-2 min-h-[2.5rem] mb-4">
+                {{ kpi.descripcion|default:"Sin descripción." }}
+            </p>
+
+            <div class="flex items-end justify-between border-t border-slate-100 pt-3">
+                <div>
+                    <p class="text-[10px] text-slate-400 uppercase tracking-wide font-semibold">Último valor</p>
+                    <div class="flex items-baseline gap-1">
+                        <p class="text-2xl font-bold text-slate-900">
+                            {{ kpi.ultimo_resultado.valor|default:"--" }} 
+                        </p>
+                        <span class="text-sm text-slate-500 font-medium">{{ kpi.unidad_medida }}</span>
+                    </div>
+                    {% if kpi.ultimo_resultado %}
+                        <p class="text-[10px] text-slate-400 mt-1">Periodo: {{ kpi.ultimo_resultado.periodo }}</p>
+                    {% endif %}
+                </div>
+                
+                <div class="text-right">
+                    <p class="text-[10px] text-slate-400 uppercase tracking-wide font-semibold">Meta</p>
+                    <p class="text-sm font-bold text-slate-600">
+                        {{ kpi.meta_default|default:"N/A" }}
+                    </p>
+                </div>
+            </div>
+            
+            <a href="{% url 'kpi:kpi_detalle' kpi.id %}" class="absolute inset-0 z-10" title="Ver detalle e historial"></a>
+        </div>
+        {% empty %}
+        
+        <div class="col-span-full py-16 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+            <div class="max-w-md mx-auto">
+                <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6M6 20V10M18 20V4"/></svg>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900 mb-2">Comienza a medir</h3>
+                <p class="text-slate-500 mb-6">Genera los indicadores recomendados para empezar.</p>
+                <a href="{% url 'kpi:kpi_generar_defaults' %}" class="btn btn-primary">
+                    ✨ Generar KPIs Recomendados
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+{% include "kpi/partials/modal_kpi.html" %}
+
+{% endblock %}
