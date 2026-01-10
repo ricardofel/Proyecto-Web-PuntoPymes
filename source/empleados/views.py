@@ -1,31 +1,56 @@
 import os
+
+# --- 1. Imports de Django ---
+from django.db import transaction
 from django.db.models import Q
-from django.views.decorators.http import require_POST
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.db import transaction
 from django.contrib.auth import get_user_model
+from django.views.generic import ListView
+from django.utils.decorators import method_decorator
+from django.views.decorators.http import require_POST
 
-from .models import Empleado, Contrato 
+# --- 2. Imports del Core (Mixins y Lógica Global) ---
+from core.mixins import FiltradoEmpresaMixin
+
+# --- 3. Imports de Usuarios (Decoradores y Roles) ---
+from usuarios.decorators import solo_superusuario_o_admin_rrhh
+from usuarios.models import Rol, UsuarioRol
+
+# --- 4. Imports Locales (Empleados) ---
+from .models import Empleado, Contrato
 from .forms import EmpleadoForm
-# Mantenemos tus modelos personalizados de Usuarios
-from usuarios.models import Rol, UsuarioRol 
 
-# ---------------------------------------------------------
-# 1. LISTA EMPLEADOS
-# ---------------------------------------------------------
-def lista_empleados_view(request):
-    empleados = Empleado.objects.all().order_by('-id')
-    busqueda = request.GET.get('q')
-    
-    if busqueda:
-        empleados = empleados.filter(
-            Q(nombres__icontains=busqueda) | 
-            Q(apellidos__icontains=busqueda) |
-            Q(cedula__icontains=busqueda)
-        )
-    
-    return render(request, 'empleados/lista_empleados.html', {'empleados': empleados})
+# =========================================================
+# VISTAS DE EMPLEADOS
+# =========================================================
+
+# 1. LISTA DE EMPLEADOS (Protegida y Filtrada)
+@method_decorator(solo_superusuario_o_admin_rrhh, name='dispatch')
+class ListaEmpleadosView(FiltradoEmpresaMixin, ListView):
+    model = Empleado
+    template_name = 'empleados/lista_empleados.html'
+    context_object_name = 'empleados'
+    paginate_by = 10 
+
+    def get_queryset(self):
+        # 1. Obtenemos el QuerySet base (filtrado por empresa gracias al Mixin)
+        qs = super().get_queryset()
+
+        # 2. Aplicamos lógica de búsqueda (si el usuario escribió algo)
+        busqueda = self.request.GET.get('q')
+        if busqueda:
+            qs = qs.filter(
+                Q(nombres__icontains=busqueda) | 
+                Q(apellidos__icontains=busqueda) |
+                Q(cedula__icontains=busqueda)
+            )
+        
+        return qs.order_by('-id')
+
+# Aquí abajo irían tus otras vistas (Crear, Editar, Eliminar)
+# Recuerda convertirlas también a Class Based Views si quieres usar el Mixin,
+# o usar la lógica manual si prefieres mantenerlas como funciones por ahora.
 
 # ---------------------------------------------------------
 # 2. CREAR EMPLEADO
