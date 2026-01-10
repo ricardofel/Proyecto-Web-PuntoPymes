@@ -314,10 +314,10 @@
             </svg>
             <span class="sidebar-text">Reportes</span>
           </a>
-
+          {% if request.user.is_superuser %}
           <a
-            href="#"
-            title="Integración ERP"
+            href="{% url 'integraciones:dashboard' %}"
+            title="Integraciones"
             class="flex items-center gap-3 px-3 py-2 rounded-lg font-medium transition-colors {% if 'integracion' in request.path %} bg-blue-50 text-blue-600 {% else %} text-slate-600 hover:bg-slate-100 {% endif %}"
           >
             <svg
@@ -334,9 +334,9 @@
                 d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244"
               />
             </svg>
-            <span class="sidebar-text">Integración ERP</span>
+            <span class="sidebar-text">Integraciones</span>
           </a>
-
+          {% endif %}
           <a
             href="{% url 'poa:poa' %}"
             title="POA"
