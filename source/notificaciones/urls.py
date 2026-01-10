@@ -1,7 +1,10 @@
 from django.urls import path
+from notificaciones.views.notificaciones_view import listar_notificaciones, marcar_todas_leidas
 
 app_name = "notificaciones"
 
 urlpatterns = [
-    # TODO: rutas de vistas web para el buzón de notificaciones del usuario.
+    path('', listar_notificaciones, name='listar'),
+
+    path('marcar-todas/', marcar_todas_leidas, name='marcar_todas'),
 ]

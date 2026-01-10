@@ -18,4 +18,5 @@ urlpatterns = [
     path('api/poa/', include('poa.api.urls')),
     path('integraciones/', include('integraciones.urls')),
     path('auditoria/', include('auditoria.urls')),
+    path('notificaciones/', include('notificaciones.urls')),
     ]

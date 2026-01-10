@@ -392,24 +392,97 @@
           </div>
 
           <div class="flex items-center gap-4 text-slate-500">
-            <button
-              class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke-width="1.5"
-                stroke="currentColor"
-                class="size-6"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"
-                />
-              </svg>
-            </button>
+            <div class="relative">
+    
+    <button id="notifBtn" onclick="toggleNotificaciones(event)" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors relative focus:outline-none">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5 text-slate-600">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+        </svg>
+
+        {% if notif_count > 0 %}
+        <span class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[9px] font-bold text-white ring-2 ring-white animate-pulse">
+            {{ notif_count }}
+        </span>
+        {% endif %}
+    </button>
+
+    <div id="notifMenu" class="hidden absolute right-0 top-full mt-2 w-80 origin-top-right rounded-xl bg-white shadow-xl ring-1 ring-black ring-opacity-5 z-50">
+        
+        <div class="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl">
+            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wide">Notificaciones</h3>
+            {% if notif_count > 0 %}
+                <a href="{% url 'notificaciones:marcar_todas' %}" class="text-[10px] font-bold text-blue-600 hover:text-blue-700 hover:underline">
+                    Marcar leídas
+                </a>
+            {% endif %}
+        </div>
+        
+        <div class="max-h-64 overflow-y-auto">
+            {% for notif in notif_list %}
+            <a href="{{ notif.link|default:'#' }}" class="block p-3 hover:bg-slate-50 transition border-b border-slate-50 last:border-0 group/item">
+                <div class="flex gap-3 items-start">
+                    <div class="flex-shrink-0 mt-1.5">
+                        {% if notif.tipo == 'success' %}
+                            <div class="w-2 h-2 rounded-full bg-green-500 shadow-sm shadow-green-200"></div>
+                        {% elif notif.tipo == 'warning' %}
+                            <div class="w-2 h-2 rounded-full bg-yellow-500 shadow-sm shadow-yellow-200"></div>
+                        {% elif notif.tipo == 'error' %}
+                            <div class="w-2 h-2 rounded-full bg-red-500 shadow-sm shadow-red-200"></div>
+                        {% else %}
+                            <div class="w-2 h-2 rounded-full bg-blue-500 shadow-sm shadow-blue-200"></div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="flex-1">
+                        <p class="text-xs font-bold {% if not notif.leido %}text-slate-800{% else %}text-slate-500{% endif %} group-hover/item:text-blue-600 transition-colors">
+                            {{ notif.titulo }}
+                        </p>
+                        <p class="text-[11px] text-slate-500 mt-0.5 line-clamp-2 leading-snug">
+                            {{ notif.mensaje }}
+                        </p>
+                        <p class="text-[9px] text-slate-400 mt-1.5 font-medium">
+                            {{ notif.fecha_creacion|timesince }}
+                        </p>
+                    </div>
+                </div>
+            </a>
+            {% empty %}
+            <div class="py-8 text-center flex flex-col items-center justify-center text-slate-400">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 mb-2 opacity-50">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                </svg>
+                <p class="text-xs">Sin novedades</p>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="p-2 border-t border-slate-100 bg-slate-50 rounded-b-xl text-center">
+            <a href="{% url 'notificaciones:listar' %}" class="block w-full py-1 text-[10px] font-bold text-slate-500 hover:text-slate-800 transition-colors uppercase tracking-wide">
+                Ver historial
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleNotificaciones(event) {
+        event.stopPropagation(); // Evita que el clic se propague y cierre el menú inmediatamente
+        const menu = document.getElementById('notifMenu');
+        menu.classList.toggle('hidden');
+    }
+
+    // Cerrar menú al hacer clic en cualquier otro lado
+    document.addEventListener('click', function(event) {
+        const menu = document.getElementById('notifMenu');
+        const btn = document.getElementById('notifBtn');
+        
+        // Si el menú está abierto... Y el clic NO fue dentro del menú... Y NO fue en el botón...
+        if (!menu.classList.contains('hidden') && !menu.contains(event.target) && event.target !== btn) {
+            menu.classList.add('hidden'); // Lo cerramos
+        }
+    });
+</script>
 
             <button
               class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200"
