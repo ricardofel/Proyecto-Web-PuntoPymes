@@ -4,11 +4,11 @@
 {% block header_subtitle %}Gestiona la estructura, departamentos y sucursales.{% endblock %}
 
 {% block page_content %}
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 min-h-[500px]">
+<div class="flex flex-col gap-6">
 
-    <div class="p-6 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50/50 rounded-t-xl">
-        <div class="flex items-center gap-3">
-            <div class="p-2 bg-blue-100 rounded-lg text-blue-600">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-3 w-full md:w-auto">
+            <div class="p-2.5 bg-blue-50 rounded-lg text-blue-600">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m8-2a2 2 0 00-2-2H9a2 2 0 00-2 2v2m7-2a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
@@ -19,27 +19,51 @@
             </div>
         </div>
 
-        <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-gray-200 shadow-sm">
-            <span class="text-xs font-semibold text-gray-400 uppercase">Empresa:</span>
-            <form method="GET" action="{% url 'organizacion' %}">
-                <select name="empresa_id" onchange="this.form.submit()" class="text-sm font-bold text-gray-700 bg-transparent border-none focus:ring-0 cursor-pointer outline-none">
+        <div class="relative w-full md:w-auto" id="companyDropdownContainer">
+            <button onclick="toggleCompanyDropdown()" 
+                    class="flex items-center justify-between gap-3 bg-white border border-gray-200 rounded-lg px-4 py-2 shadow-sm hover:border-blue-400 hover:shadow-md transition-all duration-200 cursor-pointer w-full md:w-72 group">
+                <div class="flex flex-col items-start text-left overflow-hidden">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Empresa:</span>
+                    <span class="text-sm font-bold text-gray-800 truncate w-full group-hover:text-blue-700 transition-colors">
+                        {{ empresa_actual.nombre_comercial|default:"Seleccionar..." }}
+                    </span>
+                </div>
+                <svg id="dropdownArrow" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 group-hover:text-blue-500 transition-transform duration-200 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+
+            <div id="companyDropdownMenu" class="hidden absolute right-0 mt-2 w-full md:w-80 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden transform transition-all origin-top-right">
+                <div class="max-h-64 overflow-y-auto custom-scrollbar">
                     {% for empresa in empresas %}
-                        <option value="{{ empresa.id }}" {% if empresa_actual.id == empresa.id %}selected{% endif %}>
-                            {{ empresa.nombre_comercial }}
-                        </option>
+                        <a href="?empresa_id={{ empresa.id }}" class="flex items-center justify-between px-4 py-3 hover:bg-blue-50 transition-colors border-b border-gray-50 last:border-0 group">
+                            <div class="flex items-center gap-3 overflow-hidden">
+                                <div class="h-8 w-8 rounded-full flex-shrink-0 flex items-center justify-center {% if empresa_actual.id == empresa.id %}bg-blue-600 text-white{% else %}bg-gray-100 text-gray-500 group-hover:bg-blue-200 group-hover:text-blue-700{% endif %} font-bold text-xs transition-colors">
+                                    {{ empresa.nombre_comercial|slice:":2"|upper }}
+                                </div>
+                                <span class="text-sm font-medium truncate {% if empresa_actual.id == empresa.id %}text-blue-700{% else %}text-gray-700 group-hover:text-blue-700{% endif %}">
+                                    {{ empresa.nombre_comercial }}
+                                </span>
+                            </div>
+                            {% if empresa_actual.id == empresa.id %}
+                                <svg class="h-4 w-4 text-blue-600 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                            {% endif %}
+                        </a>
                     {% empty %}
-                        <option value="">-- No hay empresas --</option>
+                        <div class="px-4 py-3 text-sm text-gray-500 text-center">No hay empresas</div>
                     {% endfor %}
-                </select>
-            </form>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="p-6">
-
-        <div class="flex justify-end mb-6">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        
+        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/30">
+            <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide">Unidades Registradas</h3>
+            
             {% if empresa_actual %}
-            <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm shadow-blue-200">
+            <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
@@ -49,56 +73,107 @@
         </div>
 
         {% if unidades %}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {% for unidad in unidades %}
-                <div class="group border border-gray-200 rounded-xl p-5 hover:shadow-lg transition-all duration-200 bg-white hover:border-blue-300 relative">
-                    <div class="flex justify-between items-start mb-4">
-                        <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md font-medium uppercase tracking-wide group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                            {{ unidad.tipo|default:"Unidad" }}
-                        </span>
-                        <span class="text-xs text-gray-300 font-mono">#{{ unidad.id }}</span>
-                    </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-50 border-b border-gray-200 text-xs uppercase text-gray-500 font-semibold tracking-wider">
+                        <th class="px-6 py-3">Nombre / Tipo</th>
+                        <th class="px-6 py-3">Ubicación</th>
+                        <th class="px-6 py-3">Jerarquía (Padre)</th>
+                        <th class="px-6 py-3 text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for unidad in unidades %}
+                    <tr class="hover:bg-blue-50/40 transition-colors group">
+                        <td class="px-6 py-3 align-middle">
+                            <div class="flex flex-col">
+                                <span class="font-bold text-gray-800 text-sm group-hover:text-blue-700 transition-colors">
+                                    {{ unidad.nombre }}
+                                </span>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600 w-max mt-1">
+                                    {{ unidad.tipo|default:"General" }}
+                                </span>
+                            </div>
+                        </td>
 
-                    <h3 class="text-lg font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors">
-                        {{ unidad.nombre }}
-                    </h3>
-
-                    <div class="text-sm text-gray-500 mb-4 border-t border-gray-50 pt-3 mt-3">
-                        {% if unidad.padre %}
-                            <p class="flex items-center gap-1.5">
-                                <span class="text-gray-400">↳</span>
-                                <span>Reporta a: <strong class="text-gray-700">{{ unidad.padre.nombre }}</strong></span>
-                            </p>
-                        {% else %}
-                            <p class="flex items-center gap-1.5 text-green-600 bg-green-50 w-max px-2 py-0.5 rounded text-xs font-medium">
-                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        <td class="px-6 py-3 align-middle">
+                            <div class="flex items-center gap-2 text-gray-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                 </svg>
-                                Unidad Raíz (Matriz)
-                            </p>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
+                                <span class="text-sm">{{ unidad.ubicacion|default:"No definida" }}</span>
+                            </div>
+                        </td>
 
+                        <td class="px-6 py-3 align-middle">
+                            {% if unidad.padre %}
+                                <div class="flex items-center gap-1.5 text-gray-500">
+                                    <svg class="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                    </svg>
+                                    <span class="text-xs font-medium">{{ unidad.padre.nombre }}</span>
+                                </div>
+                            {% else %}
+                                <span class="text-[10px] uppercase font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full border border-green-100">
+                                    ★ Nivel Superior
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td class="px-6 py-3 align-middle text-right">
+                            <button class="text-gray-400 hover:text-blue-600 p-1 rounded-md hover:bg-blue-100 transition-all">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
-            <div class="text-center py-16 bg-gray-50/50 rounded-xl border-2 border-dashed border-gray-200">
-                <div class="bg-white rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4 shadow-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div class="text-center py-12">
+                <div class="bg-gray-50 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-3">
+                    <svg class="h-8 w-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m8-2a2 2 0 00-2-2H9a2 2 0 00-2 2v2m7-2a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                 </div>
-                <h3 class="text-gray-900 font-medium text-lg">Sin estructura definida</h3>
-                <p class="text-gray-500 mt-1 max-w-sm mx-auto text-sm">
-                    {% if empresa_actual %}
-                        Comienza agregando los departamentos o sucursales de <strong>{{ empresa_actual.nombre_comercial }}</strong>.
-                    {% else %}
-                        Selecciona una empresa arriba para ver su información.
-                    {% endif %}
+                <h3 class="text-gray-900 font-medium">Sin unidades</h3>
+                <p class="text-gray-400 text-sm mt-1">
+                    {% if empresa_actual %}Esta empresa no tiene estructura definida.{% else %}Selecciona una empresa.{% endif %}
                 </p>
             </div>
         {% endif %}
     </div>
+
 </div>
+
+<script>
+    function toggleCompanyDropdown() {
+        const menu = document.getElementById('companyDropdownMenu');
+        const arrow = document.getElementById('dropdownArrow');
+        menu.classList.toggle('hidden');
+        arrow.style.transform = menu.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+    }
+
+    document.addEventListener('click', function(event) {
+        const container = document.getElementById('companyDropdownContainer');
+        const menu = document.getElementById('companyDropdownMenu');
+        const arrow = document.getElementById('dropdownArrow');
+        if (!container.contains(event.target) && !menu.classList.contains('hidden')) {
+            menu.classList.add('hidden');
+            arrow.style.transform = 'rotate(0deg)';
+        }
+    });
+</script>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+</style>
 {% endblock %}
