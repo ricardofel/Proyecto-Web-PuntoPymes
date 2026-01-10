@@ -1,68 +1,60 @@
-import logging
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.apps import apps
+from auditoria.models import LogAuditoria        # <--- Conectamos con la BD
+from auditoria.middleware import get_current_user # <--- Conectamos con el Middleware
 
-# --- 1. CONFIGURAR LOGGER ---
-logger = logging.getLogger('auditoria_app')
-
-def obtener_detalle(instance):
-    """Extrae un resumen legible del objeto"""
-    return str(instance)
-
-# --- 2. DEFINIR QUÉ APPS VIGILAR ---
-# Listamos las apps de TU proyecto + 'auth' (Usuarios).
-# No ponemos 'admin', 'sessions', etc. para no llenar el log de basura técnica.
+# --- 1. CONFIGURACIÓN ---
+# Evitamos bucles infinitos excluyendo auditoria y sesiones
 APPS_DEL_PROYECTO = [
+    'empleados', 
+    'asistencia', 
+    'solicitudes', 
+    'kpi', 
+    'integraciones', 
     'core',
-    'empleados',
-    'asistencia',
-    'solicitudes',
+    'usuarios',
     'poa',
-    'kpi',
-    'integraciones', # Si tienes modelos aquí
-    'auth',          # Usuarios y Grupos (Django)
+    'notificaciones',
 ]
 
-# --- 3. OBTENER TODOS LOS MODELOS DINÁMICAMENTE ---
 modelos_vigilados = []
-
 for app_label in APPS_DEL_PROYECTO:
     try:
-        # Obtenemos la configuración de la app
         app_config = apps.get_app_config(app_label)
-        # Extraemos TODOS sus modelos y los sumamos a la lista
         modelos_vigilados.extend(app_config.get_models())
     except LookupError:
-        # Si una app no está instalada (ej: integraciones vacía), no pasa nada
         pass
 
-# --- 4. SEÑALES UNIVERSALES ---
+def obtener_detalle(instance):
+    return str(instance)[:500] # Cortamos para no saturar la BD
 
+# --- 2. SEÑAL GUARDAR (Crear/Editar) ---
 @receiver(post_save)
-def registrar_cambio_universal(sender, instance, created, **kwargs):
-    """Detecta CREACIÓN o EDICIÓN en cualquier modelo de la lista"""
+def registrar_cambio(sender, instance, created, **kwargs):
     if sender in modelos_vigilados:
-        accion = 'CREADO' if created else 'EDITADO'
-        app = sender._meta.app_label.upper()     # Ej: EMPLEADOS
-        tabla = sender._meta.model_name.upper()  # Ej: CONTRATO
-        detalle = obtener_detalle(instance)
+        usuario = get_current_user() # ¡Atrapamos al culpable!
         
-        # Mejora visual para Usuarios
-        if hasattr(instance, 'username'):
-             detalle = f"Usuario: {instance.username} | Email: {getattr(instance, 'email', '-')}"
+        LogAuditoria.objects.create(
+            usuario=usuario if (usuario and usuario.is_authenticated) else None,
+            accion='CREAR' if created else 'EDITAR',
+            modulo=sender._meta.app_label.upper(),
+            modelo=sender._meta.model_name.upper(),
+            objeto_id=str(instance.pk),
+            detalle=obtener_detalle(instance)
+        )
 
-        # Formato Columnar para el Log
-        mensaje = f"APP: {app:<12} | ACCION: {accion:<8} | TABLA: {tabla:<18} | ID: {str(instance.pk):<5} | DETALLE: {detalle}"
-        logger.info(mensaje)
-
+# --- 3. SEÑAL ELIMINAR ---
 @receiver(post_delete)
-def registrar_eliminacion_universal(sender, instance, **kwargs):
-    """Detecta ELIMINACIÓN en cualquier modelo de la lista"""
+def registrar_eliminacion(sender, instance, **kwargs):
     if sender in modelos_vigilados:
-        app = sender._meta.app_label.upper()
-        tabla = sender._meta.model_name.upper()
-        detalle = obtener_detalle(instance)
+        usuario = get_current_user()
         
-        mensaje = f"APP: {app:<12} | ACCION: ELIMINADO | TABLA: {tabla:<18} | ID: {str(instance.pk):<5} | DETALLE: {detalle}"
-        logger.info(mensaje)
+        LogAuditoria.objects.create(
+            usuario=usuario if (usuario and usuario.is_authenticated) else None,
+            accion='ELIMINAR',
+            modulo=sender._meta.app_label.upper(),
+            modelo=sender._meta.model_name.upper(),
+            objeto_id=str(instance.pk),
+            detalle=obtener_detalle(instance)
+        )

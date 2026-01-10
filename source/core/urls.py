@@ -19,4 +19,6 @@ urlpatterns = [
     path('integraciones/', include('integraciones.urls')),
     path('organizacion/crear/', organization_views.crear_unidad, name='crear_unidad'),
     path('organizacion/editar/<int:pk>/', organization_views.editar_unidad, name='editar_unidad'),
+    path('auditoria/', include('auditoria.urls')),
+    path('notificaciones/', include('notificaciones.urls')),
     ]
