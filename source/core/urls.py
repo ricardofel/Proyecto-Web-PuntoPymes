@@ -2,6 +2,7 @@ from django.urls import path, include
 from core.views.auth_views import login_view, logout_view, dashboard_view
 from core.views import auth_views 
 from core.views import organization_views 
+from core.views.core_views import visor_universal
 
 urlpatterns = [
     path("login/", login_view, name="login"),
@@ -21,4 +22,5 @@ urlpatterns = [
     path('organizacion/editar/<int:pk>/', organization_views.editar_unidad, name='editar_unidad'),
     path('auditoria/', include('auditoria.urls')),
     path('notificaciones/', include('notificaciones.urls')),
+    path('detalles/<str:app_label>/<str:model_name>/<int:pk>/', visor_universal, name='visor_universal'),
     ]
