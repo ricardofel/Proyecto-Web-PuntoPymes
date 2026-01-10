@@ -8,58 +8,76 @@
 <div class="flex flex-col items-center justify-center min-h-[500px] py-10">
 
     <div class="mb-10 text-center">
-        <h2 class="text-4xl font-bold text-gray-800 tracking-tight">
-            {% now "H:i" %}
+        <h2 class="text-5xl font-extrabold text-gray-800 tracking-tight" id="reloj-tiempo-real">
+            {% now "h:i A" %}
         </h2>
-        <p class="text-gray-500 mt-1">{% now "l, d F Y" %}</p>
+        <p class="text-gray-500 mt-2 text-lg">{% now "l, d F Y" %}</p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl px-4">
-
-        <button class="group relative flex flex-col items-center justify-center p-8 bg-white border-2 border-transparent rounded-2xl shadow-sm hover:shadow-lg hover:border-green-500 transition-all duration-300 cursor-pointer">
-            <div class="h-16 w-16 bg-green-50 rounded-full flex items-center justify-center mb-4 group-hover:bg-green-100 transition-colors">
-                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                </svg>
+    <form method="POST" action="{% url 'asistencia:registrar_marca' %}" class="w-full max-w-4xl px-4">
+        {% csrf_token %}
+        
+        {% if messages %}
+            <div class="mb-6 space-y-2">
+                {% for message in messages %}
+                    <div class="p-4 rounded-lg text-sm font-medium text-center
+                        {% if message.tags == 'success' %} bg-green-50 text-green-700 border border-green-200
+                        {% elif message.tags == 'error' %} bg-red-50 text-red-700 border border-red-200
+                        {% elif message.tags == 'warning' %} bg-orange-50 text-orange-700 border border-orange-200
+                        {% else %} bg-blue-50 text-blue-700 border border-blue-200 {% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
             </div>
-            <span class="text-lg font-bold text-gray-700 group-hover:text-green-700">Iniciar Jornada</span>
-            <span class="text-xs text-gray-400 mt-1">Registrar entrada laboral</span>
-        </button>
+        {% endif %}
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
 
-        <button class="group relative flex flex-col items-center justify-center p-8 bg-white border-2 border-transparent rounded-2xl shadow-sm hover:shadow-lg hover:border-red-500 transition-all duration-300 cursor-pointer">
-            <div class="h-16 w-16 bg-red-50 rounded-full flex items-center justify-center mb-4 group-hover:bg-red-100 transition-colors">
-                <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-                </svg>
-            </div>
-            <span class="text-lg font-bold text-gray-700 group-hover:text-red-700">Terminar Jornada</span>
-            <span class="text-xs text-gray-400 mt-1">Registrar salida final</span>
-        </button>
+            <button type="submit" name="tipo_marca" value="entrada" class="group relative flex flex-col items-center justify-center p-8 bg-white border-2 border-transparent rounded-2xl shadow-sm hover:shadow-xl hover:border-green-500 transition-all duration-300 cursor-pointer w-full text-left transform hover:-translate-y-1">
+                <div class="h-16 w-16 bg-green-50 rounded-full flex items-center justify-center mb-4 group-hover:bg-green-100 transition-colors">
+                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                </div>
+                <span class="text-xl font-bold text-gray-700 group-hover:text-green-700">Iniciar Jornada</span>
+                <span class="text-sm text-gray-400 mt-1">Registrar entrada laboral</span>
+            </button>
 
-        <button class="group relative flex flex-col items-center justify-center p-8 bg-white border-2 border-transparent rounded-2xl shadow-sm hover:shadow-lg hover:border-blue-500 transition-all duration-300 cursor-pointer">
-            <div class="h-16 w-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-100 transition-colors">
-                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
-                </svg>
-            </div>
-            <span class="text-lg font-bold text-gray-700 group-hover:text-blue-700">Iniciar Descanso</span>
-            <span class="text-xs text-gray-400 mt-1">Pausa para almuerzo/break</span>
-        </button>
+            <button type="submit" name="tipo_marca" value="salida" onclick="return confirm('¿Estás seguro de que deseas finalizar tu jornada laboral por hoy?');" class="group relative flex flex-col items-center justify-center p-8 bg-white border-2 border-transparent rounded-2xl shadow-sm hover:shadow-xl hover:border-red-500 transition-all duration-300 cursor-pointer w-full text-left transform hover:-translate-y-1">
+                <div class="h-16 w-16 bg-red-50 rounded-full flex items-center justify-center mb-4 group-hover:bg-red-100 transition-colors">
+                    <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                </div>
+                <span class="text-xl font-bold text-gray-700 group-hover:text-red-700">Terminar Jornada</span>
+                <span class="text-sm text-gray-400 mt-1">Registrar salida final</span>
+            </button>
 
-        <button class="group relative flex flex-col items-center justify-center p-8 bg-white border-2 border-transparent rounded-2xl shadow-sm hover:shadow-lg hover:border-orange-500 transition-all duration-300 cursor-pointer">
-            <div class="h-16 w-16 bg-orange-50 rounded-full flex items-center justify-center mb-4 group-hover:bg-orange-100 transition-colors">
-                <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-            </div>
-            <span class="text-lg font-bold text-gray-700 group-hover:text-orange-700">Terminar Descanso</span>
-            <span class="text-xs text-gray-400 mt-1">Volver a actividades</span>
-        </button>
+            <button type="submit" name="tipo_marca" value="pausa_in" class="group relative flex flex-col items-center justify-center p-8 bg-white border-2 border-transparent rounded-2xl shadow-sm hover:shadow-xl hover:border-blue-500 transition-all duration-300 cursor-pointer w-full text-left transform hover:-translate-y-1">
+                <div class="h-16 w-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-100 transition-colors">
+                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+                    </svg>
+                </div>
+                <span class="text-xl font-bold text-gray-700 group-hover:text-blue-700">Iniciar Descanso</span>
+                <span class="text-sm text-gray-400 mt-1">Pausa para almuerzo/break</span>
+            </button>
 
-    </div>
+            <button type="submit" name="tipo_marca" value="pausa_out" class="group relative flex flex-col items-center justify-center p-8 bg-white border-2 border-transparent rounded-2xl shadow-sm hover:shadow-xl hover:border-orange-500 transition-all duration-300 cursor-pointer w-full text-left transform hover:-translate-y-1">
+                <div class="h-16 w-16 bg-orange-50 rounded-full flex items-center justify-center mb-4 group-hover:bg-orange-100 transition-colors">
+                    <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <span class="text-xl font-bold text-gray-700 group-hover:text-orange-700">Terminar Descanso</span>
+                <span class="text-sm text-gray-400 mt-1">Volver a actividades</span>
+            </button>
 
-    <div class="mt-12">
-        <a href="#" class="inline-flex items-center space-x-2 text-indigo-600 hover:text-indigo-800 font-medium transition-colors border-b border-indigo-200 hover:border-indigo-600 pb-0.5">
+        </div>
+    </form>
+
+    <div class="mt-16">
+        <a href="{% url 'asistencia:dashboard' %}" class="inline-flex items-center space-x-2 text-indigo-600 hover:text-indigo-800 font-medium transition-colors border-b border-indigo-200 hover:border-indigo-600 pb-0.5">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
             </svg>
@@ -68,4 +86,26 @@
     </div>
 
 </div>
+
+<script>
+    function actualizarReloj() {
+        const ahora = new Date();
+        let horas = ahora.getHours();
+        let minutos = ahora.getMinutes();
+        const ampm = horas >= 12 ? 'PM' : 'AM';
+        
+        horas = horas % 12;
+        horas = horas ? horas : 12; // La hora 0 es 12
+        minutos = minutos < 10 ? '0' + minutos : minutos;
+        
+        const strHora = horas + ':' + minutos + ' ' + ampm;
+        const elemento = document.getElementById('reloj-tiempo-real');
+        if(elemento) {
+            elemento.innerText = strHora;
+        }
+    }
+    // Actualizar cada segundo (1000ms)
+    setInterval(actualizarReloj, 1000);
+</script>
+
 {% endblock %}

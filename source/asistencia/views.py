@@ -3,43 +3,159 @@ from datetime import date, datetime, timedelta
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from django.db.models import Q
+from django.contrib import messages
+from django.views.decorators.http import require_POST
+from django.http import JsonResponse  # <--- IMPORTANTE: Nuevo import
 
 from empleados.models import Empleado
-from .models import JornadaCalculada
+from .models import JornadaCalculada, EventoAsistencia
 
+# ==============================================================================
+# 1. VISTA SEMÁFORO (Dispatcher)
+# ==============================================================================
 @login_required
-def dashboard_asistencia_view(request, empleado_id=None):
-    
-    # ==============================================================================
-    # 1. CONTROL DE ACCESO (Lógica de Roles)
-    # ==============================================================================
+def asistencia_home_view(request):
     usuario = request.user
+    es_jefe = (
+        usuario.is_superuser or 
+        getattr(usuario, 'es_admin_rrhh', False) or 
+        getattr(usuario, 'es_superadmin_negocio', False)
+    )
+    if es_jefe:
+        return redirect('asistencia:dashboard')
+    else:
+        return redirect('asistencia:zona_marcaje')
+
+# ==============================================================================
+# 2. VISTA ZONA DE MARCAJE (Solo Botones)
+# ==============================================================================
+@login_required
+def zona_marcaje_view(request):
+    return render(request, 'asistencia/registro_entradasalida.html')
+
+# ==============================================================================
+# 3. VISTA REGISTRAR MARCA (Lógica Estricta)
+# ==============================================================================
+@login_required
+@require_POST
+def registrar_marca_view(request):
+    usuario = request.user
+    if not hasattr(usuario, 'empleado'):
+        messages.error(request, "No tienes una ficha de empleado asignada.")
+        return redirect('asistencia:zona_marcaje')
     
+    empleado = usuario.empleado
+    accion = request.POST.get('tipo_marca')
+    # Usamos hora local explícita
+    ahora = timezone.localtime(timezone.now())
+    hoy = ahora.date()
+
+    tipo_map = {
+        'entrada': EventoAsistencia.TipoEvento.CHECK_IN,
+        'salida': EventoAsistencia.TipoEvento.CHECK_OUT,
+        'pausa_in': EventoAsistencia.TipoEvento.PAUSA_IN,
+        'pausa_out': EventoAsistencia.TipoEvento.PAUSA_OUT,
+    }
+
+    if accion not in tipo_map:
+        messages.error(request, "Acción no válida.")
+        return redirect('asistencia:zona_marcaje')
+
+    # 1. Guardar Historial Crudo
+    EventoAsistencia.objects.create(
+        empleado=empleado,
+        tipo=tipo_map[accion],
+        registrado_el=ahora,
+        origen='web',
+        ip_address=request.META.get('REMOTE_ADDR')
+    )
+
+    # 2. Obtener o Crear Jornada
+    jornada, created = JornadaCalculada.objects.get_or_create(
+        empleado=empleado,
+        fecha=hoy
+    )
+
+    if accion == 'entrada':
+        if not jornada.hora_primera_entrada:
+            jornada.hora_primera_entrada = ahora
+            
+            hora_teorica_naive = datetime.combine(hoy, empleado.hora_entrada_teorica)
+            hora_teorica_aware = timezone.make_aware(hora_teorica_naive, timezone.get_current_timezone())
+            margen = timedelta(minutes=0) # Tolerancia Cero
+
+            if ahora > (hora_teorica_aware + margen):
+                diferencia = ahora - hora_teorica_aware
+                minutos_tarde = int(diferencia.total_seconds() / 60)
+                jornada.minutos_tardanza = minutos_tarde
+                jornada.estado = JornadaCalculada.EstadoJornada.ATRASO
+                messages.warning(request, f"Entrada con {minutos_tarde} min de atraso.")
+            else:
+                jornada.minutos_tardanza = 0
+                jornada.estado = JornadaCalculada.EstadoJornada.PUNTUAL
+                messages.success(request, "Entrada puntual registrada.")
+        else:
+            messages.info(request, "Entrada registrada (ya existía).")
+
+    elif accion == 'salida':
+        jornada.hora_ultima_salida = ahora
+        if jornada.hora_primera_entrada:
+            tiempo_trabajado = ahora - jornada.hora_primera_entrada
+            jornada.minutos_trabajados = int(tiempo_trabajado.total_seconds() / 60)
+        else:
+            jornada.minutos_trabajados = 0
+
+        inicio_teorico = datetime.combine(hoy, empleado.hora_entrada_teorica)
+        fin_teorico = datetime.combine(hoy, empleado.hora_salida_teorica)
+        if fin_teorico < inicio_teorico:
+            fin_teorico += timedelta(days=1)
+        duracion_teorica = fin_teorico - inicio_teorico
+        minutos_objetivo = int(duracion_teorica.total_seconds() / 60)
+
+        # Jerarquía: Rojo > Naranja > Verde
+        if jornada.minutos_trabajados < (minutos_objetivo - 1):
+            jornada.estado = JornadaCalculada.EstadoJornada.FALTA
+            faltan = minutos_objetivo - jornada.minutos_trabajados
+            messages.error(request, f"⚠️ JORNADA INCOMPLETA (Faltaron {faltan} min).")
+        elif jornada.minutos_tardanza > 0:
+            jornada.estado = JornadaCalculada.EstadoJornada.ATRASO
+            messages.warning(request, "Horas cumplidas, pero mantienes el atraso de entrada.")
+        else:
+            jornada.estado = JornadaCalculada.EstadoJornada.PUNTUAL
+            messages.success(request, "¡Jornada perfecta! Salida registrada.")
+
+    elif accion == 'pausa_in':
+        messages.info(request, "Inicio de descanso registrado.")
+    elif accion == 'pausa_out':
+        messages.info(request, "Fin de descanso registrado.")
+
+    jornada.save()
+    return redirect('asistencia:zona_marcaje')
+
+# ==============================================================================
+# 4. VISTA DASHBOARD (Calendario)
+# ==============================================================================
+@login_required
+def dashboard_asistencia_view(request):
+    usuario = request.user
     es_jefe = (
         usuario.is_superuser or 
         getattr(usuario, 'es_admin_rrhh', False) or 
         getattr(usuario, 'es_superadmin_negocio', False)
     )
 
-    if not es_jefe:
-        return render(request, 'asistencia/registro_entradasalida.html')
-
-    # ==============================================================================
-    # 2. DETERMINAR EMPLEADO (Opción Trampa)
-    # ==============================================================================
-    
-    if not empleado_id:
+    target_empleado = None
+    if es_jefe:
         empleado_id = request.GET.get('empleado_id')
+        if empleado_id:
+            target_empleado = get_object_or_404(Empleado, pk=empleado_id)
+    else:
+        if hasattr(usuario, 'empleado'):
+            target_empleado = usuario.empleado
+        else:
+            messages.error(request, "Tu usuario no tiene una ficha de empleado asociada.")
+            return redirect('core:home')
 
-    # Si el ID está vacío o es la opción por defecto, empleado será None
-    empleado = None
-    if empleado_id and empleado_id != "":
-        empleado = get_object_or_404(Empleado, pk=empleado_id)
-
-    # ==============================================================================
-    # 3. DETERMINAR MES Y AÑO
-    # ==============================================================================
     hoy = timezone.now().date()
     try:
         mes = int(request.GET.get('mes', hoy.month))
@@ -49,23 +165,17 @@ def dashboard_asistencia_view(request, empleado_id=None):
         anio = hoy.year
 
     fecha_actual_obj = date(anio, mes, 1)
-    
-    # ==============================================================================
-    # 4. CONSTRUIR CALENDARIO (Solo si hay un empleado seleccionado)
-    # ==============================================================================
     semanas_datos = []
-    
-    if empleado:
+
+    if target_empleado:
         cal = calendar.Calendar(firstweekday=6)
         matriz_mes = cal.monthdayscalendar(anio, mes)
         
-        # Obtener datos de asistencia
         jornadas = JornadaCalculada.objects.filter(
-            empleado=empleado,
+            empleado=target_empleado,
             fecha__year=anio,
             fecha__month=mes
         )
-        
         datos_dias = {j.fecha.day: j for j in jornadas}
         
         for semana in matriz_mes:
@@ -76,7 +186,6 @@ def dashboard_asistencia_view(request, empleado_id=None):
                 else:
                     jornada = datos_dias.get(dia)
                     estado_codigo = 'futuro' 
-                    
                     if jornada:
                         estado_codigo = jornada.estado
                     elif date(anio, mes, dia) < hoy:
@@ -89,25 +198,67 @@ def dashboard_asistencia_view(request, empleado_id=None):
                     })
             semanas_datos.append(semana_lista)
 
-    # ==============================================================================
-    # 5. NAVEGACIÓN Y CONTEXTO
-    # ==============================================================================
-    mes_anterior_date = fecha_actual_obj - timedelta(days=1)
-    mes_siguiente_date = (fecha_actual_obj + timedelta(days=32)).replace(day=1)
-
-    # Mantener el ID del empleado en los links de navegación si existe
-    param_empleado = f"&empleado_id={empleado.id}" if empleado else ""
+    mes_anterior = fecha_actual_obj - timedelta(days=1)
+    mes_siguiente = (fecha_actual_obj + timedelta(days=32)).replace(day=1)
+    
+    param_empleado = ""
+    if es_jefe and target_empleado:
+        param_empleado = f"&empleado_id={target_empleado.id}"
 
     context = {
-        'empleado': empleado,
+        'empleado': target_empleado,
+        'es_jefe': es_jefe,
         'mes_actual': fecha_actual_obj.strftime("%B"),
         'anio_actual': anio,
         'calendario': semanas_datos,
-        
-        'link_anterior': f"?mes={mes_anterior_date.month}&anio={mes_anterior_date.year}{param_empleado}",
-        'link_siguiente': f"?mes={mes_siguiente_date.month}&anio={mes_siguiente_date.year}{param_empleado}",
-        
-        'empleados_list': Empleado.objects.filter(estado='Activo') 
+        'link_anterior': f"?mes={mes_anterior.month}&anio={mes_anterior.year}{param_empleado}",
+        'link_siguiente': f"?mes={mes_siguiente.month}&anio={mes_siguiente.year}{param_empleado}",
+        'empleados_list': Empleado.objects.filter(estado='Activo') if es_jefe else None
     }
     
     return render(request, 'asistencia/dashboard_asistencia.html', context)
+
+# ==============================================================================
+# 5. API: DETALLE DEL DÍA (Para el Modal)
+# ==============================================================================
+@login_required
+def obtener_detalle_dia_view(request):
+    """
+    Retorna JSON con la lista de eventos (Entradas/Salidas/Pausas) de un día específico.
+    """
+    empleado_id = request.GET.get('empleado_id')
+    fecha_str = request.GET.get('fecha') # Formato YYYY-MM-DD
+    
+    if not empleado_id or not fecha_str:
+        return JsonResponse({'error': 'Faltan parámetros'}, status=400)
+    
+    # Buscamos los eventos RAW (Crudos)
+    eventos = EventoAsistencia.objects.filter(
+        empleado_id=empleado_id,
+        registrado_el__date=fecha_str
+    ).order_by('registrado_el')
+    
+    data = []
+    for e in eventos:
+        color = "gray"
+        # Asignamos color para la línea de tiempo del modal
+        if e.tipo == EventoAsistencia.TipoEvento.CHECK_IN:
+            color = "green"
+        elif e.tipo == EventoAsistencia.TipoEvento.CHECK_OUT:
+            color = "red"
+        elif e.tipo == EventoAsistencia.TipoEvento.PAUSA_IN:
+            color = "blue"
+        elif e.tipo == EventoAsistencia.TipoEvento.PAUSA_OUT:
+            color = "orange"
+
+        # Formateamos hora local para evitar problemas de UTC
+        hora_local = timezone.localtime(e.registrado_el)
+
+        data.append({
+            'hora': hora_local.strftime('%I:%M %p'),
+            'tipo_legible': e.get_tipo_display(),
+            'color': color,
+            'origen': e.origen
+        })
+        
+    return JsonResponse({'eventos': data})

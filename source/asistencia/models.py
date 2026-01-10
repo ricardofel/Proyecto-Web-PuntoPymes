@@ -3,10 +3,9 @@ from django.utils.translation import gettext_lazy as _
 
 """
 Modelos de la app asistencia:
-
-- Turno (Configuración de horarios - Tabla 4)
-- EventoAsistencia (Marcaciones GPS/Biométrico - Tabla 24)
-- JornadaCalculada (Resumen diario procesado - Tabla 25)
+- Turno (Configuración de horarios)
+- EventoAsistencia (Marcaciones GPS/Biométrico)
+- JornadaCalculada (Resumen diario procesado)
 """
 
 class Turno(models.Model):
@@ -67,9 +66,7 @@ class EventoAsistencia(models.Model):
 
 
 class JornadaCalculada(models.Model):
-    # Tabla jornada_calculada (Esta es la que alimenta el Dashboard Visual)
-    
-    # --- CAMBIO IMPORTANTE: ESTADOS PARA EL DASHBOARD ---
+    # Tabla jornada_calculada (Alimenta el Dashboard Visual)
     class EstadoJornada(models.TextChoices):
         PUNTUAL = "puntual", _("Puntual")       # Verde
         ATRASO = "atraso", _("Atraso")          # Naranja
@@ -91,7 +88,7 @@ class JornadaCalculada(models.Model):
     
     estado = models.CharField(
         max_length=20,
-        choices=EstadoJornada.choices, # Usamos las opciones nuevas
+        choices=EstadoJornada.choices,
         default=EstadoJornada.FALTA,   # Por defecto es falta hasta que marque
         help_text=_("Estado calculado para el dashboard"),
     )
@@ -109,26 +106,7 @@ class JornadaCalculada(models.Model):
     def __str__(self):
         return f"{self.empleado} - {self.fecha} ({self.estado})"
 
-    # --- LÓGICA AUTOMÁTICA ---
+    # --- CAMBIO APLICADO: Método save limpio ---
     def save(self, *args, **kwargs):
-        """
-        Determina el color (Estado) automáticamente basándose en los datos.
-        """
-        # Si tiene entrada pero no salida, es INCOMPLETO
-        if self.hora_primera_entrada and not self.hora_ultima_salida:
-            # A menos que ya tenga un atraso registrado, en cuyo caso mantenemos el atraso visualmente
-            if self.minutos_tardanza > 0:
-                self.estado = self.EstadoJornada.ATRASO
-            else:
-                self.estado = self.EstadoJornada.INCOMPLETO
-        
-        # Si ya marcó entrada y salida
-        elif self.hora_primera_entrada and self.hora_ultima_salida:
-            if self.minutos_tardanza > 0:
-                self.estado = self.EstadoJornada.ATRASO
-            else:
-                self.estado = self.EstadoJornada.PUNTUAL
-        
-        # Si no tiene nada, sigue siendo el default (FALTA)
-
+        # Eliminamos la lógica automática para que respete lo que decide la Vista.
         super().save(*args, **kwargs)
