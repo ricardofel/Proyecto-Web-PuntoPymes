@@ -2,6 +2,7 @@ import os
 from django.db import models
 from django.utils import timezone 
 from django.utils.translation import gettext_lazy as _
+from core.storage import private_storage
 
 """
 Modelos de la app empleados:
@@ -172,42 +173,32 @@ class Empleado(models.Model):
 
 # --- 3. MODELO CONTRATO (RECUPERADO) ---
 class Contrato(models.Model):
-    # Tabla contrato
-    class Estado(models.TextChoices):
-        VIGENTE = "vigente", _("Vigente")
-        FINALIZADO = "finalizado", _("Finalizado")
-        ANULADO = "anulado", _("Anulado")
+    TIPOS = [
+        ('Indefinido', 'Tiempo Indefinido'),
+        ('Plazo Fijo', 'Plazo Fijo'),
+        ('Obra', 'Por Obra o Servicio'),
+        ('Eventual', 'Eventual / Pasantía'),
+    ]
 
-    id = models.BigAutoField(primary_key=True)
-    empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
-    empleado = models.ForeignKey(
-        Empleado, on_delete=models.CASCADE, related_name="contratos"
-    )
-    # Nota: Asegúrate de que la app 'asistencia' y el modelo 'Turno' existan
-    # Si no existen aún, comenta esta línea temporalmente.
-    turno = models.ForeignKey(
-        "asistencia.Turno", on_delete=models.PROTECT, related_name="contratos"
-    )
-    tipo = models.CharField(max_length=50, help_text=_("Ej: Indefinido, Plazo Fijo"))
+    empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE, related_name='contratos')
+    tipo = models.CharField(max_length=50, choices=TIPOS)
+    
+    # Datos del papel
+    cargo_en_contrato = models.CharField(max_length=100)
     fecha_inicio = models.DateField()
-    fecha_fin = models.DateField(
-        null=True, blank=True, help_text=_("NULL si es Indefinido")
+    fecha_fin = models.DateField(null=True, blank=True)
+    salario = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    # --- AQUÍ USAMOS EL STORAGE PRIVADO ---
+    archivo_pdf = models.FileField(
+        upload_to='contratos/%Y/',  # Se guardará en: private_media/contratos/2025/archivo.pdf
+        storage=private_storage,    # <--- La clave de la seguridad
+        null=True, blank=True,
+        verbose_name="PDF Firmado"
     )
-    salario_base = models.DecimalField(max_digits=12, decimal_places=2)
-    jornada_semanal_horas = models.DecimalField(
-        max_digits=4, decimal_places=1, null=True, blank=True
-    )
-    documento_url = models.TextField(blank=True, null=True)
-    estado = models.CharField(
-        max_length=20, choices=Estado.choices, default=Estado.VIGENTE
-    )
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        db_table = "contrato"
-        indexes = [
-            models.Index(fields=["empleado", "estado"]),
-        ]
-
+    
+    observaciones = models.TextField(blank=True)
+    estado = models.BooleanField(default=True, verbose_name="Es contrato vigente")
+    
     def __str__(self):
-        return f"Contrato {self.id} - {self.empleado}"
+        return f"{self.tipo} - {self.empleado}"

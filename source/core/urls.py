@@ -7,6 +7,7 @@ from core.views import auth_views
 from core.views import organization_views 
 from core.views.core_views import visor_universal
 from core.views.home_views import dashboard_view
+from core.views import organization_views, config_views
 
 urlpatterns = [
     # Autenticación y Home
@@ -36,6 +37,11 @@ urlpatterns = [
 
     # Utilidades
     path('detalles/<str:app_label>/<str:model_name>/<int:pk>/', visor_universal, name='visor_universal'),
+
+    # NUEVAS RUTAS DE CONFIGURACIÓN
+    path('organizacion/configuracion/', config_views.gestion_configuracion_view, name='configuracion_empresa'),
+    path('organizacion/puesto/crear/', config_views.crear_puesto_view, name='crear_puesto'),
+    path('organizacion/solicitud/crear/', config_views.crear_tipo_ausencia_view, name='crear_tipo_ausencia'),
 ]
 
 # === CONFIGURACIÓN PARA SERVIR IMÁGENES (MEDIA) EN DESARROLLO ===
