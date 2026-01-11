@@ -7,7 +7,6 @@ from .models import Rol, UsuarioRol
 
 User = get_user_model()
 
-
 class UsuarioForm(forms.ModelForm):
     # Campo "ficticio" para seleccionar roles en la interfaz
     roles = forms.ModelChoiceField(
@@ -18,12 +17,12 @@ class UsuarioForm(forms.ModelForm):
     )
 
     class Meta:
-        model = User  # 👈 IMPORTANTE: aquí está el model del ModelForm
+        model = User
         fields = [
             "email",
             "password",
             "empleado",
-            "estado",  # sacamos is_staff, lo controlamos por rol
+            "estado",
         ]
         widgets = {
             "email": forms.EmailInput(
@@ -87,69 +86,50 @@ class UsuarioForm(forms.ModelForm):
         return email_normalizado.lower()
 
     def save(self, commit=True):
-        """
-        Guarda el usuario y sincroniza la tabla pivote UsuarioRol.
-        Maneja bien el password y respeta jerarquía:
-        - Solo superuser puede cambiar roles / is_superuser / is_staff.
-        """
         user = super().save(commit=False)
         raw_password = self.cleaned_data.get("password")
 
-        # Manejo de password: si se ingresó uno, lo seteamos; si no, conservamos el anterior
         if raw_password:
             user.set_password(raw_password)
         elif user.pk:
-            # No sobreescribir el hash con vacío
             old_user = User.objects.get(pk=user.pk)
             user.password = old_user.password
 
-        # Manejo de usuarios
         if user.pk:
             old_user = User.objects.get(pk=user.pk)
-
-            # Si el campo 'empleado' no vino en el POST o no se cambió, lo conservamos
             if "empleado" not in self.data or "empleado" not in self.changed_data:
                 user.empleado = old_user.empleado
 
-        # ⚠ Proteger flags si quien edita NO es superuser
         if not (self.usuario_actual and self.usuario_actual.is_superuser):
             if user.pk:
                 old_user = User.objects.get(pk=user.pk)
                 user.is_staff = old_user.is_staff
                 user.is_superuser = old_user.is_superuser
             else:
-                # Usuarios creados por RRHH salen como no staff / no superuser
                 user.is_staff = False
                 user.is_superuser = False
 
         if commit:
             user.save()
-
             rol_seleccionado = self.cleaned_data.get("roles")
 
-            # Solo el superuser puede modificar roles y flags críticos
             if self.usuario_actual and self.usuario_actual.is_superuser:
-                # Limpiamos relaciones anteriores
                 UsuarioRol.objects.filter(usuario=user).delete()
 
                 if rol_seleccionado:
-                    # Creamos la relación 1 a 1 en la tabla pivote
                     UsuarioRol.objects.create(usuario=user, rol=rol_seleccionado)
-
-                    # Mapear rol de negocio → flags de Django
                     if rol_seleccionado.nombre == "Superusuario":
                         user.is_superuser = True
                         user.is_staff = True
                     elif rol_seleccionado.nombre == "Admin RRHH":
                         user.is_superuser = False
                         user.is_staff = True
-                    else:  # Empleado u otros
+                    else:
                         user.is_superuser = False
                         user.is_staff = False
 
                     user.save(update_fields=["is_superuser", "is_staff"])
 
-            # --- Sincronizar estado con el Empleado, si existe ---
             empleado = getattr(user, "empleado", None)
             if empleado is not None:
                 nuevo_estado = (
@@ -160,3 +140,34 @@ class UsuarioForm(forms.ModelForm):
                     empleado.save(update_fields=["estado"])
 
         return user
+
+
+# ==========================================
+# NUEVO FORMULARIO PARA "MI PERFIL"
+# ==========================================
+
+class PerfilUsuarioForm(forms.ModelForm):
+    """
+    Formulario limitado para que el usuario gestione sus propios datos
+    personales sin afectar roles o estados de cuenta.
+    """
+    class Meta:
+        model = User
+        fields = ["foto_perfil", "telefono"]
+        widgets = {
+            "telefono": forms.TextInput(
+                attrs={
+                    "class": "w-full rounded-lg border-slate-300 text-slate-900 shadow-sm "
+                             "focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2.5",
+                    "placeholder": "+593 99 999 9999",
+                }
+            ),
+            "foto_perfil": forms.FileInput(
+                attrs={
+                    "class": "block w-full text-sm text-slate-500 file:mr-4 file:py-2 "
+                             "file:px-4 file:rounded-full file:border-0 file:text-sm "
+                             "file:font-semibold file:bg-blue-50 file:text-blue-700 "
+                             "hover:file:bg-blue-100 cursor-pointer",
+                }
+            ),
+        }
