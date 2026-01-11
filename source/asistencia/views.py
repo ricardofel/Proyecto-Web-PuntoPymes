@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.contrib import messages
 from django.views.decorators.http import require_POST
-from django.http import JsonResponse  # <--- IMPORTANTE: Nuevo import
+from django.http import JsonResponse
 
 from empleados.models import Empleado
 from .models import JornadaCalculada, EventoAsistencia
@@ -46,7 +46,6 @@ def registrar_marca_view(request):
     
     empleado = usuario.empleado
     accion = request.POST.get('tipo_marca')
-    # Usamos hora local explícita
     ahora = timezone.localtime(timezone.now())
     hoy = ahora.date()
 
@@ -82,7 +81,7 @@ def registrar_marca_view(request):
             
             hora_teorica_naive = datetime.combine(hoy, empleado.hora_entrada_teorica)
             hora_teorica_aware = timezone.make_aware(hora_teorica_naive, timezone.get_current_timezone())
-            margen = timedelta(minutes=0) # Tolerancia Cero
+            margen = timedelta(minutes=0) 
 
             if ahora > (hora_teorica_aware + margen):
                 diferencia = ahora - hora_teorica_aware
@@ -112,7 +111,6 @@ def registrar_marca_view(request):
         duracion_teorica = fin_teorico - inicio_teorico
         minutos_objetivo = int(duracion_teorica.total_seconds() / 60)
 
-        # Jerarquía: Rojo > Naranja > Verde
         if jornada.minutos_trabajados < (minutos_objetivo - 1):
             jornada.estado = JornadaCalculada.EstadoJornada.FALTA
             faltan = minutos_objetivo - jornada.minutos_trabajados
@@ -144,11 +142,22 @@ def dashboard_asistencia_view(request):
         getattr(usuario, 'es_superadmin_negocio', False)
     )
 
+    # [MULTI-EMPRESA] 1. Recuperar la empresa actual del middleware
+    empresa_actual = getattr(request, 'empresa_actual', None)
+
     target_empleado = None
+    
+    # [MULTI-EMPRESA] 2. Filtramos la lista de empleados seleccionables
+    lista_empleados = None
+    if es_jefe and empresa_actual:
+        lista_empleados = Empleado.objects.filter(empresa=empresa_actual, estado='Activo')
+    
+    # Lógica de selección de empleado
     if es_jefe:
         empleado_id = request.GET.get('empleado_id')
         if empleado_id:
-            target_empleado = get_object_or_404(Empleado, pk=empleado_id)
+            # [MULTI-EMPRESA] Aseguramos que el empleado sea de la empresa actual
+            target_empleado = get_object_or_404(Empleado, pk=empleado_id, empresa=empresa_actual)
     else:
         if hasattr(usuario, 'empleado'):
             target_empleado = usuario.empleado
@@ -167,6 +176,7 @@ def dashboard_asistencia_view(request):
     fecha_actual_obj = date(anio, mes, 1)
     semanas_datos = []
 
+    # Solo calculamos si tenemos un empleado objetivo válido
     if target_empleado:
         cal = calendar.Calendar(firstweekday=6)
         matriz_mes = cal.monthdayscalendar(anio, mes)
@@ -213,7 +223,9 @@ def dashboard_asistencia_view(request):
         'calendario': semanas_datos,
         'link_anterior': f"?mes={mes_anterior.month}&anio={mes_anterior.year}{param_empleado}",
         'link_siguiente': f"?mes={mes_siguiente.month}&anio={mes_siguiente.year}{param_empleado}",
-        'empleados_list': Empleado.objects.filter(estado='Activo') if es_jefe else None
+        # [MULTI-EMPRESA] Pasamos la lista filtrada
+        'empleados_list': lista_empleados, 
+        'empresa_actual': empresa_actual
     }
     
     return render(request, 'asistencia/dashboard_asistencia.html', context)
@@ -224,24 +236,28 @@ def dashboard_asistencia_view(request):
 @login_required
 def obtener_detalle_dia_view(request):
     """
-    Retorna JSON con la lista de eventos (Entradas/Salidas/Pausas) de un día específico.
+    Retorna JSON con la lista de eventos.
+    [MULTI-EMPRESA] Valida que el empleado pertenezca a la empresa actual.
     """
     empleado_id = request.GET.get('empleado_id')
-    fecha_str = request.GET.get('fecha') # Formato YYYY-MM-DD
+    fecha_str = request.GET.get('fecha')
     
     if not empleado_id or not fecha_str:
         return JsonResponse({'error': 'Faltan parámetros'}, status=400)
     
-    # Buscamos los eventos RAW (Crudos)
+    empresa_actual = getattr(request, 'empresa_actual', None)
+    
+    # [MULTI-EMPRESA] Filtro de seguridad:
+    # Solo mostramos eventos si el empleado es de la empresa que estamos viendo
     eventos = EventoAsistencia.objects.filter(
         empleado_id=empleado_id,
+        empleado__empresa=empresa_actual, # <--- FILTRO CLAVE
         registrado_el__date=fecha_str
     ).order_by('registrado_el')
     
     data = []
     for e in eventos:
         color = "gray"
-        # Asignamos color para la línea de tiempo del modal
         if e.tipo == EventoAsistencia.TipoEvento.CHECK_IN:
             color = "green"
         elif e.tipo == EventoAsistencia.TipoEvento.CHECK_OUT:
@@ -251,7 +267,6 @@ def obtener_detalle_dia_view(request):
         elif e.tipo == EventoAsistencia.TipoEvento.PAUSA_OUT:
             color = "orange"
 
-        # Formateamos hora local para evitar problemas de UTC
         hora_local = timezone.localtime(e.registrado_el)
 
         data.append({
