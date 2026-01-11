@@ -1,5 +1,6 @@
 from datetime import date
 from decimal import Decimal
+import json
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -109,8 +110,7 @@ def _build_dashboard_context(request, anio: int):
 
 def _render_oob_response(request, objetivo=None, metas_qs=None, toast_msg="Operación exitosa"):
     """
-    Helper para generar respuestas HTMX Out-Of-Band (OOB) comunes.
-    Actualiza la lista de metas y el header del objetivo.
+    Versión robusta usando HX-Trigger Headers.
     """
     response_content = ""
     
@@ -124,27 +124,14 @@ def _render_oob_response(request, objetivo=None, metas_qs=None, toast_msg="Opera
         header_html = render_to_string("poa/partials/objetivo_header.html", {"objetivo": objetivo}, request)
         response_content += f'<div hx-swap-oob="innerHTML:#objetivo-header">{header_html}</div>'
 
-    # 3. Script de notificación (SweetAlert2) - Se mantiene genérico
-    # Nota: Hemos quitado la lógica de cerrar modales de Bootstrap aquí.
-    # El frontend (Alpine/Hyperscript) debería encargarse de cerrar el modal al recibir éxito.
-    script = f"""
-    <script>
-        Swal.fire({{
-            icon: 'success', 
-            title: '{toast_msg}', 
-            toast: true, 
-            position: 'top-end', 
-            showConfirmButton: false, 
-            timer: 3000
-        }});
-        // Disparar evento personalizado para cerrar modales en Tailwind/Alpine
-        document.body.dispatchEvent(new CustomEvent('close-modal')); 
-    </script>
-    """
-    response_content += script
+    # 3. CREAR LA RESPUESTA Y ADJUNTAR LA SEÑAL EN EL HEADER
+    response = HttpResponse(response_content)
+    
+    # Esto dispara el evento 'close-modal' en el navegador con el mensaje
+    trigger_data = {"close-modal": toast_msg}
+    response["HX-Trigger"] = json.dumps(trigger_data)
 
-    return HttpResponse(response_content)
-
+    return response
 
 # --- VISTAS PRINCIPALES ---
 
@@ -163,16 +150,18 @@ def poa_dashboard_partial(request):
     context = _build_dashboard_context(request, anio)
     return render(request, "poa/partials/dashboard_cards.html", context)
 
-
 @login_required
 @solo_superusuario_o_admin_rrhh
 def objetivo_crear_view(request):
+    # 1. Validar método
     if request.method != "POST":
         return HttpResponseBadRequest("Método no permitido")
 
+    # 2. Definir variables (ESTAS ERAN LAS QUE FALTABAN)
     anio = _anio_actual_from_request(request)
     form = ObjetivoForm(request.POST)
 
+    # 3. Validar formulario
     if form.is_valid():
         empresa = _empresa_actual(request)
         if not empresa:
@@ -182,24 +171,26 @@ def objetivo_crear_view(request):
             objetivo.anio = anio
             objetivo.empresa = empresa
             objetivo.save()
-            form.save_m2m() # Guardar relaciones M2M si las hubiera en el futuro
+            form.save_m2m()
 
-            # Actualizar dashboard via OOB
+            # 4. Actualizar dashboard via OOB
             context_dash = _build_dashboard_context(request, anio)
             dashboard_html = render_to_string("poa/partials/dashboard_cards.html", context_dash, request)
             
-            # Script simple de éxito
-            script = """
-            <script>
-                Swal.fire({icon: 'success', title: 'Objetivo creado', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000});
-                document.body.dispatchEvent(new CustomEvent('close-modal'));
-            </script>
-            """
-            return HttpResponse(f'<div hx-swap-oob="innerHTML:#poa-dashboard">{dashboard_html}</div>{script}')
+            # --- SOLUCIÓN DE MODAL (HEADERS) ---
+            # Preparamos la respuesta con el HTML nuevo
+            response = HttpResponse(f'<div hx-swap-oob="innerHTML:#poa-dashboard">{dashboard_html}</div>')
+            
+            # Enviamos la orden de cierre en la cabecera para que el script del frontend la capture
+            trigger_data = {"close-modal": "Objetivo creado"}
+            response["HX-Trigger"] = json.dumps(trigger_data)
+            
+            return response
 
+    # 5. Si hay errores, devolvemos el formulario
     return render(request, "poa/partials/modal_objetivo.html", {"form": form, "anio_actual": anio})
 
-
+    return render(request, "poa/partials/modal_objetivo.html", {"form": form, "anio_actual": anio})
 @login_required
 def objetivo_detalle_view(request, pk: int):
     objetivo = get_object_or_404(Objetivo, pk=pk)
@@ -248,31 +239,28 @@ def objetivo_editar_view(request, pk: int):
         if form.is_valid():
             form.save()
             
-            # Detectar contexto para respuesta inteligente
+            # --- LÓGICA ACTUALIZADA (HEADERS) ---
             referer = request.META.get('HTTP_REFERER', '')
+            response_content = ""
             
             if "objetivos/" in referer and "dashboard" not in referer:
-                # Estamos en detalle: actualizar header
+                # Caso A: Detalle -> Actualizar Header
                 header_html = render_to_string("poa/partials/objetivo_header.html", {"objetivo": obj}, request)
-                return HttpResponse(f"""
-                    <div hx-swap-oob="innerHTML:#objetivo-header">{header_html}</div>
-                    <script>
-                        Swal.fire({{icon: 'success', title: 'Objetivo actualizado', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000}});
-                        document.body.dispatchEvent(new CustomEvent('close-modal'));
-                    </script>
-                """)
+                response_content = f'<div hx-swap-oob="innerHTML:#objetivo-header">{header_html}</div>'
             else:
-                # Estamos en dashboard: actualizar tarjeta
+                # Caso B: Dashboard -> Actualizar Card
                 anio = obj.anio
                 context_dash = _build_dashboard_context(request, anio)
                 dashboard_html = render_to_string("poa/partials/dashboard_cards.html", context_dash, request)
-                return HttpResponse(f"""
-                    <div hx-swap-oob="innerHTML:#poa-dashboard">{dashboard_html}</div>
-                    <script>
-                        Swal.fire({{icon: 'success', title: 'Objetivo actualizado', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000}});
-                        document.body.dispatchEvent(new CustomEvent('close-modal'));
-                    </script>
-                """)
+                response_content = f'<div hx-swap-oob="innerHTML:#poa-dashboard">{dashboard_html}</div>'
+
+            response = HttpResponse(response_content)
+            # Enviamos la señal de cierre al frontend
+            trigger_data = {"close-modal": "Objetivo actualizado"}
+            response["HX-Trigger"] = json.dumps(trigger_data)
+            
+            return response
+            
     else:
         form = ObjetivoForm(instance=obj)
 
@@ -282,7 +270,6 @@ def objetivo_editar_view(request, pk: int):
         "is_edit": True,
         "edit_url": request.path
     })
-
 
 @login_required
 @solo_superusuario_o_admin_rrhh
@@ -334,6 +321,8 @@ def cambiar_estado_objetivo(request, pk):
 
 @login_required
 @solo_superusuario_o_admin_rrhh
+@login_required
+@solo_superusuario_o_admin_rrhh
 def meta_crear_view(request, pk: int):
     objetivo = get_object_or_404(Objetivo, pk=pk)
     if not _verificar_permiso_empresa(request, objetivo):
@@ -351,15 +340,25 @@ def meta_crear_view(request, pk: int):
             metas = MetaTactico.objects.filter(objetivo=objetivo).prefetch_related('actividades', 'actividades__ejecutores').order_by("-fecha_fin", "-id")
             return _render_oob_response(request, objetivo, metas, "Meta creada")
             
+        # Si hay errores en el POST, devolvemos el form con errores
         return render(request, "poa/partials/modal_meta.html", {"objetivo": objetivo, "meta_form": form})
     
-    return HttpResponseBadRequest("Método no permitido")
+    # --- AGREGAR ESTO PARA MANEJAR EL GET ---
+    else:
+        form = MetaTacticoForm()
+    
+    return render(request, "poa/partials/modal_meta.html", {
+        "objetivo": objetivo, 
+        "meta_form": form
+    })
 
 
 @login_required
 @solo_superusuario_o_admin_rrhh
 def meta_editar_view(request, pk: int):
     meta = get_object_or_404(MetaTactico, pk=pk)
+    
+    # Verificación de permisos (ahora con bypass para superusuario)
     if not _verificar_permiso_empresa(request, meta.objetivo):
         return HttpResponseBadRequest("Sin permiso")
 
@@ -367,7 +366,11 @@ def meta_editar_view(request, pk: int):
         form = MetaTacticoForm(request.POST, instance=meta)
         if form.is_valid():
             form.save()
+            
+            # Recargar la lista de metas ordenada
             metas = MetaTactico.objects.filter(objetivo=meta.objetivo).prefetch_related('actividades', 'actividades__ejecutores').order_by("-fecha_fin", "-id")
+            
+            # Usar el helper robusto (que envía el HX-Trigger)
             return _render_oob_response(request, meta.objetivo, metas, "Meta actualizada")
     else:
         form = MetaTacticoForm(instance=meta)

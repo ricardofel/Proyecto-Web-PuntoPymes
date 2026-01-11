@@ -38,59 +38,37 @@
     <div class="flex items-center gap-1 p-1 bg-slate-50 rounded-lg border border-slate-200">
         
         <button 
-            class="p-2 text-slate-400 hover:text-blue-600 hover:bg-white hover:shadow-sm rounded-md transition-all duration-200"
+            type="button"
+            class="h-8 w-8 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-white hover:shadow-sm rounded-md transition-all duration-200"
             title="Editar objetivo"
             onclick="document.getElementById('modalObjetivoCrear').classList.remove('hidden')"
             hx-get="{% url 'poa:objetivo_editar' objetivo.id %}"
             hx-target="#modal-objetivo-content"
             hx-swap="outerHTML"
         >
-             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
         </button>
         
-        <div class="w-px h-4 bg-slate-300 mx-1"></div>
+        <div class="w-px h-4 bg-slate-200 mx-0.5"></div>
 
         <button 
-            class="p-2 text-slate-400 hover:text-red-600 hover:bg-white hover:shadow-sm rounded-md transition-all duration-200"
+            type="button"
+            class="h-8 w-8 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-white hover:shadow-sm rounded-md transition-all duration-200"
             title="Eliminar objetivo"
             hx-post="{% url 'poa:objetivo_eliminar' objetivo.id %}"
             hx-confirm="¿⚠️ ESTÁS SEGURO? Se borrarán TODAS las metas y actividades de este objetivo irreversiblemente."
         >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
         </button>
     </div>
     {% endif %}
 
-    <div class="flex items-center gap-3 w-full sm:w-auto">
-
-        {% if user.is_superuser or user.es_admin_rrhh %}
-            <form action="{% url 'poa:cambiar_estado_objetivo' objetivo.pk %}" method="POST" class="w-full sm:w-auto">
-                {% csrf_token %}
-                <button type="submit" class="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm
-                    {% if objetivo.estado == 'activo' %}
-                        bg-white text-amber-600 border border-amber-200 hover:bg-amber-50 hover:border-amber-300
-                    {% else %}
-                        bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 hover:border-blue-300
-                    {% endif %}">
-                    
-                    {% if objetivo.estado == 'activo' %}
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2"/></svg>
-                        Finalizar
-                    {% else %}
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2"/></svg>
-                        Re-activar
-                    {% endif %}
-                </button>
-            </form>
-        {% endif %}
-
-        <a
-          href="{% url 'poa:poa' %}"
-          class="w-full sm:w-auto inline-flex justify-center items-center px-4 py-2 rounded-lg bg-slate-800 text-white text-sm font-medium hover:bg-slate-700 transition shadow-sm border border-transparent"
-        >
-          ← Volver
-        </a>
-    </div>
+    <a
+      href="{% url 'poa:poa' %}"
+      class="inline-flex items-center px-4 py-2 rounded-lg bg-slate-800 text-white text-xs font-bold uppercase tracking-wide hover:bg-slate-700 transition shadow-sm border border-transparent h-10"
+    >
+      ← Volver
+    </a>
 
   </div>
 </div>
