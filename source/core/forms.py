@@ -1,6 +1,31 @@
 from django import forms
 from core.models import UnidadOrganizacional
+from empleados.models import Puesto
+from solicitudes.models import TipoAusencia
 
+class PuestoForm(forms.ModelForm):
+    class Meta:
+        model = Puesto
+        # Excluimos empresa y fechas, eso lo ponemos automático
+        fields = ['nombre', 'nivel', 'banda_salarial_min', 'banda_salarial_max', 'descripcion']
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'w-full rounded-lg border-gray-300 text-sm', 'placeholder': 'Ej: Analista Sr.'}),
+            'nivel': forms.TextInput(attrs={'class': 'w-full rounded-lg border-gray-300 text-sm', 'placeholder': 'Ej: Junior, Senior'}),
+            'banda_salarial_min': forms.NumberInput(attrs={'class': 'w-full rounded-lg border-gray-300 text-sm'}),
+            'banda_salarial_max': forms.NumberInput(attrs={'class': 'w-full rounded-lg border-gray-300 text-sm'}),
+            'descripcion': forms.Textarea(attrs={'class': 'w-full rounded-lg border-gray-300 text-sm', 'rows': 2}),
+        }
+
+class TipoAusenciaForm(forms.ModelForm):
+    class Meta:
+        model = TipoAusencia
+        fields = ['nombre', 'descripcion', 'afecta_sueldo', 'requiere_documento', 'descuenta_vacaciones']
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'w-full rounded-lg border-gray-300 text-sm', 'placeholder': 'Ej: Vacaciones, Permiso Médico'}),
+            'descripcion': forms.Textarea(attrs={'class': 'w-full rounded-lg border-gray-300 text-sm', 'rows': 2}),
+            # Los checkbox usan el estilo por defecto o podemos personalizarlos en el HTML
+        }
+        
 class UnidadOrganizacionalForm(forms.ModelForm):
     # 1. Definimos las opciones exactas para el menú desplegable
     TIPOS_OPCIONES = [

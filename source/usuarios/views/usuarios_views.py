@@ -7,7 +7,8 @@ from django.db.models import Q
 from usuarios.models import Rol
 from usuarios.decorators import solo_superusuario_o_admin_rrhh
 
-from ..forms import UsuarioForm
+# IMPORTANTE: Hemos agregado PerfilUsuarioForm a los imports
+from ..forms import UsuarioForm, PerfilUsuarioForm
 
 User = get_user_model()
 
@@ -66,7 +67,7 @@ def lista_usuarios(request):
 @solo_superusuario_o_admin_rrhh
 def gestionar_usuario(request, user_id=None):
     """
-    Crear o editar un usuario.
+    Crear o editar un usuario (Admin/RRHH).
     - Si viene user_id => editar.
     - Si no viene => crear.
     """
@@ -89,7 +90,7 @@ def gestionar_usuario(request, user_id=None):
         form = UsuarioForm(
             request.POST,
             instance=usuario,
-            usuario_actual=request.user,  # 👈 importante
+            usuario_actual=request.user,
         )
         if form.is_valid():
             form.save()
@@ -108,3 +109,36 @@ def gestionar_usuario(request, user_id=None):
         "titulo": titulo,
     }
     return render(request, "usuarios/form_usuario.html", context)
+
+
+# ==========================================
+# NUEVA VISTA PARA "MI PERFIL"
+# ==========================================
+
+@login_required
+def perfil_usuario(request):
+    """
+    Vista para que el usuario logueado gestione sus propios datos
+    (foto y teléfono) sin permisos administrativos.
+    """
+    usuario = request.user
+    
+    if request.method == 'POST':
+        # request.FILES es necesario para procesar la imagen subida
+        form = PerfilUsuarioForm(request.POST, request.FILES, instance=usuario)
+        
+        if form.is_valid():
+            form.save()
+            messages.success(request, '¡Tu perfil ha sido actualizado correctamente!')
+            return redirect('usuarios:perfil')
+        else:
+            messages.error(request, 'Por favor corrige los errores indicados en el formulario.')
+    else:
+        form = PerfilUsuarioForm(instance=usuario)
+
+    context = {
+        'form': form,
+        'usuario': usuario,
+        'titulo': 'Mi Perfil'
+    }
+    return render(request, 'usuarios/perfil.html', context)

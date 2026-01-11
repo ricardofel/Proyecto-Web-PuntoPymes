@@ -1,0 +1,207 @@
+{% extends 'core/base_dashboard.html' %}
+{% load static %}
+
+{% block header_title %}Mi Perfil{% endblock %}
+{% block header_subtitle %}Gestiona tu información personal{% endblock %}
+
+{% block page_content %}
+<div class="max-w-5xl mx-auto pb-10">
+    
+    {% if not usuario.empleado %}
+    <div class="mb-6 p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 text-sm rounded-r shadow-sm">
+        <p><strong>Aviso:</strong> Tu usuario no está vinculado a una ficha de empleado. La sección izquierda y los datos laborales aparecerán vacíos.</p>
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {# --- COLUMNA IZQUIERDA: RESUMEN VISUAL --- #}
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 text-center sticky top-6">
+                <div class="relative w-32 h-32 mx-auto mb-5">
+                    {# Prioridad: 1. Foto Usuario, 2. Foto Empleado, 3. Iniciales #}
+                    {% if usuario.foto_perfil %}
+                        <img src="{{ usuario.foto_perfil.url }}" alt="Foto de perfil" class="w-full h-full rounded-full object-cover border-4 border-white shadow-md">
+                    {% elif usuario.empleado and usuario.empleado.foto %}
+                        <img src="{{ usuario.empleado.foto.url }}" alt="Foto de empleado" class="w-full h-full rounded-full object-cover border-4 border-white shadow-md">
+                    {% else %}
+                        <div class="w-full h-full rounded-full bg-blue-600 flex items-center justify-center text-white text-4xl font-bold border-4 border-white shadow-md uppercase">
+                            {% if usuario.empleado %}
+                                {{ usuario.empleado.nombres.0 }}{{ usuario.empleado.apellidos.0 }}
+                            {% else %}
+                                {{ usuario.email|slice:":2" }}
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                    {# Estado: Verifica si el empleado está Activo #}
+                    <span class="absolute bottom-1 right-1 w-6 h-6 border-2 border-white rounded-full shadow-sm {% if usuario.empleado.estado == 'Activo' %}bg-green-500{% else %}bg-gray-400{% endif %}" title="{{ usuario.empleado.estado|default:'Desconocido' }}"></span>
+                </div>
+
+                <h2 class="text-xl font-bold text-slate-800">
+                    {% if usuario.empleado %}
+                        {{ usuario.empleado.nombres }} {{ usuario.empleado.apellidos }}
+                    {% else %}
+                        {{ usuario.email }}
+                    {% endif %}
+                </h2>
+                
+                <p class="text-blue-600 font-semibold text-sm mb-6">
+                    {{ usuario.empleado.puesto.nombre|default:"Puesto no definido" }}
+                </p>
+
+                <div class="border-t border-slate-100 pt-5 text-left space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-slate-50 rounded-lg text-slate-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                        </div>
+                        <div class="overflow-hidden">
+                            <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Departamento</p>
+                            <p class="text-sm font-medium text-slate-700 truncate">
+                                {{ usuario.empleado.unidad_org.nombre|default:"--" }}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-slate-50 rounded-lg text-slate-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Fecha Ingreso</p>
+                            <p class="text-sm font-medium text-slate-700">
+                                {{ usuario.empleado.fecha_ingreso|date:"d M, Y"|default:"--" }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# --- COLUMNA DERECHA: EDICIÓN Y DETALLES --- #}
+        <div class="lg:col-span-2 space-y-6">
+            
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-6 py-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                        Información Personal
+                    </h3>
+                    <span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold uppercase">Editable</span>
+                </div>
+                
+                <form method="POST" enctype="multipart/form-data" class="p-6 space-y-5">
+                    {% csrf_token %}
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-slate-500">Correo Electrónico</label>
+                            <input type="text" value="{{ usuario.email }}" disabled class="w-full rounded-lg border-slate-200 bg-slate-50 text-slate-500 text-sm">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-slate-500">Teléfono Móvil</label>
+                            {{ form.telefono }}
+                            {% if form.telefono.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ form.telefono.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-500">Dirección Domiciliaria</label>
+                        <input type="text" value="{{ usuario.empleado.direccion|default:'No registrada' }}" disabled class="w-full rounded-lg border-slate-200 bg-slate-50 text-slate-500 text-sm">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-500">Cambiar Foto de Perfil</label>
+                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-200 border-dashed rounded-xl hover:border-blue-400 transition-colors">
+                            <div class="space-y-1 text-center">
+                                <svg class="mx-auto h-10 w-10 text-slate-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <div class="flex text-sm text-slate-600 justify-center">
+                                    {{ form.foto_perfil }}
+                                </div>
+                                <p class="text-xs text-slate-400 font-medium">PNG, JPG hasta 5MB</p>
+                            </div>
+                        </div>
+                        {% if form.foto_perfil.errors %}
+                            <p class="text-red-500 text-xs mt-1 text-center">{{ form.foto_perfil.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-100 text-right">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-8 rounded-xl transition-all shadow-md shadow-blue-100 active:transform active:scale-95">
+                            Actualizar Perfil
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            {% if usuario.empleado %}
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-6 py-4 bg-slate-50 border-b border-slate-100">
+                    <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        Información Laboral
+                    </h3>
+                </div>
+                
+                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    {# 1. Cédula #}
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                        <span class="text-[10px] text-slate-400 uppercase font-extrabold tracking-widest block mb-1">Cédula de Identidad</span>
+                        <span class="text-slate-800 font-bold font-mono">{{ usuario.empleado.cedula|default:"--" }}</span>
+                    </div>
+                    
+                    {# 2. Zona Horaria #}
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                        <span class="text-[10px] text-slate-400 uppercase font-extrabold tracking-widest block mb-1">Zona Horaria</span>
+                        <span class="text-slate-800 font-bold">{{ usuario.empleado.zona_horaria|default:"Ecuador Continental" }}</span>
+                    </div>
+
+                    {# 3. Horario de Entrada #}
+                    <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-100">
+                        <span class="text-[10px] text-emerald-600 uppercase font-extrabold tracking-widest block mb-1">Hora Entrada</span>
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+                            <span class="text-slate-800 font-bold text-lg">{{ usuario.empleado.hora_entrada_teorica|time:"h:i A" }}</span>
+                        </div>
+                    </div>
+
+                    {# 4. Horario de Salida #}
+                    <div class="p-4 rounded-xl bg-red-50 border border-red-100">
+                        <span class="text-[10px] text-red-600 uppercase font-extrabold tracking-widest block mb-1">Hora Salida</span>
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                            <span class="text-slate-800 font-bold text-lg">{{ usuario.empleado.hora_salida_teorica|time:"h:i A" }}</span>
+                        </div>
+                    </div>
+
+                    
+
+                    {# 6. Días Laborales #}
+                    <div class="md:col-span-2 p-4 rounded-xl bg-slate-50 border border-slate-100">
+                        <span class="text-[10px] text-slate-400 uppercase font-extrabold tracking-widest block mb-3">Días Laborales Asignados</span>
+                        <div class="flex flex-wrap gap-2 justify-center sm:justify-start">
+                            {% with dias=usuario.empleado.dias_laborales|default:"" %}
+                                <div class="w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold transition-colors {% if 'LUN' in dias %} bg-blue-100 text-blue-700 border border-blue-200 {% else %} bg-white text-slate-300 border border-slate-200 {% endif %}">LUN</div>
+                                <div class="w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold transition-colors {% if 'MAR' in dias %} bg-blue-100 text-blue-700 border border-blue-200 {% else %} bg-white text-slate-300 border border-slate-200 {% endif %}">MAR</div>
+                                <div class="w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold transition-colors {% if 'MIE' in dias %} bg-blue-100 text-blue-700 border border-blue-200 {% else %} bg-white text-slate-300 border border-slate-200 {% endif %}">MIÉ</div>
+                                <div class="w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold transition-colors {% if 'JUE' in dias %} bg-blue-100 text-blue-700 border border-blue-200 {% else %} bg-white text-slate-300 border border-slate-200 {% endif %}">JUE</div>
+                                <div class="w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold transition-colors {% if 'VIE' in dias %} bg-blue-100 text-blue-700 border border-blue-200 {% else %} bg-white text-slate-300 border border-slate-200 {% endif %}">VIE</div>
+                                <div class="w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold transition-colors {% if 'SAB' in dias %} bg-blue-100 text-blue-700 border border-blue-200 {% else %} bg-white text-slate-300 border border-slate-200 {% endif %}">SÁB</div>
+                                <div class="w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold transition-colors {% if 'DOM' in dias %} bg-blue-100 text-blue-700 border border-blue-200 {% else %} bg-white text-slate-300 border border-slate-200 {% endif %}">DOM</div>
+                            {% endwith %}
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}

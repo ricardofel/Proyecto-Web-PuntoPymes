@@ -48,6 +48,21 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         default=True, verbose_name=_("Activo"), help_text=_("TRUE = Puede hacer login")
     )
 
+    # === NUEVOS CAMPOS PARA EL PERFIL ===
+    foto_perfil = models.ImageField(
+        upload_to='perfiles/', 
+        blank=True, 
+        null=True, 
+        verbose_name=_("Foto de Perfil")
+    )
+    telefono = models.CharField(
+        max_length=20, 
+        blank=True, 
+        null=True, 
+        verbose_name=_("Teléfono de Contacto")
+    )
+    # ====================================
+
     mfa_enabled = models.BooleanField(default=False)
     mfa_secret = models.CharField(max_length=100, blank=True, null=True)
     ultimo_login = models.DateTimeField(null=True, blank=True)

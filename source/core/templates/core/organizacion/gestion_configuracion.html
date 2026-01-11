@@ -1,0 +1,197 @@
+{% extends 'core/base_dashboard.html' %}
+
+{% block header_title %}Configuración de Catálogos{% endblock %}
+{% block header_subtitle %}Define puestos y tipos de solicitud para {{ empresa_actual.nombre_comercial }}{% endblock %}
+
+{% block page_content %}
+<div class="flex flex-col gap-6">
+    
+    <div>
+        <a href="{% url 'organizacion' %}" class="text-sm text-gray-500 hover:text-blue-600 flex items-center gap-1 font-medium transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+            Volver a Organización
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-[600px]">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <div>
+                    <h3 class="font-bold text-gray-800">Puestos de Trabajo</h3>
+                    <p class="text-[10px] text-gray-400 uppercase tracking-wider">{{ puestos|length }} Registrados</p>
+                </div>
+                <button onclick="document.getElementById('modalPuesto').classList.remove('hidden')" 
+                        class="text-xs bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                    Nuevo Puesto
+                </button>
+            </div>
+            
+            <div class="overflow-y-auto flex-1 custom-scrollbar p-2">
+                {% if puestos %}
+                    <div class="space-y-2">
+                        {% for puesto in puestos %}
+                        <div class="p-4 border border-gray-100 rounded-lg hover:border-blue-200 hover:bg-blue-50/30 transition-all group">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm font-bold text-gray-800">{{ puesto.nombre }}</p>
+                                    <p class="text-xs text-gray-500 mt-0.5">{{ puesto.nivel|default:"Nivel General" }}</p>
+                                    {% if puesto.banda_salarial_min or puesto.banda_salarial_max %}
+                                    <p class="text-[10px] text-green-600 mt-1 font-mono bg-green-50 px-1.5 py-0.5 rounded w-max">
+                                        ${{ puesto.banda_salarial_min|default:"0" }} - ${{ puesto.banda_salarial_max|default:"∞" }}
+                                    </p>
+                                    {% endif %}
+                                </div>
+                                <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button class="text-gray-400 hover:text-blue-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="h-full flex flex-col items-center justify-center text-gray-400 opacity-60">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                        <p class="text-sm">Sin puestos definidos</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-[600px]">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <div>
+                    <h3 class="font-bold text-gray-800">Tipos de Solicitud</h3>
+                    <p class="text-[10px] text-gray-400 uppercase tracking-wider">{{ tipos_ausencia|length }} Registrados</p>
+                </div>
+                <button onclick="document.getElementById('modalAusencia').classList.remove('hidden')" 
+                        class="text-xs bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                    Nuevo Tipo
+                </button>
+            </div>
+            
+            <div class="overflow-y-auto flex-1 custom-scrollbar p-2">
+                {% if tipos_ausencia %}
+                    <div class="space-y-2">
+                        {% for tipo in tipos_ausencia %}
+                        <div class="p-4 border border-gray-100 rounded-lg hover:border-blue-200 hover:bg-blue-50/30 transition-all group">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm font-bold text-gray-800">{{ tipo.nombre }}</p>
+                                    <div class="flex flex-wrap gap-2 mt-2">
+                                        {% if tipo.descuenta_vacaciones %}
+                                            <span class="text-[10px] bg-red-50 text-red-600 px-2 py-0.5 rounded border border-red-100">Descuenta Vacaciones</span>
+                                        {% endif %}
+                                        {% if tipo.afecta_sueldo %}
+                                            <span class="text-[10px] bg-amber-50 text-amber-600 px-2 py-0.5 rounded border border-amber-100">Afecta Sueldo</span>
+                                        {% endif %}
+                                        {% if tipo.requiere_documento %}
+                                            <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-100">Requiere Adjunto</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button class="text-gray-400 hover:text-blue-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="h-full flex flex-col items-center justify-center text-gray-400 opacity-60">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+                        <p class="text-sm">Sin tipos definidos</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div id="modalPuesto" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-all">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform scale-100 transition-all">
+        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+            <h3 class="font-bold text-gray-800">Nuevo Puesto</h3>
+            <button onclick="document.getElementById('modalPuesto').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <form action="{% url 'crear_puesto' %}" method="POST" class="p-6 space-y-4">
+            {% csrf_token %}
+            
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nombre del Puesto</label>
+                {{ form_puesto.nombre }}
+            </div>
+            
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nivel / Seniority</label>
+                {{ form_puesto.nivel }}
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Salario Min</label>
+                    {{ form_puesto.banda_salarial_min }}
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Salario Max</label>
+                    {{ form_puesto.banda_salarial_max }}
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-50">
+                <button type="button" onclick="document.getElementById('modalPuesto').classList.add('hidden')" class="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 font-medium">Cancelar</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 font-medium shadow-sm">Guardar Puesto</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalAusencia" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+            <h3 class="font-bold text-gray-800">Nuevo Tipo de Solicitud</h3>
+            <button onclick="document.getElementById('modalAusencia').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <form action="{% url 'crear_tipo_ausencia' %}" method="POST" class="p-6 space-y-4">
+            {% csrf_token %}
+            
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nombre Solicitud</label>
+                {{ form_ausencia.nombre }}
+            </div>
+            
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Descripción / Reglas</label>
+                {{ form_ausencia.descripcion }}
+            </div>
+
+            <div class="space-y-3 pt-2">
+                <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    {{ form_ausencia.descuenta_vacaciones }}
+                    <span class="text-sm text-gray-700 font-medium">Descuenta de Vacaciones</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    {{ form_ausencia.requiere_documento }}
+                    <span class="text-sm text-gray-700 font-medium">Requiere Adjuntar Documento</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    {{ form_ausencia.afecta_sueldo }}
+                    <span class="text-sm text-gray-700 font-medium">Afecta al Sueldo (Descuento)</span>
+                </label>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-50">
+                <button type="button" onclick="document.getElementById('modalAusencia').classList.add('hidden')" class="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 font-medium">Cancelar</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 font-medium shadow-sm">Guardar Tipo</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -3,6 +3,15 @@
 {% block header_title %}Organización Empresarial{% endblock %}
 {% block header_subtitle %}Gestiona la estructura, departamentos y sucursales.{% endblock %}
 
+{% block extra_css %}
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+</style>
+{% endblock %}
+
 {% block page_content %}
 <div class="flex flex-col gap-6">
 
@@ -15,8 +24,18 @@
             </div>
             <div>
                 <h2 class="text-lg font-bold text-gray-800">Estructura Organizativa</h2>
-                <p class="text-xs text-gray-500">Visualizando: <span class="font-bold text-blue-600">{{ empresa_actual.nombre_comercial|default:"Sin Selección" }}</span></p>
+                <p class="text-xs text-gray-500">Gestión de departamentos y sucursales</p>
             </div>
+        </div>
+
+        <div>
+            <a href="{% url 'configuracion_empresa' %}" class="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 hover:text-blue-600 hover:border-blue-300 px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm group">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-gray-400 group-hover:text-blue-500">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l.546.941c.293.508.09 1.155-.453 1.393l-1.217.532c-.058.026-.106.069-.136.121a6.83 6.83 0 0 1 0 1.742c.03.053.078.096.136.121l1.217.532c.543.238.746.885.453 1.393l-.546.941a1.125 1.125 0 0 1-1.37.49l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-.547-.941c-.293-.508-.09-1.155.453-1.393l1.217-.532a.64.64 0 0 0 .136-.121 6.8 6.8 0 0 1 0-1.742.64.64 0 0 0-.136-.121l-1.217-.532c-.543-.238-.746-.885-.453-1.393l.547-.941a1.125 1.125 0 0 1 1.37-.49l1.217.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                </svg>
+                Configurar Catálogos
+            </a>
         </div>
     </div>
 
@@ -24,7 +43,6 @@
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div class="lg:col-span-1 bg-white border-2 border-blue-100 rounded-xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden">
             <div class="absolute -right-6 -top-6 w-24 h-24 bg-blue-50 rounded-full blur-2xl opacity-60"></div>
-            
             <div class="relative z-10">
                 <div class="flex items-center gap-3 mb-4">
                     <div class="h-10 w-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
@@ -35,15 +53,12 @@
                         <p class="text-xs text-gray-400 font-mono mt-0.5">RUC: {{ empresa_actual.ruc }}</p>
                     </div>
                 </div>
-                
                 <div class="flex items-center gap-2 mt-4">
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if empresa_actual.estado %}bg-emerald-50 text-emerald-700 border border-emerald-100{% else %}bg-red-50 text-red-700 border border-red-100{% endif %}">
                         <span class="w-1.5 h-1.5 rounded-full {% if empresa_actual.estado %}bg-emerald-500{% else %}bg-red-500{% endif %} mr-1.5"></span>
                         {% if empresa_actual.estado %}Activa{% else %}Suspendida{% endif %}
                     </span>
-                    <span class="text-xs text-gray-400 border-l border-gray-200 pl-2 ml-2">
-                        Desde: {{ empresa_actual.fecha_creacion|date:"Y" }}
-                    </span>
+                    <span class="text-xs text-gray-400 border-l border-gray-200 pl-2 ml-2">Desde: {{ empresa_actual.fecha_creacion|date:"Y" }}</span>
                 </div>
             </div>
         </div>
@@ -84,9 +99,7 @@
                 </div>
                 <div>
                     <p class="text-xs font-medium text-gray-400 uppercase tracking-wide">Razón Social</p>
-                    <p class="text-sm font-bold text-gray-800 truncate max-w-[150px]" title="{{ empresa_actual.razon_social }}">
-                        {{ empresa_actual.razon_social|default:empresa_actual.nombre_comercial }}
-                    </p>
+                    <p class="text-sm font-bold text-gray-800 truncate max-w-[150px]" title="{{ empresa_actual.razon_social }}">{{ empresa_actual.razon_social|default:empresa_actual.nombre_comercial }}</p>
                     <p class="text-[10px] text-green-600">Datos fiscales activos</p>
                 </div>
             </div>
@@ -95,16 +108,11 @@
     {% endif %}
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        
         <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/30">
             <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide">Unidades Registradas</h3>
-            
             {% if empresa_actual %}
-            <a href="{% url 'crear_unidad' %}?empresa_id={{ empresa_actual.id }}" 
-               class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
+            <a href="{% url 'crear_unidad' %}?empresa_id={{ empresa_actual.id }}" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                 Nueva Unidad
             </a>
             {% endif %}
@@ -126,15 +134,10 @@
                     <tr class="hover:bg-blue-50/40 transition-colors group">
                         <td class="px-6 py-3 align-middle">
                             <div class="flex flex-col">
-                                <span class="font-bold text-gray-800 text-sm group-hover:text-blue-700 transition-colors">
-                                    {{ unidad.nombre }}
-                                </span>
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600 w-max mt-1">
-                                    {{ unidad.tipo|default:"General" }}
-                                </span>
+                                <span class="font-bold text-gray-800 text-sm group-hover:text-blue-700 transition-colors">{{ unidad.nombre }}</span>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600 w-max mt-1">{{ unidad.tipo|default:"General" }}</span>
                             </div>
                         </td>
-
                         <td class="px-6 py-3 align-middle">
                             <div class="flex items-center gap-2 text-gray-500">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -144,22 +147,18 @@
                                 <span class="text-sm">{{ unidad.ubicacion|default:"No definida" }}</span>
                             </div>
                         </td>
-
                         <td class="px-6 py-3 align-middle">
                             {% if unidad.padre %}
-                                <div class="flex items-center gap-1.5 text-gray-500">
-                                    <svg class="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                                    </svg>
-                                    <span class="text-xs font-medium">{{ unidad.padre.nombre }}</span>
-                                </div>
+                            <div class="flex items-center gap-1.5 text-gray-500">
+                                <svg class="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                </svg>
+                                <span class="text-xs font-medium">{{ unidad.padre.nombre }}</span>
+                            </div>
                             {% else %}
-                                <span class="text-[10px] uppercase font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full border border-green-100">
-                                    ★ Nivel Superior
-                                </span>
+                            <span class="text-[10px] uppercase font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full border border-green-100">★ Nivel Superior</span>
                             {% endif %}
                         </td>
-
                         <td class="px-6 py-3 align-middle text-right">
                             <a href="{% url 'editar_unidad' unidad.id %}" class="text-gray-400 hover:text-blue-600 p-1 rounded-md hover:bg-blue-100 transition-all inline-block" title="Editar">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -173,45 +172,18 @@
             </table>
         </div>
         {% else %}
-            <div class="text-center py-12">
-                <div class="bg-gray-50 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-3">
-                    <svg class="h-8 w-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m8-2a2 2 0 00-2-2H9a2 2 0 00-2 2v2m7-2a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                </div>
-                <h3 class="text-gray-900 font-medium">Sin unidades</h3>
-                <p class="text-gray-400 text-sm mt-1">
-                    {% if empresa_actual %}Esta empresa no tiene estructura definida.{% else %}Selecciona una empresa.{% endif %}
-                </p>
+        <div class="text-center py-12">
+            <div class="bg-gray-50 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-3">
+                <svg class="h-8 w-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m8-2a2 2 0 00-2-2H9a2 2 0 00-2 2v2m7-2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
             </div>
+            <h3 class="text-gray-900 font-medium">Sin unidades</h3>
+            <p class="text-gray-400 text-sm mt-1">{% if empresa_actual %}Esta empresa no tiene estructura definida.{% else %}Selecciona una empresa.{% endif %}</p>
+        </div>
         {% endif %}
     </div>
 
 </div>
 
-<script>
-    function toggleCompanyDropdown() {
-        const menu = document.getElementById('companyDropdownMenu');
-        const arrow = document.getElementById('dropdownArrow');
-        menu.classList.toggle('hidden');
-        arrow.style.transform = menu.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
-    }
-
-    document.addEventListener('click', function(event) {
-        const container = document.getElementById('companyDropdownContainer');
-        const menu = document.getElementById('companyDropdownMenu');
-        const arrow = document.getElementById('dropdownArrow');
-        if (!container.contains(event.target) && !menu.classList.contains('hidden')) {
-            menu.classList.add('hidden');
-            arrow.style.transform = 'rotate(0deg)';
-        }
-    });
-</script>
-
-<style>
-    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
-</style>
 {% endblock %}

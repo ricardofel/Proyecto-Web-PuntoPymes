@@ -1,32 +1,39 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
 from core.models import Empresa, UnidadOrganizacional
-from django.shortcuts import redirect
 from core.forms import UnidadOrganizacionalForm
 
+@login_required
 def organizacion_dashboard(request):
-    # 1. Obtenemos todas las empresas para el menú desplegable
-    empresas = Empresa.objects.filter(estado=True)
+    """
+    Panel principal de Organización.
+    Ahora responde 100% a la selección global del menú lateral.
+    """
     
-    # 2. Verificamos si hay una empresa seleccionada en la URL (ej: ?empresa_id=1)
-    empresa_id = request.GET.get('empresa_id')
-    
-    empresa_actual = None
+    # 1. OBTENER LA EMPRESA DEL CONTEXTO GLOBAL (Middleware)
+    # Ya no buscamos en GET['empresa_id'] manualmente, confiamos en el sistema global.
+    empresa_actual = getattr(request, 'empresa_actual', None)
+
     unidades = []
 
-    if empresa_id:
-        # Si seleccionaron una, buscamos esa empresa y sus unidades
-        empresa_actual = get_object_or_404(Empresa, id=empresa_id)
-        unidades = UnidadOrganizacional.objects.filter(empresa=empresa_actual).order_by('nombre')
-    elif empresas.exists():
-        # Si no seleccionaron nada pero hay empresas, tomamos la primera por defecto
-        empresa_actual = empresas.first()
-        unidades = UnidadOrganizacional.objects.filter(empresa=empresa_actual).order_by('nombre')
+    # 2. FILTRAR LAS UNIDADES
+    if empresa_actual:
+        # Si hay empresa seleccionada, traemos SUS unidades
+        unidades = UnidadOrganizacional.objects.filter(
+            empresa=empresa_actual
+        ).select_related('padre').order_by('nombre')
+    else:
+        # Si no hay empresa (ej: SuperAdmin nuevo sin seleccionar nada), lista vacía.
+        unidades = []
 
+    # 3. RENDERIZAR
+    # Nota: Ya no necesitamos pasar 'empresas' (la lista completa) porque 
+    # el selector ahora vive en el sidebar (base_dashboard.html).
     context = {
-        'empresas': empresas,
+        'unidades': unidades,
         'empresa_actual': empresa_actual,
-        'unidades': unidades
     }
+    
     return render(request, 'core/organizacion/panel_organizacion.html', context)
 
 # --- VISTA PARA CREAR ---
