@@ -1,103 +1,184 @@
-<div class="modal fade" id="modalMetaCrear" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div id="modal-meta-content" class="modal-content">
+<div 
+  id="modalMetaCrear" 
+  class="hidden fixed inset-0 z-50 overflow-y-auto" 
+  aria-labelledby="modal-title" 
+  role="dialog" 
+  aria-modal="true"
+>
+  <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"></div>
+
+  <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+    
+    <div 
+      id="modal-meta-content" 
+      class="relative transform overflow-hidden rounded-xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-2xl border border-slate-100"
+    >
       
       {% if success %}
         <div hx-swap-oob="innerHTML:#metas-container">{{ lista_html|safe }}</div>
-        
         <div hx-swap-oob="innerHTML:#objetivo-header">{{ header_html|safe }}</div>
 
         <script>
           (function() {
-             var el = document.getElementById('modalMetaCrear');
-             var m = bootstrap.Modal.getInstance(el);
-             if (!m) m = new bootstrap.Modal(el);
-             m.hide();
-             
-             Swal.fire({
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 3000,
-                timerProgressBar: true,
-                icon: 'success',
-                title: '{% if is_edit %}¡Meta actualizada!{% else %}¡Meta creada!{% endif %}'
-             });
+            // Cerrar modal (Tailwind logic)
+            document.getElementById('modalMetaCrear').classList.add('hidden');
+            
+            // Notificación SweetAlert
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              showConfirmButton: false,
+              timer: 3000,
+              timerProgressBar: true,
+              icon: 'success',
+              title: '{% if is_edit %}¡Meta actualizada!{% else %}¡Meta creada!{% endif %}'
+            });
           })();
         </script>
       {% endif %}
 
-<form
+      <form
         id="form-meta-crear"
         method="post"
         hx-post="{% if is_edit %}{{ edit_url }}{% else %}{% url 'poa:meta_crear' objetivo.id %}{% endif %}"
         hx-target="#modal-meta-content"
         hx-select="#modal-meta-content"
         hx-swap="outerHTML"
+        class="flex flex-col h-full"
       >
         {% csrf_token %}
 
-        <div class="modal-header">
-          <h5 class="modal-title">{% if is_edit %}Editar meta{% else %}Nueva meta{% endif %}</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        <div class="bg-slate-50 px-4 py-3 sm:px-6 flex justify-between items-center border-b border-slate-100">
+          <h3 class="text-lg font-semibold leading-6 text-slate-900">
+            {% if is_edit %}Editar meta{% else %}Nueva meta{% endif %}
+          </h3>
+          <button 
+            type="button" 
+            onclick="document.getElementById('modalMetaCrear').classList.add('hidden')"
+            class="text-slate-400 hover:text-slate-500 transition-colors"
+          >
+            <span class="sr-only">Cerrar</span>
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
 
-        <div class="modal-body">
-          {% if meta_form.non_field_errors %}
-          <div class="alert alert-danger">
-            {{ meta_form.non_field_errors|join:", " }}
-          </div>
-          {% endif %}
-
-          <div class="space-y-3">
-            <div>
-                {{ meta_form.nombre.label_tag }} {{ meta_form.nombre }}
-                <div class="text-danger text-xs mt-1">{{ meta_form.nombre.errors }}</div>
+        <div class="px-4 py-5 sm:p-6 space-y-4">
+            
+            {% if meta_form.non_field_errors %}
+            <div class="rounded-md bg-red-50 p-3 mb-4 border border-red-100">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-red-800">Errores</h3>
+                        <div class="mt-1 text-sm text-red-700">
+                            {{ meta_form.non_field_errors|join:", " }}
+                        </div>
+                    </div>
+                </div>
             </div>
+            {% endif %}
 
-            <div>
-              {{ meta_form.descripcion.label_tag }} {{ meta_form.descripcion }}
-              <div class="text-danger text-xs mt-1">{{ meta_form.descripcion.errors }}</div>
-            </div>
+            <style>
+                #form-meta-crear input[type="text"],
+                #form-meta-crear input[type="number"],
+                #form-meta-crear input[type="date"],
+                #form-meta-crear textarea,
+                #form-meta-crear select {
+                   width: 100%;
+                   border-radius: 0.5rem;
+                   border-color: #cbd5e1; /* slate-300 */
+                   font-size: 0.875rem;
+                   padding: 0.5rem 0.75rem;
+                   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+                   background-color: #fff;
+                }
+                #form-meta-crear input:focus,
+                #form-meta-crear textarea:focus,
+                #form-meta-crear select:focus {
+                   border-color: #3b82f6; /* blue-500 */
+                   outline: 2px solid transparent;
+                   outline-offset: 2px;
+                   --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+                   --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) #3b82f6;
+                   box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-ring-shadow, 0 0 #0000);
+                }
+             </style>
 
-            <div>
-              {{ meta_form.indicador.label_tag }} {{ meta_form.indicador }}
-              <div class="text-danger text-xs mt-1">{{ meta_form.indicador.errors }}</div>
-            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ meta_form.nombre.label }}</label>
+                    {{ meta_form.nombre }}
+                    <div class="text-red-500 text-xs mt-1">{{ meta_form.nombre.errors }}</div>
+                </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                {{ meta_form.valor_esperado.label_tag }} {{ meta_form.valor_esperado }}
-                <div class="text-danger text-xs mt-1">{{ meta_form.valor_esperado.errors }}</div>
-              </div>
-              <div>
-                {{ meta_form.valor_actual.label_tag }} {{ meta_form.valor_actual }}
-                <div class="text-danger text-xs mt-1">{{ meta_form.valor_actual.errors }}</div>
-              </div>
-            </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ meta_form.descripcion.label }}</label>
+                    {{ meta_form.descripcion }}
+                    <div class="text-red-500 text-xs mt-1">{{ meta_form.descripcion.errors }}</div>
+                </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                {{ meta_form.fecha_inicio.label_tag }} {{ meta_form.fecha_inicio }}
-                <div class="text-danger text-xs mt-1">{{ meta_form.fecha_inicio.errors }}</div>
-              </div>
-              <div>
-                {{ meta_form.fecha_fin.label_tag }} {{ meta_form.fecha_fin }}
-                <div class="text-danger text-xs mt-1">{{ meta_form.fecha_fin.errors }}</div>
-              </div>
-            </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ meta_form.indicador.label }}</label>
+                    {{ meta_form.indicador }}
+                    <div class="text-red-500 text-xs mt-1">{{ meta_form.indicador.errors }}</div>
+                </div>
 
-            <div>
-                {{ meta_form.estado.label_tag }} {{ meta_form.estado }}
-                <div class="text-danger text-xs mt-1">{{ meta_form.estado.errors }}</div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">{{ meta_form.valor_esperado.label }}</label>
+                        {{ meta_form.valor_esperado }}
+                        <div class="text-red-500 text-xs mt-1">{{ meta_form.valor_esperado.errors }}</div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">{{ meta_form.valor_actual.label }}</label>
+                        {{ meta_form.valor_actual }}
+                        <div class="text-red-500 text-xs mt-1">{{ meta_form.valor_actual.errors }}</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">{{ meta_form.fecha_inicio.label }}</label>
+                        {{ meta_form.fecha_inicio }}
+                        <div class="text-red-500 text-xs mt-1">{{ meta_form.fecha_inicio.errors }}</div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">{{ meta_form.fecha_fin.label }}</label>
+                        {{ meta_form.fecha_fin }}
+                        <div class="text-red-500 text-xs mt-1">{{ meta_form.fecha_fin.errors }}</div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ meta_form.estado.label }}</label>
+                    {{ meta_form.estado }}
+                    <div class="text-red-500 text-xs mt-1">{{ meta_form.estado.errors }}</div>
+                </div>
             </div>
-          </div>
         </div>
 
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Guardar</button>
+        <div class="bg-slate-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 gap-2 border-t border-slate-100 rounded-b-xl">
+            <button 
+                type="submit" 
+                class="inline-flex w-full justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:w-auto transition-colors"
+            >
+                Guardar
+            </button>
+            <button 
+                type="button" 
+                onclick="document.getElementById('modalMetaCrear').classList.add('hidden')"
+                class="mt-3 inline-flex w-full justify-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:mt-0 sm:w-auto transition-colors"
+            >
+                Cancelar
+            </button>
         </div>
+
       </form>
     </div>
   </div>
