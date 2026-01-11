@@ -18,7 +18,7 @@
         <h3 class="text-lg font-semibold text-slate-900">Metas Tácticas</h3>
         <p class="text-sm text-slate-500">Desglose de metas para cumplir este objetivo.</p>
       </div>
-      
+      {% if user.is_superuser or user.es_admin_rrhh or user.es_superadmin_negocio %}
       <button
         type="button"
         class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 shadow-sm transition"
@@ -30,6 +30,7 @@
         </svg>
         Nueva meta
       </button>
+      {% endif %}
     </div>
 
     <div

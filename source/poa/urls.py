@@ -15,6 +15,7 @@ from .views.poa_view import (
     actividad_estado_view,
     objetivo_editar_view,
     objetivo_eliminar_view,
+    cambiar_estado_objetivo,
 )
 
 app_name = "poa"
@@ -42,5 +43,6 @@ urlpatterns = [
     path("actividades/<int:pk>/estado/", actividad_estado_view, name="actividad_estado"),
     path("objetivos/<int:pk>/editar/", objetivo_editar_view, name="objetivo_editar"),
     path("objetivos/<int:pk>/eliminar/", objetivo_eliminar_view, name="objetivo_eliminar"),
+    path("objetivos/<int:pk>/cambiar-estado/", cambiar_estado_objetivo, name="cambiar_estado_objetivo"),
 
 ]

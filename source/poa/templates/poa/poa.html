@@ -18,6 +18,7 @@
       </p>
     </div>
 
+    {% if user.is_superuser or user.es_admin_rrhh or user.es_superadmin_negocio %}
     <button
       class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 shadow-sm"
       data-bs-toggle="modal"
@@ -25,6 +26,7 @@
     >
       + Nuevo objetivo
     </button>
+    {% endif %}
   </div>
 
   <!-- Filtros (HTMX) -->

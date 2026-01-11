@@ -458,3 +458,19 @@ def objetivo_eliminar_view(request, pk: int):
         """)
 
     return HttpResponseBadRequest()
+
+@login_required
+@solo_superusuario_o_admin_rrhh
+def cambiar_estado_objetivo(request, pk):
+    objetivo = get_object_or_404(ObjetivoEstrategico, pk=pk)
+    
+    # Lógica simple de cambio
+    if objetivo.estado == 'activo':
+        objetivo.estado = 'cerrado'
+        messages.warning(request, f"El objetivo '{objetivo.nombre}' ha sido cerrado.")
+    else:
+        objetivo.estado = 'activo'
+        messages.success(request, f"El objetivo '{objetivo.nombre}' ahora está activo.")
+    
+    objetivo.save()
+    return redirect('poa:objetivo_detalle', pk=pk)
