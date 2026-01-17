@@ -1,11 +1,14 @@
 from rest_framework import routers
 from empleados.api_views import EmpleadoViewSet
-from asistencia.api_views import EventoAsistenciaViewSet # <--- Importación corregida
+from asistencia.api_views import EventoAsistenciaViewSet
+# 1. importar la vista de auditoria
+from auditoria.api_views import LogAuditoriaViewSet
 
 router = routers.DefaultRouter()
 
-# Rutas
+# rutas existentes
 router.register(r'empleados', EmpleadoViewSet)
-router.register(r'asistencias', EventoAsistenciaViewSet) # La URL será /api/asistencias/
+router.register(r'asistencias', EventoAsistenciaViewSet)
+router.register(r'auditoria', LogAuditoriaViewSet)
 
 urlpatterns = router.urls
