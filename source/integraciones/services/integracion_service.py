@@ -6,8 +6,9 @@ from django.core.serializers.json import DjangoJSONEncoder
 from integraciones.models import LogIntegracion
 from integraciones.constants import EstadoIntegracion
 
-# Importaciones condicionales para evitar ciclos si fuera necesario
-from empleados.models import Empleado
+# Importaciones condicionales para evitar ciclos
+from empleados.models import Empleado, Puesto
+from core.models import Empresa, UnidadOrganizacional # <-- IMPORTANTE
 from asistencia.models import EventoAsistencia
 
 class IntegracionService:
@@ -35,7 +36,6 @@ class IntegracionService:
         
         erp.save(update_fields=['estado_sincronizacion', 'fecha_ultima_sincronizacion'])
         
-        # Logueamos el resultado
         LogIntegracion.objects.create(
             integracion=erp,
             endpoint=erp.url_api,
@@ -75,16 +75,32 @@ class IntegracionService:
         creados = 0
         errores = []
         
-        # Validar IDs por defecto (esto debería venir de configuración, pero por ahora protegemos)
-        # Podríamos buscar la primera empresa activa en lugar de hardcodear ID=1
+        # --- REFACTORIZACIÓN PRIORIDAD 1: Eliminación de Hardcoded IDs ---
+        # Buscamos dinámicamente dónde ubicar a los empleados
         
+        # 1. Buscamos la empresa por defecto (en un sistema real, esto vendría en la config de la integración)
+        empresa_default = Empresa.objects.first()
+        if not empresa_default:
+            return 0, ["Error crítico: No existen empresas registradas en el sistema para asociar los empleados."]
+            
+        # 2. Buscamos Unidad y Puesto por defecto en esa empresa
+        unidad_default = UnidadOrganizacional.objects.filter(empresa=empresa_default).first()
+        if not unidad_default:
+            return 0, [f"Error crítico: La empresa '{empresa_default.nombre_comercial}' no tiene unidades organizacionales creadas."]
+            
+        puesto_default = Puesto.objects.filter(empresa=empresa_default).first()
+        if not puesto_default:
+            return 0, [f"Error crítico: La empresa '{empresa_default.nombre_comercial}' no tiene puestos creados."]
+
+        # -----------------------------------------------------------------
+
         for item in lista_data:
             try:
-                # Usamos get_or_create para evitar duplicados por email
                 email = item.get('email')
                 if not email:
                     raise ValueError("Email es obligatorio")
 
+                # Usamos los objetos encontrados, no IDs fijos
                 empleado, created = Empleado.objects.get_or_create(
                     email=email,
                     defaults={
@@ -92,10 +108,10 @@ class IntegracionService:
                         'apellidos': item.get('apellidos'),
                         'cedula': item.get('cedula', 'S/N'),
                         'fecha_ingreso': item.get('fecha_ingreso'),
-                        # Asignamos valores por defecto seguros
-                        'empresa_id': 1, 
-                        'unidad_org_id': 1,
-                        'puesto_id': 1
+                        # Asignación Dinámica Segura
+                        'empresa': empresa_default,
+                        'unidad_org': unidad_default,
+                        'puesto': puesto_default
                     }
                 )
                 if created:
