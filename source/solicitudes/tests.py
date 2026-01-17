@@ -1,5 +1,4 @@
-import os
-from datetime import date, timedelta
+from datetime import date
 from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -7,15 +6,16 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 from core.models import Empresa, UnidadOrganizacional
 from empleados.models import Empleado, Puesto
-from solicitudes.models import SolicitudAusencia, TipoAusencia, AdjuntoSolicitud, RegistroVacaciones
+from solicitudes.models import SolicitudAusencia, TipoAusencia, RegistroVacaciones
 from solicitudes.forms import SolicitudAusenciaForm
 
 User = get_user_model()
 
 class SolicitudesLogicWhiteBoxTests(TestCase):
     """
-    [Caja Blanca] Tests para la lógica interna y cálculos.
-    Objetivo: Validar el contador de días hábiles y el balance de vacaciones.
+    Tests de lógica interna:
+    - cálculo de días hábiles
+    - saldo de vacaciones
     """
 
     def setUp(self):
@@ -30,23 +30,23 @@ class SolicitudesLogicWhiteBoxTests(TestCase):
 
     def test_calculo_dias_habiles_excluye_fines_semana(self):
         print("\n📅 [TEST] Iniciando: test_calculo_dias_habiles_excluye_fines_semana")
-        
-        # Viernes 17 de enero a Lunes 20 de enero de 2026
-        # Incluye: Viernes (1), Sábado (X), Domingo (X), Lunes (1) -> Total 2 días hábiles
+
+        # Rango: 2026-01-16 (viernes) a 2026-01-19 (lunes)
+        # Hábiles esperados: viernes (1) + lunes (1) => 2
         data = {
             'ausencia': self.tipo.id,
             'fecha_inicio': date(2026, 1, 16),
             'fecha_fin': date(2026, 1, 19),
             'motivo': "Descanso necesario"
         }
-        
+
         form = SolicitudAusenciaForm(data=data, empleado=self.empleado)
         self.assertTrue(form.is_valid(), f"Errores: {form.errors}")
-        
-        # El formulario asigna el valor al objeto en el clean()
+
+        # El formulario asigna el valor al objeto en su validación/limpieza
         solicitud = form.save(commit=False)
         print(f"   ↳ Rango: 2026-01-16 al 2026-01-19. Días calculados: {solicitud.dias_habiles}")
-        
+
         self.assertEqual(solicitud.dias_habiles, 2, "El cálculo de días hábiles no descontó el fin de semana.")
         print("     ✅ Éxito: El algoritmo de días hábiles es preciso.")
 
@@ -63,15 +63,18 @@ class SolicitudesLogicWhiteBoxTests(TestCase):
 
 class SolicitudesViewWhiteBoxTests(TestCase):
     """
-    [Caja Blanca] Tests para Vistas y Flujo de Aprobación.
+    Tests de vistas y flujo:
+    - creación con adjuntos
+    - aprobación por jefe
+    - restricción de edición por estado
     """
 
     def setUp(self):
         self.empresa = Empresa.objects.create(nombre_comercial="Mango Corp", ruc="999")
         self.u = UnidadOrganizacional.objects.create(nombre="U", empresa=self.empresa)
         self.p = Puesto.objects.create(nombre="P", empresa=self.empresa)
-        
-        # Usuario Empleado
+
+        # Usuario empleado
         self.user_emp = User.objects.create_user(email='empleado@test.com', password='123')
         self.empleado = Empleado.objects.create(
             nombres="Juan", apellidos="Perez", email=self.user_emp.email, cedula="111",
@@ -80,7 +83,7 @@ class SolicitudesViewWhiteBoxTests(TestCase):
         self.user_emp.empleado = self.empleado
         self.user_emp.save()
 
-        # Usuario Jefe (Superusuario)
+        # Usuario jefe (superuser)
         self.user_jefe = User.objects.create_superuser(email='jefe@test.com', password='123')
         self.jefe = Empleado.objects.create(
             nombres="Gran", apellidos="Jefe", email=self.user_jefe.email, cedula="000",
@@ -95,11 +98,11 @@ class SolicitudesViewWhiteBoxTests(TestCase):
     def test_crear_solicitud_con_multiples_adjuntos(self):
         print("\n📎 [TEST] Iniciando: test_crear_solicitud_con_multiples_adjuntos")
         self.client.force_login(self.user_emp)
-        
-        # Simulamos archivos
+
+        # Archivos simulados enviados en 'archivos_nuevos'
         file1 = SimpleUploadedFile("reposo.pdf", b"contenido_pdf", content_type="application/pdf")
         file2 = SimpleUploadedFile("receta.png", b"contenido_imagen", content_type="image/png")
-        
+
         data = {
             'ausencia': self.tipo.id,
             'fecha_inicio': '2025-05-01',
@@ -107,12 +110,12 @@ class SolicitudesViewWhiteBoxTests(TestCase):
             'motivo': "Cita médica",
             'archivos_nuevos': [file1, file2]
         }
-        
+
         response = self.client.post(reverse('solicitudes:crear_solicitud'), data)
-        
+
         self.assertEqual(response.status_code, 302)
         solicitud = SolicitudAusencia.objects.get(motivo="Cita médica")
-        
+
         adjuntos_count = solicitud.adjuntos.count()
         print(f"   ↳ Solicitud creada con {adjuntos_count} adjuntos.")
         self.assertEqual(adjuntos_count, 2)
@@ -120,25 +123,25 @@ class SolicitudesViewWhiteBoxTests(TestCase):
 
     def test_flujo_aprobacion_jefe(self):
         print("\n✅ [TEST] Iniciando: test_flujo_aprobacion_jefe")
-        # 1. Creamos la solicitud pendiente
+        # Solicitud inicial en estado PENDIENTE
         solicitud = SolicitudAusencia.objects.create(
             empresa=self.empresa, empleado=self.empleado, ausencia=self.tipo,
             fecha_inicio="2025-06-01", fecha_fin="2025-06-02", motivo="Vacaciones",
             dias_habiles=2, estado=SolicitudAusencia.Estado.PENDIENTE
         )
-        
-        # 2. Jefe entra a responder
+
+        # Jefe registra aprobación
         self.client.force_login(self.user_jefe)
         url = reverse('solicitudes:responder_solicitudes', args=[solicitud.id])
-        
+
         response = self.client.post(url, {
             'accion': 'aprobar',
             'comentario': 'Disfrute su descanso'
         })
-        
+
         solicitud.refresh_from_db()
         print(f"   ↳ Acción: Aprobar. Estado final: {solicitud.estado}")
-        
+
         self.assertEqual(solicitud.estado, SolicitudAusencia.Estado.APROBADO)
         self.assertEqual(solicitud.aprobaciones.count(), 1)
         self.assertEqual(solicitud.aprobaciones.first().comentario, 'Disfrute su descanso')
@@ -146,18 +149,17 @@ class SolicitudesViewWhiteBoxTests(TestCase):
 
     def test_seguridad_edicion_bloqueada_si_aprobada(self):
         print("\n🛡️ [TEST] Iniciando: test_seguridad_edicion_bloqueada_si_aprobada")
-        # Solicitud ya aprobada
+        # Solicitud en estado APROBADO: no debe ser editable por el empleado
         solicitud = SolicitudAusencia.objects.create(
             empresa=self.empresa, empleado=self.empleado, ausencia=self.tipo,
             fecha_inicio="2025-06-01", fecha_fin="2025-06-02", motivo="X",
             estado=SolicitudAusencia.Estado.APROBADO
         )
-        
+
         self.client.force_login(self.user_emp)
         url = reverse('solicitudes:editar_solicitud', args=[solicitud.id])
-        
+
         response = self.client.get(url)
-        # Debería redirigir con un mensaje de advertencia
         self.assertEqual(response.status_code, 302)
         print("   ↳ El sistema bloqueó la edición de una solicitud aprobada.")
         print("     ✅ Éxito: Las reglas de integridad de estados están activas.")

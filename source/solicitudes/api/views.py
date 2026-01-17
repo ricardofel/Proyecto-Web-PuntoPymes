@@ -3,60 +3,57 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-# Modelos
-from solicitudes.models import TipoAusencia, SolicitudAusencia, AprobacionAusencia, RegistroVacaciones
-# Serializadores
+from solicitudes.models import SolicitudAusencia, RegistroVacaciones
 from .serializers import (
-    TipoAusenciaSerializer, 
-    SolicitudAusenciaSerializer, 
+    TipoAusenciaSerializer,
+    SolicitudAusenciaSerializer,
     RegistroVacacionesSerializer
 )
 
+
 class TipoAusenciaViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    Lista los tipos de ausencia disponibles para que el empleado elija en el combo.
+    ViewSet de solo lectura para listar tipos de ausencia activos.
     """
     queryset = TipoAusencia.objects.filter(estado=True)
     serializer_class = TipoAusenciaSerializer
     permission_classes = [IsAuthenticated]
 
+
 class SolicitudAusenciaViewSet(viewsets.ModelViewSet):
     """
-    Gestión de solicitudes. 
-    - Empleados: Ven y crean sus propias solicitudes.
-    - Admins/Jefes: Pueden aprobar o rechazar (vía acciones).
+    ViewSet para gestión de solicitudes de ausencia.
+    Incluye acciones de flujo (aprobar / rechazar) vía endpoints custom.
     """
     serializer_class = SolicitudAusenciaSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        # Retorna solicitudes del empleado autenticado (si existe vínculo empleado)
         user = self.request.user
-        # Si es superusuario ve todo, si no, solo lo suyo
-        # (Aquí podrías expandir lógica para que los jefes vean a sus subordinados)
         if hasattr(user, 'empleado'):
             return SolicitudAusencia.objects.filter(empleado=user.empleado).order_by('-fecha_creacion')
         return SolicitudAusencia.objects.none()
 
     def perform_create(self, serializer):
         """
-        Asigna automáticamente el empleado logueado y su empresa a la solicitud.
+        Asigna automáticamente empleado y empresa del usuario autenticado.
         """
         if hasattr(self.request.user, 'empleado'):
             empleado = self.request.user.empleado
             serializer.save(empleado=empleado, empresa=empleado.empresa, estado='pendiente')
 
-    # --- ACCIONES DE FLUJO DE TRABAJO ---
-
     @action(detail=True, methods=['post'], url_path='aprobar')
     def aprobar(self, request, pk=None):
+        """
+        Marca la solicitud como aprobada y registra historial (si el aprobador tiene empleado).
+        """
         solicitud = self.get_object()
         comentario = request.data.get('comentario', 'Aprobado vía API')
-        
-        # 1. Actualizar estado
+
         solicitud.estado = SolicitudAusencia.Estado.APROBADO
         solicitud.save()
 
-        # 2. Registrar historial (Si el usuario que aprueba tiene perfil de empleado)
         if hasattr(request.user, 'empleado'):
             AprobacionAusencia.objects.create(
                 solicitud=solicitud,
@@ -64,14 +61,17 @@ class SolicitudAusenciaViewSet(viewsets.ModelViewSet):
                 accion='Aprobado',
                 comentario=comentario
             )
-        
+
         return Response({'status': 'Solicitud Aprobada'}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'], url_path='rechazar')
     def rechazar(self, request, pk=None):
+        """
+        Marca la solicitud como rechazada y registra historial (si el aprobador tiene empleado).
+        """
         solicitud = self.get_object()
         comentario = request.data.get('comentario', 'Rechazado vía API')
-        
+
         solicitud.estado = SolicitudAusencia.Estado.RECHAZADO
         solicitud.save()
 
@@ -82,12 +82,13 @@ class SolicitudAusenciaViewSet(viewsets.ModelViewSet):
                 accion='Rechazado',
                 comentario=comentario
             )
-        
+
         return Response({'status': 'Solicitud Rechazada'}, status=status.HTTP_200_OK)
+
 
 class RegistroVacacionesViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    Permite al empleado consultar su saldo de vacaciones.
+    ViewSet de solo lectura para consultar saldo de vacaciones del empleado autenticado.
     """
     serializer_class = RegistroVacacionesSerializer
     permission_classes = [IsAuthenticated]

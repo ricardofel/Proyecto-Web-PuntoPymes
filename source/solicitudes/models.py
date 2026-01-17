@@ -4,16 +4,23 @@ from empleados.models import Empleado
 from core.models import Empresa
 from core.storage import private_storage
 
-# --- UTILIDAD PARA RUTAS ---
+
 def ruta_adjunto_solicitud(instance, filename):
-    # Genera: solicitudes/empleado_00005/solicitud_10/documento.pdf
-    # Organizamos por ID de empleado y luego por ID de solicitud
+    """
+    Ruta de almacenamiento para adjuntos de solicitudes.
+
+    Estructura:
+    solicitudes/empleado_00005/solicitud_10/documento.pdf
+    """
     folder_name = f"empleado_{instance.solicitud.empleado.id:05d}"
     subfolder = f"solicitud_{instance.solicitud.id}"
     return os.path.join('solicitudes', folder_name, subfolder, filename)
 
-# 1. TIPO DE AUSENCIA 
+
 class TipoAusencia(models.Model):
+    """
+    Catálogo de tipos de ausencia (por empresa).
+    """
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField(blank=True)
@@ -26,8 +33,12 @@ class TipoAusencia(models.Model):
     def __str__(self):
         return self.nombre
 
-# 2. SOLICITUD DE AUSENCIA
+
 class SolicitudAusencia(models.Model):
+    """
+    Solicitud de ausencia realizada por un empleado.
+    Soporta adjuntos mediante el modelo AdjuntoSolicitud.
+    """
     class Estado(models.TextChoices):
         PENDIENTE = 'pendiente', 'Pendiente'
         APROBADO = 'aprobado', 'Aprobado'
@@ -37,35 +48,37 @@ class SolicitudAusencia(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
     empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE, related_name='solicitudes')
     ausencia = models.ForeignKey(TipoAusencia, on_delete=models.PROTECT)
-    
+
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField()
-    
-    # CAMBIO: Ahora es IntegerField (Entero)
+
+    # Días hábiles calculados para el rango de fechas
     dias_habiles = models.IntegerField(default=0)
-    
+
     motivo = models.TextField()
-    
-    # NOTA: Eliminamos 'archivo_adjunto' de aquí porque usaremos el modelo AdjuntoSolicitud
-    
+
+    # Estado del flujo de aprobación
     estado = models.CharField(
-        max_length=20, 
-        choices=Estado.choices, 
+        max_length=20,
+        choices=Estado.choices,
         default=Estado.PENDIENTE
     )
-    
+
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.empleado} - {self.ausencia}"
 
-# === NUEVO MODELO PARA MÚLTIPLES ARCHIVOS ===
+
 class AdjuntoSolicitud(models.Model):
+    """
+    Adjuntos asociados a una solicitud (permite múltiples archivos por solicitud).
+    """
     solicitud = models.ForeignKey(
-        SolicitudAusencia, 
-        on_delete=models.CASCADE, 
-        related_name='adjuntos' # Clave para acceder desde la solicitud: solicitud.adjuntos.all()
+        SolicitudAusencia,
+        on_delete=models.CASCADE,
+        related_name='adjuntos'
     )
     archivo = models.FileField(
         upload_to=ruta_adjunto_solicitud,
@@ -80,16 +93,22 @@ class AdjuntoSolicitud(models.Model):
     def __str__(self):
         return f"Adjunto {self.filename()} para Solicitud {self.solicitud.id}"
 
-# 3. APROBACIÓN (Historial)
+
 class AprobacionAusencia(models.Model):
+    """
+    Historial de acciones sobre una solicitud (aprobar / rechazar / devolver).
+    """
     solicitud = models.ForeignKey(SolicitudAusencia, on_delete=models.CASCADE, related_name='aprobaciones')
     aprobador = models.ForeignKey(Empleado, on_delete=models.PROTECT)
-    accion = models.CharField(max_length=20) 
+    accion = models.CharField(max_length=20)
     comentario = models.TextField(blank=True, null=True)
     fecha_accion = models.DateTimeField(auto_now_add=True)
 
-# 4. REGISTRO DE VACACIONES
+
 class RegistroVacaciones(models.Model):
+    """
+    Registro de saldo de vacaciones por empleado y periodo.
+    """
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
     empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
     periodo = models.CharField(max_length=50)

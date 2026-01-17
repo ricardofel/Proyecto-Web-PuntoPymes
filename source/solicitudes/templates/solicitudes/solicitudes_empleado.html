@@ -5,7 +5,7 @@
 {% block page_content %}
 <div class="bg-white p-6 rounded-lg shadow min-h-[400px]">
 
-    {# --- CABECERA --- #}
+    {# Buscador + acción principal #}
     <div class="flex justify-between items-center mb-6">
         <form method="get" class="relative w-full sm:max-w-md group mr-4">
             <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -21,7 +21,7 @@
     </div>
     <hr class="mb-6"/>
 
-    {# --- TABLA --- #}
+    {# Tabla de solicitudes del empleado #}
     <div class="overflow-visible border rounded-lg">
         <table class="w-full text-left text-sm text-gray-600">
             <thead class="bg-gray-50 text-xs uppercase font-semibold text-gray-700">
@@ -30,7 +30,7 @@
                     <th class="px-6 py-4">Asunto</th>
                     <th class="px-6 py-4">Fechas</th>
                     <th class="px-6 py-4 text-center">Estado</th>
-                    <th class="px-6 py-4 text-right">Acciones</th> 
+                    <th class="px-6 py-4 text-right">Acciones</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
@@ -59,11 +59,11 @@
                     </td>
                     <td class="px-6 py-4 text-right">
                         <div class="flex items-center justify-end gap-2">
-                            
-                            {# --- NUEVO: BOTÓN DE COMENTARIO (Si existe) --- #}
+
+                            {# Botón para ver el último comentario del flujo (si existe) #}
                             {% with ultimo=solicitud.aprobaciones.last %}
                                 {% if ultimo and ultimo.comentario %}
-                                <button type="button" 
+                                <button type="button"
                                     onclick="verComentario('{{ ultimo.comentario|escapejs }}', '{{ ultimo.get_accion_display }}', '{{ ultimo.aprobador.nombres }}')"
                                     class="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
                                     title="Ver comentario de RRHH">
@@ -74,7 +74,7 @@
                                 {% endif %}
                             {% endwith %}
 
-                            {# --- LÓGICA EXISTENTE DE ACCIONES --- #}
+                            {# Acciones permitidas: editar/eliminar solo en estados Pendiente o Devuelto #}
                             {% if solicitud.estado == 'pendiente' or solicitud.estado == 'devuelto' %}
                                 <div class="relative inline-block text-left">
                                     <button type="button" onclick="toggleMenu('menu-{{ solicitud.id }}')" class="p-2 rounded-full hover:bg-gray-200 text-gray-500 transition-colors focus:outline-none">
@@ -87,7 +87,7 @@
                                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                                             {% if solicitud.estado == 'devuelto' %}Corregir{% else %}Editar{% endif %}
                                         </a>
-                                        <button type="button" 
+                                        <button type="button"
                                             data-url="{% url 'solicitudes:eliminar_solicitud' solicitud.id %}"
                                             onclick="openDeleteModal(this.getAttribute('data-url'))"
                                             class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 text-left w-full flex items-center">
@@ -117,7 +117,7 @@
     </div>
 </div>
 
-{# --- MODAL DE ELIMINAR --- #}
+{# Modal de confirmación: eliminar solicitud #}
 <div id="deleteModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeDeleteModal()"></div>
@@ -144,7 +144,7 @@
     </div>
 </div>
 
-{# --- MODAL DE COMENTARIO (NUEVO) --- #}
+{# Modal: ver comentario asociado a la última acción (si existe) #}
 <div id="commentModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="cerrarComentario()"></div>
@@ -195,7 +195,6 @@
         document.getElementById('deleteModal').classList.add('hidden');
     }
 
-    
     function verComentario(texto, accion, autor) {
         document.getElementById('modal-texto-comentario').innerText = texto;
         document.getElementById('modal-autor').innerText = 'Acción: ' + accion + ' | Por: ' + autor;

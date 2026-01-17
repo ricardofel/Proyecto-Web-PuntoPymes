@@ -12,10 +12,10 @@
             {% if es_edicion %}Editando Solicitud #{{ form.instance.id }}{% else %}Detalles de la Ausencia{% endif %}
         </h2>
 
-        {# === IMPORTANTE: enctype obligatorio para subir archivos === #}
+        {# Formulario con soporte para carga de archivos #}
         <form method="post" enctype="multipart/form-data" id="form-solicitud">
-            {% csrf_token %} 
-            
+            {% csrf_token %}
+
             {% if form.non_field_errors %}
                 <div class="mb-4 p-4 bg-red-50 text-red-700 rounded-md">
                     {{ form.non_field_errors }}
@@ -23,8 +23,8 @@
             {% endif %}
 
             <div class="space-y-6">
-                
-                {# 1. TIPO DE SOLICITUD #}
+
+                {# Tipo de ausencia #}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Solicitud <span class="text-red-500">*</span></label>
                     {{ form.ausencia }}
@@ -33,7 +33,7 @@
                     {% endif %}
                 </div>
 
-                {# 2. FECHAS #}
+                {# Fechas del periodo solicitado #}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Inicio <span class="text-red-500">*</span></label>
@@ -51,7 +51,7 @@
                     </div>
                 </div>
 
-                {# 3. MOTIVO #}
+                {# Motivo / justificación #}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Motivo / Justificación <span class="text-red-500">*</span></label>
                     {{ form.motivo }}
@@ -60,21 +60,21 @@
                     {% endif %}
                 </div>
 
-                {# 4. GESTOR DE ARCHIVOS #}
+                {# Gestión de adjuntos (nuevos y existentes) #}
                 <div class="border-t border-gray-100 pt-6 mt-6">
                     <label class="block text-sm font-medium text-gray-700 mb-3">Documentos de Soporte</label>
-                    
-                    {# Input Real de Django (Oculto) #}
+
+                    {# Input real del formulario (se mantiene oculto y se gestiona desde JS) #}
                     <div class="hidden">
                         {{ form.archivos_nuevos }}
                     </div>
-                    {# Mostramos errores del archivo si los hubiera #}
+
                     {% if form.archivos_nuevos.errors %}
                         <p class="text-xs text-red-500 mb-2">{{ form.archivos_nuevos.errors.0 }}</p>
                     {% endif %}
 
-                    {# Botón Visual #}
-                    <button type="button" id="btn-agregar-archivo" 
+                    {# Botón visual para abrir el selector de archivos #}
+                    <button type="button" id="btn-agregar-archivo"
                             class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition-colors mb-4">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -82,10 +82,10 @@
                         Agregar Archivo
                     </button>
 
-                    {# Contenedor de Fichas #}
+                    {# Contenedor de adjuntos renderizados por servidor (existentes) y por JS (nuevos) #}
                     <div class="space-y-3" id="contenedor-archivos">
-                        
-                        {# Archivos ya guardados (Solo edición) #}
+
+                        {# Adjuntos existentes (solo en edición) #}
                         {% if adjuntos_existentes %}
                             {% for adj in adjuntos_existentes %}
                                 <div id="adjunto-db-{{ adj.id }}" class="flex items-center justify-between p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
@@ -102,9 +102,9 @@
                                             <span class="text-xs text-indigo-400">Guardado previamente</span>
                                         </div>
                                     </div>
-                                    
-                                    {# Botón Eliminar BD - CORREGIDO CON COMILLAS #}
-                                    <button type="button" onclick="eliminarAdjuntoDB('{{ adj.id }}')" 
+
+                                    {# Elimina el adjunto persistido mediante AJAX #}
+                                    <button type="button" onclick="eliminarAdjuntoDB('{{ adj.id }}')"
                                             class="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-white transition-all" title="Eliminar">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -114,10 +114,10 @@
                             {% endfor %}
                         {% endif %}
 
-                        {# Aquí JS insertará los nuevos #}
+                        {# Los adjuntos nuevos se insertan aquí desde JavaScript #}
                     </div>
-                    
-                    {# Mensaje Vacío - CORREGIDO CON CLASE HIDDEN #}
+
+                    {# Mensaje cuando no hay adjuntos (ni existentes ni nuevos) #}
                     <p class="text-xs text-gray-400 mt-3 {% if adjuntos_existentes %}hidden{% endif %}" id="msg-vacio">
                         No hay archivos seleccionados.
                     </p>
@@ -138,19 +138,19 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        
+
         const inputReal = document.getElementById('id_archivos_nuevos');
         const btnAgregar = document.getElementById('btn-agregar-archivo');
         const contenedor = document.getElementById('contenedor-archivos');
         const msgVacio = document.getElementById('msg-vacio');
-        
+
         const dt = new DataTransfer();
 
         btnAgregar.addEventListener('click', () => {
             const inputTemp = document.createElement('input');
             inputTemp.type = 'file';
-            inputTemp.multiple = true; 
-            
+            inputTemp.multiple = true;
+
             inputTemp.onchange = (e) => {
                 const files = e.target.files;
                 for (let i = 0; i < files.length; i++) {
@@ -159,7 +159,7 @@
                 inputReal.files = dt.files;
                 renderizarFichasNuevas();
             };
-            
+
             inputTemp.click();
         });
 
@@ -168,11 +168,11 @@
             fichasNuevas.forEach(el => el.remove());
 
             if (dt.files.length > 0) {
-                msgVacio.classList.add('hidden'); 
-                
+                msgVacio.classList.add('hidden');
+
                 for (let i = 0; i < dt.files.length; i++) {
                     const file = dt.files[i];
-                    
+
                     const div = document.createElement('div');
                     div.className = 'ficha-nueva-js flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg animate-fade-in';
                     div.innerHTML = `
@@ -209,14 +209,14 @@
         function verificarVacio() {
             const hayArchivosBD = document.querySelectorAll('[id^="adjunto-db-"]').length > 0;
             const hayArchivosNuevos = dt.files.length > 0;
-            
+
             if (!hayArchivosBD && !hayArchivosNuevos) {
                 msgVacio.classList.remove('hidden');
             } else {
                 msgVacio.classList.add('hidden');
             }
         }
-        
+
         window.eliminarAdjuntoDB = function(id) {
             if (!confirm('¿Eliminar este archivo guardado permanentemente?')) return;
 
@@ -234,7 +234,7 @@
                         el.style.opacity = '0';
                         setTimeout(() => {
                             el.remove();
-                            verificarVacio(); 
+                            verificarVacio();
                         }, 300);
                     }
                 } else {
