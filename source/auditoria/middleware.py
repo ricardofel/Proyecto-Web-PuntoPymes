@@ -9,19 +9,20 @@ def get_current_user():
 
 class AuditoriaMiddleware:
     """
-    Middleware que intercepta cada petición al servidor,
-    agarra al usuario (request.user) y lo guarda en el almacén temporal
-    para que signals.py lo pueda consultar después.
+    Middleware que intercepta cada petición, guarda el usuario
+    y LIMPIA al salir.
     """
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        # 1. Antes de que la vista procese nada: Guardamos al usuario
+        # 1. Entrada: Guardamos al usuario
         _thread_locals.user = getattr(request, 'user', None)
         
-        response = self.get_response(request)
-        
-        # 2. Después (Limpieza): No es estrictamente necesario en hilos modernos, 
-        # pero es buena práctica no dejar basura.
+        try:
+            response = self.get_response(request)
+        finally:
+            # 2. Salida (CRÍTICO): Limpiamos la referencia para no contaminar hilos
+            _thread_locals.user = None
+            
         return response
