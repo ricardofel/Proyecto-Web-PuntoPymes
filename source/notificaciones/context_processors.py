@@ -1,19 +1,19 @@
-from notificaciones.services.notificacion_service import NotificacionService
+from notificaciones.models import Notificacion
 
-# CAMBIO IMPORTANTE: El nombre debe ser 'notificaciones_globales'
-# para que coincida con lo que espera tu settings.py
 def notificaciones_globales(request):
     """
-    Inyecta las notificaciones en TODAS las plantillas.
-    Optimizado para ser ligero.
+    Inyecta el conteo de notificaciones no leídas en TODAS las plantillas.
+    Variable disponible: {{ conteo_notificaciones }}
     """
-    if not request.user.is_authenticated:
-        return {}
-        
-    # Delegamos al servicio la lógica de obtención eficiente
-    data = NotificacionService.obtener_resumen_navbar(request.user)
-    
+    if request.user.is_authenticated:
+        conteo = Notificacion.objects.filter(usuario=request.user, leido=False).count()
+        # También podrias devolver las últimas 3 para un mini-dropdown
+        ultimas = Notificacion.objects.filter(usuario=request.user).order_by('-fecha_creacion')[:5]
+        return {
+            'conteo_notificaciones': conteo,
+            'ultimas_notificaciones': ultimas
+        }
     return {
-        'notificaciones_no_leidas': data['num_no_leidas'],
-        'notificaciones_recientes': data['ultimas']
+        'conteo_notificaciones': 0,
+        'ultimas_notificaciones': []
     }
