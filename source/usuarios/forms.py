@@ -2,6 +2,8 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.db import models
 
+
+
 from empleados.models import Empleado
 from .models import Rol, UsuarioRol
 
@@ -100,10 +102,6 @@ class UsuarioForm(forms.ModelForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         raw_password = self.cleaned_data.get("nuevo_password")
-
-        # Si el usuario editado es el mismo que está logueado y cambió contraseña:
-        if request.user.pk == user.pk and form.cleaned_data.get("nuevo_password"):
-            update_session_auth_hash(request, user)
 
         if raw_password:
             user.set_password(raw_password)

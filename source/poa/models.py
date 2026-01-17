@@ -100,10 +100,9 @@ class MetaTactico(models.Model):
     descripcion = models.TextField(blank=True, null=True)
     indicador = models.CharField(max_length=100, blank=True, null=True)
 
-    valor_esperado = models.DecimalField(max_digits=10, decimal_places=2)
-    valor_actual = models.DecimalField(
-        max_digits=10, decimal_places=2, default=Decimal(0)
-    )
+    valor_esperado = models.DecimalField(max_digits=5, decimal_places=2, default=100)
+    valor_actual = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+
 
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField()
