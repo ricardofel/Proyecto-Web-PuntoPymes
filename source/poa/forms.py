@@ -1,9 +1,17 @@
 from django import forms
 from .models import Objetivo, MetaTactico, Actividad
 
-TAILWIND_INPUT = "w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+TAILWIND_INPUT = (
+    "w-full rounded-md border border-slate-300 px-3 py-2 text-sm "
+    "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+)
+
 
 class ObjetivoForm(forms.ModelForm):
+    """
+    Formulario para crear/editar objetivos del POA.
+    """
+
     class Meta:
         model = Objetivo
         fields = ["nombre", "descripcion", "estado"]
@@ -15,11 +23,17 @@ class ObjetivoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # En creación, inicializa el estado por defecto
         if not self.instance or not getattr(self.instance, "pk", None):
             self.fields["estado"].initial = "activo"
 
 
 class MetaTacticoForm(forms.ModelForm):
+    """
+    Formulario para crear/editar metas tácticas del POA.
+    """
+
     class Meta:
         model = MetaTactico
         fields = ["nombre", "descripcion", "indicador", "fecha_inicio", "fecha_fin", "estado"]
@@ -34,7 +48,8 @@ class MetaTacticoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Para que al editar se vean las fechas en input type="date"
+
+        # Preformatea fechas para inputs type="date" cuando se edita una instancia existente
         if self.instance and getattr(self.instance, "pk", None):
             if self.instance.fecha_inicio:
                 self.initial["fecha_inicio"] = self.instance.fecha_inicio.strftime("%Y-%m-%d")
@@ -43,6 +58,11 @@ class MetaTacticoForm(forms.ModelForm):
 
 
 class ActividadForm(forms.ModelForm):
+    """
+    Formulario para crear/editar actividades del POA.
+    Requiere al menos un ejecutor.
+    """
+
     class Meta:
         model = Actividad
         fields = ["nombre", "descripcion", "fecha_inicio", "fecha_fin", "estado", "ejecutores"]
@@ -61,6 +81,7 @@ class ActividadForm(forms.ModelForm):
         }
 
     def clean_ejecutores(self):
+        # Regla de negocio: se exige al menos un ejecutor asignado
         ejecutores = self.cleaned_data.get("ejecutores")
         if not ejecutores or len(ejecutores) == 0:
             raise forms.ValidationError("Debes asignar al menos un ejecutor.")
@@ -68,6 +89,8 @@ class ActividadForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # Preformatea fechas para inputs type="date" cuando se edita una instancia existente
         if self.instance and getattr(self.instance, "pk", None):
             if self.instance.fecha_inicio:
                 self.initial["fecha_inicio"] = self.instance.fecha_inicio.strftime("%Y-%m-%d")

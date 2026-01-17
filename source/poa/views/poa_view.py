@@ -14,10 +14,12 @@ from poa.forms import ObjetivoForm, MetaTacticoForm, ActividadForm
 from poa.models import Objetivo, MetaTactico, Actividad
 
 
-# --- UTILIDADES ---
+# -------------------------
+# Utilidades internas
+# -------------------------
 
 def _anio_actual_from_request(request) -> int:
-    """Obtiene el año del request (GET/POST) o devuelve el actual."""
+    """Obtiene el año desde GET/POST; si no existe o es inválido, usa el año actual."""
     raw = request.GET.get("anio") or request.POST.get("anio")
     try:
         return int(raw) if raw else date.today().year
@@ -26,7 +28,10 @@ def _anio_actual_from_request(request) -> int:
 
 
 def _empresa_actual(request):
-    """Obtiene la empresa del usuario actual de forma segura."""
+    """
+    Obtiene la empresa 'activa' del request.
+    Prioriza request.empresa_actual; si no existe, cae a user.empresa o user.empleado.empresa.
+    """
     if hasattr(request, "empresa_actual") and request.empresa_actual:
         return request.empresa_actual
 
@@ -42,7 +47,7 @@ def _empresa_actual(request):
 
 
 def _verificar_permiso_empresa(request, objetivo):
-    """Verifica si el objetivo pertenece a la empresa del usuario actual."""
+    """Valida que el objeto pertenezca a la empresa del usuario actual."""
     empresa = _empresa_actual(request)
     if empresa and objetivo.empresa_id != getattr(empresa, "id", None):
         return False
@@ -51,8 +56,8 @@ def _verificar_permiso_empresa(request, objetivo):
 
 def _recalcular_avance_meta(meta: MetaTactico):
     """
-    Recalcula el valor_actual de una meta basado en el % de actividades completadas.
-    valor_esperado debe ser 100 y valor_actual 0..100 (por regla del proyecto).
+    Recalcula valor_actual de la meta a partir del porcentaje de actividades completadas.
+    Regla del proyecto: valor_esperado=100, valor_actual en rango 0..100.
     """
     total_actividades = meta.actividades.count()
 
@@ -60,23 +65,22 @@ def _recalcular_avance_meta(meta: MetaTactico):
         meta.valor_actual = Decimal("0.00")
     else:
         completadas = meta.actividades.filter(estado="completada").count()
-        
-        # --- REFACTORIZACIÓN PRIORIDAD 2: Estabilidad Matemática ---
+
+        # Cálculo estable en Decimal para evitar problemas de precisión.
         numerador = Decimal(completadas)
         denominador = Decimal(total_actividades)
         ratio = numerador / denominador
-        
-        # Convertimos explícitamente a Decimal, por si viene como float de algún lado
+
+        # Asegura Decimal aunque el valor venga representado como string/float.
         valor_base = Decimal(str(meta.valor_esperado))
-        
+
         meta.valor_actual = valor_base * ratio
-        # -----------------------------------------------------------
 
     meta.save(update_fields=["valor_actual"])
 
 
 def _build_dashboard_context(request, anio: int):
-    """Construye el contexto para el dashboard principal."""
+    """Construye el contexto del dashboard: filtros, objetivos y estadísticas."""
     q = (request.GET.get("q") or "").strip()
     estado = (request.GET.get("estado") or "").strip()
     empresa = _empresa_actual(request)
@@ -97,6 +101,7 @@ def _build_dashboard_context(request, anio: int):
 
     objetivos_list = list(objetivos_qs)
 
+    # Promedio de avance (evita división por cero cuando no hay objetivos).
     if objetivos_list:
         total_avance = sum(o.avance for o in objetivos_list)
         avance_global = int(total_avance / len(objetivos_list))
@@ -121,15 +126,17 @@ def _build_dashboard_context(request, anio: int):
 
 def _render_oob_response(request, objetivo=None, metas_qs=None, toast_msg="Operación exitosa"):
     """
-    Respuesta robusta usando HX-Trigger. IMPORTANTE:
-    Siempre pasamos empleado_actual al template meta_list.html,
-    porque ahí decides si el user puede hacer toggle o no.
+    Genera una respuesta con HTMX Out-Of-Band swaps para refrescar UI sin recargar.
+    - Si metas_qs viene, actualiza el contenedor de metas.
+    - Si objetivo viene, actualiza el header del objetivo.
+    - Dispara evento para cerrar modal y mostrar toast.
     """
     response_content = ""
 
+    # Se pasa al template para habilitar/ocultar acciones según permisos del usuario.
     empleado_actual = getattr(request.user, "empleado", None)
 
-    # 1) Actualizar contenedor de metas
+    # 1) Refresco de la lista de metas
     if metas_qs is not None:
         lista_html = render_to_string(
             "poa/partials/meta_list.html",
@@ -138,7 +145,7 @@ def _render_oob_response(request, objetivo=None, metas_qs=None, toast_msg="Opera
         )
         response_content += f'<div hx-swap-oob="innerHTML:#metas-container">{lista_html}</div>'
 
-    # 2) Actualizar header del objetivo
+    # 2) Refresco del header del objetivo
     if objetivo is not None:
         header_html = render_to_string(
             "poa/partials/objetivo_header.html",
@@ -149,16 +156,19 @@ def _render_oob_response(request, objetivo=None, metas_qs=None, toast_msg="Opera
 
     response = HttpResponse(response_content)
 
-    # 3) Señal al frontend para cerrar modal + toast
+    # 3) Evento HTMX para cerrar modal + mensaje
     response["HX-Trigger"] = json.dumps({"close-modal": toast_msg})
     response["HX-Reswap"] = "none"
     return response
 
 
-# --- VISTAS PRINCIPALES ---
+# -------------------------
+# Vistas principales
+# -------------------------
 
 @login_required
 def poa_view(request):
+    """Vista principal del módulo POA (dashboard + modal de creación)."""
     anio = _anio_actual_from_request(request)
     anios = list(range(anio - 2, anio + 2))
     context = {"anio_actual": anio, "anios": anios, "form": ObjetivoForm()}
@@ -168,6 +178,7 @@ def poa_view(request):
 
 @login_required
 def poa_dashboard_partial(request):
+    """Partial HTMX: tarjetas/estadísticas del dashboard según filtros."""
     anio = _anio_actual_from_request(request)
     context = _build_dashboard_context(request, anio)
     return render(request, "poa/partials/dashboard_cards.html", context)
@@ -176,6 +187,7 @@ def poa_dashboard_partial(request):
 @login_required
 @solo_superusuario_o_admin_rrhh
 def objetivo_crear_view(request):
+    """Crea un objetivo y refresca el dashboard vía OOB."""
     if request.method != "POST":
         return HttpResponseBadRequest("Método no permitido")
 
@@ -205,6 +217,7 @@ def objetivo_crear_view(request):
 
 @login_required
 def objetivo_detalle_view(request, pk: int):
+    """Detalle de un objetivo: metas + actividades prefetch para performance."""
     objetivo = get_object_or_404(Objetivo, pk=pk)
     if not _verificar_permiso_empresa(request, objetivo):
         return HttpResponseBadRequest("Objetivo no pertenece a la empresa actual.")
@@ -226,6 +239,7 @@ def objetivo_detalle_view(request, pk: int):
 
 @login_required
 def objetivo_metas_partial(request, pk: int):
+    """Partial HTMX: lista de metas del objetivo (incluye ejecutores)."""
     objetivo = get_object_or_404(Objetivo, pk=pk)
     if not _verificar_permiso_empresa(request, objetivo):
         return HttpResponseBadRequest("Objetivo no pertenece a la empresa actual.")
@@ -244,11 +258,14 @@ def objetivo_metas_partial(request, pk: int):
     })
 
 
-# --- GESTIÓN DE OBJETIVOS ---
+# -------------------------
+# Gestión de objetivos
+# -------------------------
 
 @login_required
 @solo_superusuario_o_admin_rrhh
 def objetivo_editar_view(request, pk: int):
+    """Edita un objetivo y refresca header o dashboard según el origen."""
     obj = get_object_or_404(Objetivo, pk=pk)
     if not _verificar_permiso_empresa(request, obj):
         return HttpResponseBadRequest("Sin permiso")
@@ -261,6 +278,7 @@ def objetivo_editar_view(request, pk: int):
             referer = request.META.get("HTTP_REFERER", "")
             response_content = ""
 
+            # Si estamos en detalle, refresca el header; si estamos en dashboard, refresca tarjetas.
             if "objetivos/" in referer and "dashboard" not in referer:
                 header_html = render_to_string("poa/partials/objetivo_header.html", {"objetivo": obj}, request)
                 response_content = f'<div hx-swap-oob="innerHTML:#objetivo-header">{header_html}</div>'
@@ -287,6 +305,7 @@ def objetivo_editar_view(request, pk: int):
 @login_required
 @solo_superusuario_o_admin_rrhh
 def objetivo_eliminar_view(request, pk: int):
+    """Elimina un objetivo y refresca dashboard o redirige si venimos del detalle."""
     obj = get_object_or_404(Objetivo, pk=pk)
     if not _verificar_permiso_empresa(request, obj):
         return HttpResponseBadRequest("Sin permiso")
@@ -313,6 +332,7 @@ def objetivo_eliminar_view(request, pk: int):
 @login_required
 @solo_superusuario_o_admin_rrhh
 def cambiar_estado_objetivo(request, pk):
+    """Alterna estado del objetivo (activo/cerrado) y redirige al detalle."""
     objetivo = get_object_or_404(Objetivo, pk=pk)
     if not _verificar_permiso_empresa(request, objetivo):
         return HttpResponseBadRequest("Sin permiso")
@@ -328,11 +348,14 @@ def cambiar_estado_objetivo(request, pk):
     return redirect("poa:objetivo_detalle", pk=pk)
 
 
-# --- GESTIÓN DE METAS ---
+# -------------------------
+# Gestión de metas
+# -------------------------
 
 @login_required
 @solo_superusuario_o_admin_rrhh
 def meta_crear_view(request, pk: int):
+    """Crea una meta táctica dentro de un objetivo y refresca la lista."""
     objetivo = get_object_or_404(Objetivo, pk=pk)
     if not _verificar_permiso_empresa(request, objetivo):
         return HttpResponseBadRequest("No tiene permiso.")
@@ -359,6 +382,7 @@ def meta_crear_view(request, pk: int):
 @login_required
 @solo_superusuario_o_admin_rrhh
 def meta_editar_view(request, pk: int):
+    """Edita una meta táctica y refresca la lista."""
     meta = get_object_or_404(MetaTactico, pk=pk)
     if not _verificar_permiso_empresa(request, meta.objetivo):
         return HttpResponseBadRequest("Sin permiso")
@@ -387,6 +411,7 @@ def meta_editar_view(request, pk: int):
 @login_required
 @solo_superusuario_o_admin_rrhh
 def meta_eliminar_view(request, pk: int):
+    """Elimina una meta táctica y refresca la lista."""
     meta = get_object_or_404(MetaTactico, pk=pk)
     objetivo = meta.objetivo
     if not _verificar_permiso_empresa(request, objetivo):
@@ -403,11 +428,14 @@ def meta_eliminar_view(request, pk: int):
     return _render_oob_response(request, objetivo, metas, "Meta eliminada")
 
 
-# --- GESTIÓN DE ACTIVIDADES ---
+# -------------------------
+# Gestión de actividades
+# -------------------------
 
 @login_required
 @solo_superusuario_o_admin_rrhh
 def actividad_crear_view(request, pk: int):
+    """Crea una actividad dentro de una meta, recalcula avance y refresca lista."""
     meta = get_object_or_404(MetaTactico, pk=pk)
     if not _verificar_permiso_empresa(request, meta.objetivo):
         return HttpResponseBadRequest("No tiene permiso.")
@@ -439,6 +467,7 @@ def actividad_crear_view(request, pk: int):
 @login_required
 @solo_superusuario_o_admin_rrhh
 def actividad_editar_view(request, pk: int):
+    """Edita una actividad, recalcula avance de su meta y refresca lista."""
     act = get_object_or_404(Actividad, pk=pk)
     if not _verificar_permiso_empresa(request, act.meta.objetivo):
         return HttpResponseBadRequest("No tiene permiso.")
@@ -468,6 +497,7 @@ def actividad_editar_view(request, pk: int):
 @login_required
 @solo_superusuario_o_admin_rrhh
 def actividad_eliminar_view(request, pk: int):
+    """Elimina una actividad, recalcula avance de su meta y refresca lista."""
     act = get_object_or_404(Actividad, pk=pk)
     meta = act.meta
     objetivo = meta.objetivo
@@ -489,19 +519,19 @@ def actividad_eliminar_view(request, pk: int):
 
 @login_required
 def actividad_estado_view(request, pk: int):
-    """Toggle rápido: Completada <-> Pendiente (solo asignados o admin/rrhh)"""
+    """Toggle rápido de estado (completada/pendiente) con validación de permisos."""
     if request.method != "POST":
         return HttpResponseBadRequest("Método no permitido")
 
     act = get_object_or_404(Actividad, pk=pk)
 
-    # Admin/RRHH (según tu sistema actual)
+    # Admin/RRHH: permiso global para togglear
     es_admin_rrhh = request.user.is_superuser or getattr(request.user, "puede_ver_modulo_usuarios", False)
 
-    # Empleado asociado al usuario
+    # Empleado asociado al usuario (para validar asignación)
     empleado = getattr(request.user, "empleado", None)
 
-    # Si NO es admin, debe estar asignado
+    # Si no es admin, debe estar asignado como ejecutor
     if not es_admin_rrhh:
         if empleado is None:
             return HttpResponseForbidden("No tienes un empleado asociado.")
@@ -523,7 +553,7 @@ def actividad_estado_view(request, pk: int):
     # Recalcular meta padre
     _recalcular_avance_meta(act.meta)
 
-    # Refrescar UI
+    # Refrescar UI (metas + header)
     metas = MetaTactico.objects.filter(objetivo=act.meta.objetivo).prefetch_related(
         "actividades", "actividades__ejecutores"
     ).order_by("-fecha_fin", "-id")
