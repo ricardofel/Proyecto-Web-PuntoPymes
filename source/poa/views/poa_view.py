@@ -130,6 +130,8 @@ def _render_oob_response(request, objetivo=None, metas_qs=None, toast_msg="Opera
     # Esto dispara el evento 'close-modal' en el navegador con el mensaje
     trigger_data = {"close-modal": toast_msg}
     response["HX-Trigger"] = json.dumps(trigger_data)
+    response["HX-Reswap"] = "none"
+
 
     return response
 
@@ -319,8 +321,6 @@ def cambiar_estado_objetivo(request, pk):
 
 # --- GESTIÓN DE METAS ---
 
-@login_required
-@solo_superusuario_o_admin_rrhh
 @login_required
 @solo_superusuario_o_admin_rrhh
 def meta_crear_view(request, pk: int):

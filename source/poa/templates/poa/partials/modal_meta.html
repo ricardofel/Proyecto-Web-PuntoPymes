@@ -1,30 +1,36 @@
 {% if success %}
-  <div hx-swap-oob="innerHTML:#metas-container">{{ lista_html|safe }}</div>
-  <div hx-swap-oob="innerHTML:#objetivo-header">{{ header_html|safe }}</div>
-  <script>
-    (function() {
-      document.getElementById('modalMetaCrear').classList.add('hidden');
-      Swal.fire({
-        toast: true, position: 'top-end', showConfirmButton: false, timer: 3000,
-        icon: 'success', title: '{% if is_edit %}¡Meta actualizada!{% else %}¡Meta creada!{% endif %}'
-      });
-    })();
-  </script>
-{% endif %}
+  <div hx-swap-oob="outerHTML:#metas-container">
+    {{ lista_html|safe }}
+  </div>
 
-<div 
-  id="modal-meta-content" 
-  class="relative transform overflow-hidden rounded-xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-2xl border border-slate-100"
->
-  <form
-    id="form-meta-crear"
-    method="post"
-    hx-post="{% if is_edit %}{{ edit_url }}{% else %}{% url 'poa:meta_crear' objetivo.id %}{% endif %}"
-    hx-target="#modal-meta-content"
-    hx-swap="outerHTML"
-    class="flex flex-col h-full"
-  >
-    {% csrf_token %}
+
+  <div hx-swap-oob="innerHTML:#objetivo-header">
+    {{ header_html|safe }}
+  </div>
+
+  <script>
+    document.getElementById('modalMetaCrear').classList.add('hidden');
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 3000,
+      icon: 'success',
+      title: '{% if is_edit %}¡Meta actualizada!{% else %}¡Meta creada!{% endif %}'
+    });
+  </script>
+{% else %}
+  <!-- SOLO EN ERROR se vuelve a renderizar el formulario -->
+  <div id="modal-meta-content" class="relative transform overflow-hidden rounded-xl bg-white shadow-2xl sm:max-w-2xl border">
+    <form
+      id="form-meta-crear"
+      method="post"
+      hx-post="{% if is_edit %}{{ edit_url }}{% else %}{% url 'poa:meta_crear' objetivo.id %}{% endif %}"
+      hx-target="#modal-meta-content"
+      hx-swap="outerHTML"
+      class="flex flex-col h-full"
+    >
+      {% csrf_token %}
     <div class="bg-slate-50 px-4 py-3 sm:px-6 flex justify-between items-center border-b border-slate-100">
       <h3 class="text-lg font-semibold leading-6 text-slate-900">
         {% if is_edit %}Editar meta{% else %}Nueva meta{% endif %}
@@ -72,3 +78,4 @@
     </div>
   </form>
 </div>
+{% endif %}
