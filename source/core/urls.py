@@ -30,9 +30,6 @@ urlpatterns = [
     path('auditoria/', include('auditoria.urls')),
     path('notificaciones/', include('notificaciones.urls')),
 
-    # APIs
-    path('api/usuarios/', include('usuarios.api.urls')),
-
     # Utilidades
     path('detalles/<str:app_label>/<str:model_name>/<int:pk>/', visor_universal, name='visor_universal'),
 

@@ -10,13 +10,12 @@ from integraciones.api.views import (
 from kpi.api.views import KPIViewSet, KPIResultadoViewSet
 from notificaciones.api.views import NotificacionViewSet
 from poa.api.views import ObjetivoViewSet, MetaTacticoViewSet, ActividadViewSet
-
-# 1. Importamos Solicitudes
 from solicitudes.api.views import (
-    TipoAusenciaViewSet, 
-    SolicitudAusenciaViewSet, 
-    RegistroVacacionesViewSet
+    TipoAusenciaViewSet, SolicitudAusenciaViewSet, RegistroVacacionesViewSet
 )
+
+# 1. Importamos Usuarios
+from usuarios.api.views import UsuarioViewSet, RolViewSet
 
 router = routers.DefaultRouter()
 
@@ -24,13 +23,15 @@ router = routers.DefaultRouter()
 router.register(r'empleados', EmpleadoViewSet)
 router.register(r'asistencias', EventoAsistenciaViewSet)
 
-# Solicitudes y Ausencias (NUEVO)
+# Solicitudes
 router.register(r'solicitudes/tipos', TipoAusenciaViewSet)
 router.register(r'solicitudes/gestion', SolicitudAusenciaViewSet, basename='solicitud')
 router.register(r'solicitudes/saldos', RegistroVacacionesViewSet, basename='saldo_vacaciones')
 
-# Auditoría y Seguridad
+# Seguridad y Auditoría
 router.register(r'auditoria', LogAuditoriaViewSet)
+router.register(r'usuarios', UsuarioViewSet, basename='usuario') # <--- NUEVO
+router.register(r'roles', RolViewSet) # <--- NUEVO
 
 # Integraciones
 router.register(r'integraciones/erp', IntegracionErpViewSet)
