@@ -60,8 +60,17 @@ def _recalcular_avance_meta(meta: MetaTactico):
         meta.valor_actual = Decimal("0.00")
     else:
         completadas = meta.actividades.filter(estado="completada").count()
-        ratio = Decimal(completadas) / Decimal(total_actividades)
-        meta.valor_actual = meta.valor_esperado * ratio  # meta.valor_esperado = 100
+        
+        # --- REFACTORIZACIÓN PRIORIDAD 2: Estabilidad Matemática ---
+        numerador = Decimal(completadas)
+        denominador = Decimal(total_actividades)
+        ratio = numerador / denominador
+        
+        # Convertimos explícitamente a Decimal, por si viene como float de algún lado
+        valor_base = Decimal(str(meta.valor_esperado))
+        
+        meta.valor_actual = valor_base * ratio
+        # -----------------------------------------------------------
 
     meta.save(update_fields=["valor_actual"])
 
