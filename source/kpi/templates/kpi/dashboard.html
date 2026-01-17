@@ -1,24 +1,112 @@
-{% extends 'core/base_dashboard.html' %}
-{% load static %}
+{% extends "core/base_dashboard.html" %}
 
-{% block title %}Talent Track - KPIs{% endblock %}
-
-{% block header_title %}Tablero de Mando (KPIs){% endblock %}
-{% block header_subtitle %}Monitoreo de indicadores clave de desempeño{% endblock %}
+{% block header_title %}Tablero de Control{% endblock %}
 
 {% block page_content %}
-<div class="space-y-6">
+<div class="max-w-7xl mx-auto space-y-6 p-6">
 
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-6">
         <div>
-            <h2 class="text-sm font-bold text-slate-700">Resumen Ejecutivo</h2>
-            <p class="text-xs text-slate-400">Métricas actualizadas en tiempo real.</p>
+            <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Tablero de Control (KPIs)</h2>
+            <p class="text-sm text-slate-500 mt-1">
+                Monitoreo en tiempo real del rendimiento estratégico de la empresa.
+            </p>
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+            <a href="{% url 'kpi:kpi_generar_defaults' %}" 
+               class="inline-flex items-center px-4 py-2.5 rounded-lg bg-white border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50 focus:ring-4 focus:ring-slate-100 transition-all shadow-sm">
+                <svg class="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                Restaurar Defaults
+            </a>
+
+            <a href="{% url 'kpi:recalcular_global' %}" 
+               class="inline-flex items-center px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition-all shadow-sm">
+                <svg class="w-4 h-4 mr-2 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                Recalcular Todo
+            </a>
         </div>
     </div>
 
-    <div id="kpi-grid">
-        {% include "kpi/partials/kpi_grid.html" %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {% for kpi in kpis %}
+        <div class="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-slate-200 hover:shadow-lg hover:border-blue-200 transition-all duration-300 group relative overflow-hidden flex flex-col">
+            
+            <div class="absolute left-0 top-0 bottom-0 w-1.5 
+                {% if kpi.color == 'green' %}bg-emerald-500
+                {% elif kpi.color == 'red' %}bg-rose-500
+                {% else %}bg-slate-300{% endif %}">
+            </div>
+
+            <div class="p-5 flex-1 flex flex-col pl-6"> <div class="flex justify-between items-start mb-3">
+                    <h3 class="font-semibold text-slate-800 text-lg leading-tight truncate pr-2" title="{{ kpi.nombre }}">
+                        {{ kpi.nombre }}
+                    </h3>
+                    
+                    <div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-slate-50 rounded-md border border-slate-100 p-0.5 shadow-sm absolute right-3 top-3">
+                        <a href="{% url 'kpi:kpi_recalcular' kpi.id %}" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded" title="Recalcular">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        </a>
+                        <a href="{% url 'kpi:kpi_detalle' kpi.id %}" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded" title="Ver Detalle">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="mt-auto mb-4">
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-4xl font-extrabold text-slate-900 tracking-tight">
+                            {% if kpi.ultimo_valor is not None %}
+                                {{ kpi.ultimo_valor|floatformat:1 }}
+                            {% else %}
+                                <span class="text-slate-300 text-3xl">--</span>
+                            {% endif %}
+                        </span>
+                        <span class="text-xs font-bold text-slate-500 uppercase bg-slate-100 px-2 py-1 rounded-md">
+                            {{ kpi.unidad_medida }}
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1 truncate">
+                        {{ kpi.descripcion|default:"Indicador mensual clave" }}
+                    </p>
+                </div>
+
+                <div class="pt-4 border-t border-slate-100 flex items-center justify-between text-sm">
+                    <div class="flex flex-col">
+                        <span class="text-xs text-slate-400 font-medium uppercase tracking-wide">Meta</span>
+                        <span class="font-semibold text-slate-700">{{ kpi.meta_default|floatformat:1 }}</span>
+                    </div>
+                    
+                    {% if kpi.ultimo_valor is not None %}
+                        {% if kpi.color == 'green' %}
+                            <span class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-xs font-semibold border border-emerald-100">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                Óptimo
+                            </span>
+                        {% else %}
+                            <span class="inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 px-2.5 py-1 rounded-full text-xs font-semibold border border-rose-100">
+                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                Atención
+                            </span>
+                        {% endif %}
+                    {% else %}
+                        <span class="text-slate-400 text-xs italic">Sin datos</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+            <div class="col-span-full flex flex-col items-center justify-center py-16 bg-white rounded-xl border-2 border-dashed border-slate-200 text-center">
+                <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                    <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                </div>
+                <h3 class="text-lg font-semibold text-slate-900 mb-1">No hay KPIs activos</h3>
+                <p class="text-slate-500 max-w-sm mx-auto mb-6">Parece que aún no se han configurado los indicadores. Genera los estándares para comenzar.</p>
+                <a href="{% url 'kpi:kpi_generar_defaults' %}" class="inline-flex items-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-sm">
+                    Generar KPIs Estándar
+                </a>
+            </div>
+        {% endfor %}
     </div>
 </div>
-
 {% endblock %}

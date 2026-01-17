@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.utils import timezone
 from integraciones.models import IntegracionErp, Webhook, LogIntegracion
 from usuarios.decorators import solo_superusuario
+from integraciones.services.integracion_service import IntegracionService
 # --- 1. VISTA PRINCIPAL DEL DASHBOARD ---
 @login_required
 @solo_superusuario

@@ -1,16 +1,16 @@
 class CodigosKPI:
     HEADCOUNT = 'HEADCOUNT'
     AUSENTISMO = 'AUSENTISMO'
-    PUNTUALIDAD = 'PUNTUALIDAD'
     ROTACION = 'ROTACION'
+    PUNTUALIDAD = 'PUNTUALIDAD'
     SALARIO_PROM = 'SALARIO_PROM'
-    MANUAL = 'MANUAL' # Para KPIs que el usuario llena a mano
+    MANUAL = 'MANUAL' 
     
     OPCIONES = [
         (HEADCOUNT, 'Total Empleados'),
         (AUSENTISMO, 'Ausentismo Laboral'),
-        (PUNTUALIDAD, 'Puntualidad'),
         (ROTACION, 'Rotación de Personal'),
+        (PUNTUALIDAD, 'Puntualidad'),
         (SALARIO_PROM, 'Salario Promedio'),
         (MANUAL, 'Ingreso Manual'),
     ]

@@ -1,3 +1,4 @@
+from django.db.models import Avg
 from django.contrib.auth import get_user_model
 from empleados.models import Empleado
 from kpi.constants import CodigosKPI
@@ -16,7 +17,7 @@ def calcular_valor_automatico(kpi):
         ).count()
 
     elif codigo == CodigosKPI.PUNTUALIDAD:
-        # Lógica placeholder (aquí conectarías con asistencia)
+        # Lógica placeholder (aquí conectarías con módulo asistencia)
         return 95.0 
 
     elif codigo == CodigosKPI.AUSENTISMO:
@@ -24,11 +25,18 @@ def calcular_valor_automatico(kpi):
         return 2.5
 
     elif codigo == CodigosKPI.SALARIO_PROM:
-        from django.db.models import Avg
+        # CORRECCIÓN IMPORTANTE:
+        # El campo 'salario' no existe en Empleado. Está dentro de la relación 'contratos'.
+        # Usamos 'contratos__salario' para acceder al campo en la tabla relacionada.
+        
         promedio = Empleado.objects.filter(
             empresa=empresa, 
-            estado=Empleado.Estado.ACTIVO
-        ).aggregate(Avg('salario'))['salario__avg']
+            estado=Empleado.Estado.ACTIVO,
+            # Opcional: Si tus contratos tienen estado, podrías filtrar: 
+            # contratos__estado='activo'
+            contratos__isnull=False # Solo empleados con contrato
+        ).aggregate(media=Avg('contratos__salario'))['media']
+        
         return round(promedio, 2) if promedio else 0.0
 
     elif codigo == CodigosKPI.MANUAL:
