@@ -16,71 +16,35 @@ User = get_user_model()
 @solo_superusuario_o_admin_rrhh
 def lista_usuarios(request):
     """
-    Listado de usuarios con búsqueda y filtros por estado, rol y EMPRESA (Multi-tenant).
+    Listado de usuarios refactorizado.
     """
+    # 1. Recuperar parámetros
+    q = request.GET.get("q", "")
+    filtro_estado = request.GET.get("estado", "")
+    filtro_rol = request.GET.get("rol", "")
     
-    # 1. INICIAMOS EL QUERYSET BASE
-    # Usamos select_related para optimizar la consulta a la BD
-    usuarios = User.objects.select_related("empleado", "empleado__empresa").prefetch_related("roles_asignados").exclude(id=request.user.id)
+    # 2. Iniciar QuerySet con permisos base (usando nuestro nuevo método)
+    usuarios = User.objects.visibles_para(request.user)
 
-    # 2. LOGICA DE FILTRADO MULTI-TENANT (LA CLAVE DEL ÉXITO 🔑)
-    
-    # CASO A: Superusuario Global
-    if request.user.is_superuser:
-        # Obtenemos la empresa seleccionada en el menú lateral (Middleware)
-        empresa_actual = getattr(request, 'empresa_actual', None)
-        
-        if empresa_actual:
-            # Filtramos usuarios cuyo EMPLEADO pertenezca a esa empresa
-            usuarios = usuarios.filter(empleado__empresa=empresa_actual)
-        else:
-            # Si no hay empresa seleccionada, mostramos todos (o podrías no mostrar nada)
-            pass
+    # 3. Aplicar filtro de empresa global (caso Superuser Multi-tenant)
+    # Este viene del middleware o sesión, no del modelo directamente
+    empresa_actual = getattr(request, 'empresa_actual', None)
+    if request.user.is_superuser and empresa_actual:
+        usuarios = usuarios.para_empresa(empresa_actual)
 
-    # CASO B: Admin RRHH (No Superuser)
-    elif hasattr(request.user, 'empleado') and request.user.empleado:
-        # Filtramos estrictamente por la empresa del empleado logueado
-        mi_empresa = request.user.empleado.empresa
-        usuarios = usuarios.filter(empleado__empresa=mi_empresa)
-    
-    # CASO C: Usuario "Huérfano" (Sin empleado asociado)
-    else:
-        # Por seguridad, no le mostramos nada
-        usuarios = usuarios.none()
+    # 4. Encadenar filtros (Fluent Interface)
+    usuarios = (
+        usuarios
+        .busqueda_general(q)
+        .filtrar_por_estado(filtro_estado)
+        .filtrar_por_rol(filtro_rol)
+        .distinct()
+        .order_by('-fecha_creacion')
+    )
 
-    # 3. FILTROS DE INTERFAZ (Búsqueda, Estado, Rol)
-    q = request.GET.get("q", "").strip()
-    filtro_estado = request.GET.get("estado", "").strip()
-    filtro_rol = request.GET.get("rol", "").strip()
-
-    # Búsqueda por correo, nombre, apellido o cédula
-    if q:
-        usuarios = usuarios.filter(
-            Q(email__icontains=q)
-            | Q(empleado__nombres__icontains=q)
-            | Q(empleado__apellidos__icontains=q)
-            | Q(empleado__cedula__icontains=q) # Agregué cédula también
-        )
-
-    # Filtro por estado (activo / inactivo)
-    if filtro_estado == "activo":
-        usuarios = usuarios.filter(estado=True)
-    elif filtro_estado == "inactivo":
-        usuarios = usuarios.filter(estado=False)
-
-    # Filtro por rol
-    if filtro_rol:
-        usuarios = usuarios.filter(roles_asignados__nombre=filtro_rol)
-
-    # Ordenamiento final
-    usuarios = usuarios.distinct().order_by('-fecha_creacion')
-
-    # Roles disponibles para el combo de filtros
+    # Contexto
     roles = Rol.objects.filter(estado=True).order_by("nombre")
-
-    # Enviamos la empresa actual al contexto por si quieres mostrarla en el título
-    empresa_actual_ctx = getattr(request, 'empresa_actual', None)
-
+    
     context = {
         "usuarios": usuarios,
         "titulo": "Gestión de Usuarios",
@@ -88,10 +52,10 @@ def lista_usuarios(request):
         "filtro_estado": filtro_estado,
         "filtro_rol": filtro_rol,
         "roles": roles,
-        "empresa_actual": empresa_actual_ctx
+        # 'empresa_actual' ya suele estar en el contexto por procesadores, pero por si acaso:
+        "empresa_actual": empresa_actual 
     }
     return render(request, "usuarios/lista_usuarios.html", context)
-
 
 @login_required
 @solo_superusuario_o_admin_rrhh
