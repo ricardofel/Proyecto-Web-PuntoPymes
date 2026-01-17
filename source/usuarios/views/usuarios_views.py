@@ -14,15 +14,15 @@ User = get_user_model()
 @solo_superusuario_o_admin_rrhh
 def listar_usuarios(request):
     """
-    Lista todos los usuarios del sistema.
+    Lista usuarios del sistema, con búsqueda y paginación.
     """
     query = request.GET.get('q', '').strip()
-    
-    # CORRECCIÓN 1: Ordenamos por 'fecha_creacion', no 'date_joined'
+
+    # Listado base ordenado por fecha de creación del usuario (campo del modelo)
     usuarios_list = User.objects.all().prefetch_related('groups').order_by('-fecha_creacion')
 
     if query:
-        # CORRECCIÓN 2: Buscamos por email o datos del EMPLEADO (ya que el usuario no tiene nombres propios)
+        # Búsqueda por email y por datos del empleado vinculado (si existe)
         usuarios_list = usuarios_list.filter(
             Q(email__icontains=query) |
             Q(empleado__nombres__icontains=query) |
@@ -41,6 +41,7 @@ def listar_usuarios(request):
 @login_required
 @solo_superusuario_o_admin_rrhh
 def crear_usuario(request):
+    # Crea un usuario mediante el formulario (incluye usuario_actual para reglas de permisos)
     if request.method == 'POST':
         form = UsuarioForm(request.POST, request.FILES, usuario_actual=request.user)
         if form.is_valid():
@@ -49,7 +50,7 @@ def crear_usuario(request):
             return redirect('usuarios:lista_usuarios')
     else:
         form = UsuarioForm(usuario_actual=request.user)
-    
+
     return render(request, 'usuarios/form_usuario.html', {
         'form': form,
         'titulo': 'Crear Nuevo Usuario'
@@ -58,8 +59,9 @@ def crear_usuario(request):
 @login_required
 @solo_superusuario_o_admin_rrhh
 def editar_usuario(request, pk):
+    # Edita un usuario existente
     usuario = get_object_or_404(User, pk=pk)
-    
+
     if request.method == 'POST':
         form = UsuarioEdicionForm(request.POST, request.FILES, instance=usuario, usuario_actual=request.user)
         if form.is_valid():
@@ -77,8 +79,9 @@ def editar_usuario(request, pk):
 @login_required
 @solo_superusuario_o_admin_rrhh
 def eliminar_usuario(request, pk):
+    # Elimina un usuario (con protección para no eliminarse a sí mismo)
     usuario = get_object_or_404(User, pk=pk)
-    
+
     if usuario == request.user:
         messages.error(request, "No puedes eliminar tu propio usuario.")
         return redirect('usuarios:lista_usuarios')
@@ -87,7 +90,7 @@ def eliminar_usuario(request, pk):
         usuario.delete()
         messages.success(request, "Usuario eliminado correctamente.")
         return redirect('usuarios:lista_usuarios')
-    
+
     return render(request, 'core/confirmar_eliminar.html', {
         'obj': usuario,
         'titulo': 'Eliminar Usuario',
@@ -97,36 +100,36 @@ def eliminar_usuario(request, pk):
 @login_required
 @solo_superusuario_o_admin_rrhh
 def cambiar_estado_usuario(request, pk):
+    # Activa / desactiva el usuario alternando el campo personalizado "estado"
     usuario = get_object_or_404(User, pk=pk)
-    
+
     if usuario == request.user:
         messages.error(request, "No puedes desactivar tu propio usuario.")
     else:
-        # CORRECCIÓN 3: Solo alternamos 'estado' (tu campo personalizado)
         usuario.estado = not usuario.estado
         usuario.save()
-        
+
         estado_txt = "activado" if usuario.estado else "desactivado"
         messages.success(request, f"Usuario {usuario.email} {estado_txt}.")
-        
+
     return redirect('usuarios:lista_usuarios')
 
 @login_required
 def perfil_usuario(request):
     """
-    Permite al usuario logueado editar sus propios datos básicos (foto, teléfono).
+    Permite al usuario autenticado editar sus datos básicos (foto y teléfono).
     """
     usuario = request.user
-    
+
     if request.method == 'POST':
         form = PerfilUsuarioForm(request.POST, request.FILES, instance=usuario)
         if form.is_valid():
             form.save()
             messages.success(request, "Tu perfil ha sido actualizado.")
-            return redirect('usuarios:perfil') 
+            return redirect('usuarios:perfil')
     else:
         form = PerfilUsuarioForm(instance=usuario)
-    
+
     return render(request, 'usuarios/perfil.html', {
         'form': form,
         'usuario': usuario

@@ -1,7 +1,13 @@
-<!--templates/usuario/form_usuario.html-->
-{% extends "core/base_dashboard.html" %} {% block header_title %}Usuarios y
-Accesos{% endblock %} {% block header_subtitle %} Gestiona los accesos y roles
-del usuario en el sistema. {% endblock %} {% block page_content %}
+<!-- templates/usuarios/form_usuario.html -->
+{% extends "core/base_dashboard.html" %}
+
+{% block header_title %}Usuarios y Accesos{% endblock %}
+
+{% block header_subtitle %}
+Gestiona los accesos y roles del usuario en el sistema.
+{% endblock %}
+
+{% block page_content %}
 <div class="max-w-4xl mx-auto">
   <div class="bg-white rounded-t-2xl shadow-sm p-6 border-b border-slate-100">
     <div class="flex justify-between items-center">
@@ -32,7 +38,9 @@ del usuario en el sistema. {% endblock %} {% block page_content %}
 
   <div class="bg-white rounded-b-2xl shadow-sm p-6">
     <form method="post" class="space-y-6">
-      {% csrf_token %} {% if form.errors %}
+      {% csrf_token %}
+
+      {% if form.errors %}
       <div
         class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm"
       >
@@ -47,7 +55,8 @@ del usuario en el sistema. {% endblock %} {% block page_content %}
             <label class="block text-sm font-medium text-slate-700 mb-1">
               Correo Electrónico
             </label>
-            {{ form.email }} {% if form.email.errors %}
+            {{ form.email }}
+            {% if form.email.errors %}
             <p class="mt-1 text-xs text-red-500">{{ form.email.errors.0 }}</p>
             {% endif %}
           </div>
