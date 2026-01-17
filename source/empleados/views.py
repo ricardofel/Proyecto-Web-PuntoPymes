@@ -1,6 +1,6 @@
 import os
 
-# --- 1. Imports de Django ---
+# imports de django
 from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import render, redirect, get_object_or_404
@@ -12,30 +12,37 @@ from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from django.http import FileResponse, Http404
 
-# --- 2. Imports del Core (Mixins y Lógica Global) ---
+# imports del core y utilidades
 from core.mixins import FiltradoEmpresaMixin
 from core.storage import private_storage
 
-# --- 3. Imports de Usuarios (Decoradores y Roles) ---
+# imports de usuarios (control de acceso)
 from usuarios.decorators import solo_superusuario_o_admin_rrhh
 from usuarios.models import Rol, UsuarioRol
 
-# --- 4. Imports Locales (Empleados) ---
+# imports locales
 from .models import Empleado, Contrato
 from .forms import EmpleadoForm, ContratoForm
 
-# =========================================================
-# 1. LISTA DE EMPLEADOS (Protegida y Filtrada)
-# =========================================================
+
+# --- vistas basadas en clases ---
+
 @method_decorator(solo_superusuario_o_admin_rrhh, name='dispatch')
 class ListaEmpleadosView(FiltradoEmpresaMixin, ListView):
+    """
+    vista de listado principal de empleados.
+    integra filtrado por empresa (mixin) y búsqueda por múltiples campos.
+    """
     model = Empleado
     template_name = 'empleados/lista_empleados.html'
     context_object_name = 'empleados'
     paginate_by = 10 
 
     def get_queryset(self):
+        # obtiene el queryset base filtrado por empresa (gracias al mixin)
         qs = super().get_queryset()
+        
+        # lógica de búsqueda multicampo (nombre, apellido, cédula)
         busqueda = self.request.GET.get('q')
         if busqueda:
             qs = qs.filter(
@@ -45,62 +52,73 @@ class ListaEmpleadosView(FiltradoEmpresaMixin, ListView):
             )
         return qs.order_by('-id')
 
-# =========================================================
-# 2. CREAR EMPLEADO (¡Aquí aseguramos la Empresa!)
-# =========================================================
+
+# --- vistas basadas en funciones ---
+
 @login_required
 def crear_empleado_view(request):
-    # A. RECUPERAR EMPRESA SELECCIONADA GLOBALMENTE
+    """
+    gestiona el alta de empleados y la creación automática de su usuario de sistema.
+    utiliza transacciones atómicas para garantizar la integridad de datos entre
+    empleado, usuario y rol.
+    """
+    # recuperación del contexto de empresa actual (middleware/session)
     empresa_actual = getattr(request, 'empresa_actual', None)
     empresa_id = empresa_actual.id if empresa_actual else None
 
     if request.method == 'POST':
-        # Pasamos el ID al form para validar (managers/unidades correctos)
         form = EmpleadoForm(request.POST, request.FILES, empresa_id=empresa_id)
         rol_id = request.POST.get('rol_usuario')
 
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    # --- PASO CRÍTICO: ASIGNACIÓN FORZOSA ---
-                    # 1. Preparamos el objeto pero NO lo guardamos en DB todavía
+                    # 1. instanciación del empleado sin persistir
                     empleado = form.save(commit=False)
                     
-                    # 2. Le inyectamos la empresa seleccionada en el menú lateral
+                    # 2. inyección forzosa de la empresa del contexto
                     if empresa_actual:
                         empleado.empresa = empresa_actual
                     
-                    # 3. Ahora sí, guardamos en la base de datos
+                    # 3. persistencia del empleado
                     empleado.save()
-                    # ----------------------------------------
                     
-                    # Lógica de Usuario de Sistema (Login)
+                    # 4. lógica de creación/vinculación de usuario de sistema
                     email = form.cleaned_data.get('email') or empleado.email
                     
                     if email:
                         User = get_user_model()
+                        # generación de credencial temporal basada en documento o año
                         password_acceso = f"Talent{empleado.cedula[-4:] if empleado.cedula else '2025'}"
                         
                         user = None
                         if User.objects.filter(email=email).exists():
+                            # vinculación con usuario existente
                             user = User.objects.get(email=email)
                             user.estado = True 
-                            if hasattr(user, 'empleado'): user.empleado = empleado
+                            if hasattr(user, 'empleado'): 
+                                user.empleado = empleado
                             user.save()
                             messages.success(request, "Usuario vinculado existente.")
                         else:
+                            # creación de nuevo usuario
                             user = User.objects.create_user(
                                 username=email, email=email, password=password_acceso, estado=True 
                             )
-                            if hasattr(user, 'empleado'): user.empleado = empleado
+                            if hasattr(user, 'empleado'): 
+                                user.empleado = empleado
                             user.save()
                             messages.success(request, f"Usuario creado. Clave: {password_acceso}")
 
-                        # Asignar Rol
+                        # 5. asignación de roles y permisos
                         if user:
                             rol_obj = None
-                            if rol_id: rol_obj = Rol.objects.filter(id=rol_id).first()
-                            if not rol_obj: rol_obj = Rol.objects.filter(nombre="Empleado").first()
+                            if rol_id: 
+                                rol_obj = Rol.objects.filter(id=rol_id).first()
+                            
+                            # fallback: rol 'empleado' por defecto
+                            if not rol_obj: 
+                                rol_obj = Rol.objects.filter(nombre="Empleado").first()
 
                             if rol_obj:
                                 UsuarioRol.objects.filter(usuario=user).delete()
@@ -115,7 +133,6 @@ def crear_empleado_view(request):
         else:
              messages.error(request, "Error en el formulario. Verifique los campos.")
     else:
-        # Al cargar la página vacía, pasamos el ID para filtrar los combos (Manager/Unidad)
         form = EmpleadoForm(empresa_id=empresa_id)
 
     roles_disponibles = Rol.objects.filter(estado=True)
@@ -125,14 +142,15 @@ def crear_empleado_view(request):
         'roles_disponibles': roles_disponibles
     })
 
-# =========================================================
-# 3. EDITAR EMPLEADO
-# =========================================================
+
 @login_required
 def editar_empleado_view(request, pk):
+    """
+    permite la edición de datos del empleado manteniendo su asociación empresarial.
+    """
     empleado = get_object_or_404(Empleado, pk=pk)
     
-    # Al editar, respetamos la empresa ORIGINAL del empleado
+    # preservación de la empresa original durante la edición
     empresa_id = empleado.empresa.id if empleado.empresa else None
     
     if request.method == 'POST':
@@ -146,7 +164,7 @@ def editar_empleado_view(request, pk):
 
     roles_disponibles = Rol.objects.filter(estado=True)
     
-    # Buscamos el rol actual para marcarlo en el HTML
+    # identificación del rol actual para preselección en interfaz
     rol_actual_id = None
     usuario_asociado = get_user_model().objects.filter(email=empleado.email).first()
     if usuario_asociado:
@@ -161,57 +179,34 @@ def editar_empleado_view(request, pk):
         'es_edicion': True
     })
 
-# =========================================================
-# 4. OTRAS VISTAS (Contratos, Fotos, Estado)
-# =========================================================
+
+# --- gestión de contratos y utilidades ---
+
 @login_required
 def lista_contratos_view(request, empleado_id):
+    """
+    listado histórico de contratos asociados a un empleado.
+    """
     empleado = get_object_or_404(Empleado, pk=empleado_id)
     contratos = Contrato.objects.filter(empleado=empleado).order_by('-fecha_inicio')
-    return render(request, 'empleados/lista_contratos.html', {'empleado': empleado, 'contratos': contratos})
-
-@require_POST
-@login_required
-def actualizar_foto_view(request, pk):
-    empleado = get_object_or_404(Empleado, pk=pk)
-    if 'foto' in request.FILES:
-        if empleado.foto and os.path.isfile(empleado.foto.path):
-            try: os.remove(empleado.foto.path)
-            except: pass
-        empleado.foto = request.FILES['foto']
-        empleado.save()
-        messages.success(request, "Foto actualizada.")
-    return redirect('empleados:editar_empleado', pk=pk)
-
-@require_POST
-@login_required
-def cambiar_estado_empleado_view(request, pk):
-    empleado = get_object_or_404(Empleado, pk=pk)
-    nuevo_estado = request.POST.get('nuevo_estado')
-    if nuevo_estado in ['Activo', 'Inactivo', 'Licencia', 'Suspendido']:
-        empleado.estado = nuevo_estado
-        empleado.save()
-        
-        # Bloquear acceso si se inactiva
-        User = get_user_model()
-        u = User.objects.filter(email=empleado.email).first()
-        if u:
-            u.estado = (nuevo_estado == 'Activo')
-            u.save()
-            
-        messages.success(request, f"Estado cambiado a {nuevo_estado}")
-    return redirect('empleados:editar_empleado', pk=pk)
+    return render(request, 'empleados/lista_contratos.html', {
+        'empleado': empleado, 
+        'contratos': contratos
+    })
 
 
 def crear_contrato_view(request, empleado_id):
+    """
+    registra una nueva vinculación contractual y gestiona la subida de adjuntos.
+    """
     empleado = get_object_or_404(Empleado, pk=empleado_id)
     
     if request.method == 'POST':
-        form = ContratoForm(request.POST, request.FILES) # <--- IMPORTANTE: request.FILES
+        form = ContratoForm(request.POST, request.FILES)
         if form.is_valid():
             contrato = form.save(commit=False)
-            contrato.empleado = empleado # Asignamos el empleado AQUÍ
-            contrato.save() # Al guardar, se ejecuta upload_to usando contrato.empleado.id
+            contrato.empleado = empleado
+            contrato.save() # dispara el almacenamiento del archivo con la ruta dinámica
             messages.success(request, "Contrato registrado correctamente.")
             return redirect('empleados:lista_contratos', empleado_id=empleado.id)
     else:
@@ -222,30 +217,69 @@ def crear_contrato_view(request, empleado_id):
         'empleado': empleado
     })
 
+
+@require_POST
+@login_required
+def actualizar_foto_view(request, pk):
+    """
+    actualiza la imagen de perfil, eliminando el archivo anterior para ahorrar espacio.
+    """
+    empleado = get_object_or_404(Empleado, pk=pk)
+    if 'foto' in request.FILES:
+        # limpieza de archivo previo si existe
+        if empleado.foto and os.path.isfile(empleado.foto.path):
+            try: 
+                os.remove(empleado.foto.path)
+            except: 
+                pass
+        
+        empleado.foto = request.FILES['foto']
+        empleado.save()
+        messages.success(request, "Foto actualizada.")
+    return redirect('empleados:editar_empleado', pk=pk)
+
+
+@require_POST
+@login_required
+def cambiar_estado_empleado_view(request, pk):
+    """
+    modifica el estado laboral y sincroniza el acceso del usuario asociado.
+    """
+    empleado = get_object_or_404(Empleado, pk=pk)
+    nuevo_estado = request.POST.get('nuevo_estado')
+    
+    if nuevo_estado in ['Activo', 'Inactivo', 'Licencia', 'Suspendido']:
+        empleado.estado = nuevo_estado
+        empleado.save()
+        
+        # sincronización de acceso al sistema (bloqueo/desbloqueo)
+        User = get_user_model()
+        u = User.objects.filter(email=empleado.email).first()
+        if u:
+            u.estado = (nuevo_estado == 'Activo')
+            u.save()
+            
+        messages.success(request, f"Estado cambiado a {nuevo_estado}")
+    return redirect('empleados:editar_empleado', pk=pk)
+
+
 @login_required
 def servir_contrato_privado(request, filepath):
-    # 1. Limpieza de seguridad: Quitamos barras al inicio o final
+    """
+    controlador de acceso a archivos protegidos (private storage).
+    normaliza rutas y verifica existencia antes de servir el binario.
+    """
+    # normalización de ruta
     filepath = filepath.strip('/')
-    
-    # 2. FIX DE DOBLE RUTA: 
-    # A veces la BD guarda "contratos/archivo.pdf" y a veces solo "archivo.pdf".
-    # Si la ruta que nos llega YA empieza con 'contratos/', la usamos tal cual.
-    # Si NO empieza con 'contratos/', se lo agregamos (por si acaso).
-    
-    # En tu caso, la BD YA TIENE "contratos/...", así que confiamos en filepath.
     ruta_final = filepath
 
-    # Debug (opcional, lo verás en la consola negra donde corre el server)
-    print(f"--- INTENTANDO ABRIR: {ruta_final} ---")
-
-    # 3. Verificar existencia
+    # verificación de existencia con fallback para compatibilidad de rutas
     if not private_storage.exists(ruta_final):
-        # Intento de rescate: Probamos agregando 'contratos/' si falló el anterior
         if private_storage.exists(f'contratos/{ruta_final}'):
              ruta_final = f'contratos/{ruta_final}'
         else:
              raise Http404(f"El documento no se encuentra en: {ruta_final}")
         
-    # 4. Servir archivo
+    # entrega segura del archivo
     archivo = private_storage.open(ruta_final)
     return FileResponse(archivo)

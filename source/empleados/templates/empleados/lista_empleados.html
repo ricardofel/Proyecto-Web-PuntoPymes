@@ -10,10 +10,8 @@
 
         <form method="get" class="relative w-full sm:max-w-xs group">
             <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                <svg aria-hidden="true" class="w-4 h-4 text-gray-400 group-hover:text-gray-500 transition-colors"
-                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                <svg aria-hidden="true" class="w-4 h-4 text-gray-400 group-hover:text-gray-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                 </svg>
             </div>
             <input type="text" name="q" value="{{ request.GET.q|default:'' }}"
@@ -23,9 +21,7 @@
 
         <a href="{% url 'empleados:crear_empleado' %}"
             class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm hover:shadow-md font-medium text-sm w-full sm:w-auto border border-transparent">
-
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-                stroke="currentColor" class="size-4">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-4">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
             <span>Nuevo Empleado</span>
@@ -46,58 +42,54 @@
             <tbody class="divide-y divide-gray-200">
                 {% for empleado in empleados %}
                 <tr class="hover:bg-gray-50 transition">
+                    
                     <td class="px-6 py-4">
                         <div class="flex items-center gap-3">
                             {% if empleado.foto %}
-                            <img class="h-10 w-10 rounded-full object-cover border border-gray-200"
-                                src="{{ empleado.foto.url }}" alt="{{ empleado.nombres }}">
+                                <img class="h-10 w-10 rounded-full object-cover border border-gray-200" src="{{ empleado.foto.url }}" alt="{{ empleado.nombres }}">
                             {% else %}
-                            <div
-                                class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold border border-indigo-50">
-                                {{ empleado.nombres|first }}{{ empleado.apellidos|first }}
-                            </div>
+                                <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold border border-indigo-50">
+                                    {{ empleado.nombres|first }}{{ empleado.apellidos|first }}
+                                </div>
                             {% endif %}
                             <div>
-                                <div class="font-medium text-gray-900">{{ empleado.nombres }} {{ empleado.apellidos }}
-                                </div>
+                                <div class="font-medium text-gray-900">{{ empleado.nombres }} {{ empleado.apellidos }}</div>
                                 <div class="text-xs text-gray-500">ID: {{ empleado.cedula }}</div>
                             </div>
                         </div>
                     </td>
+
                     <td class="px-6 py-4">
                         <div class="font-medium text-gray-900">{{ empleado.puesto.nombre }}</div>
                         <div class="text-xs text-gray-500">{{ empleado.unidad_org.nombre }}</div>
                     </td>
+
                     <td class="px-6 py-4">
                         <div class="flex flex-col">
                             <span class="text-indigo-600 hover:underline cursor-pointer">{{ empleado.email }}</span>
                             <span class="text-xs">{{ empleado.telefono|default:"Sin teléfono" }}</span>
                         </div>
                     </td>
+
                     <td class="px-6 py-4 text-center">
                         <span class="inline-flex items-center justify-center w-24 px-2 py-1 rounded-full text-xs font-medium 
                         {% if empleado.estado == 'activo' or empleado.estado == 'Activo' %} 
                             bg-green-100 text-green-700 
-                        
                         {% elif empleado.estado == 'Inactivo' or empleado.estado == 'inactivo' or empleado.estado == 'baja' or empleado.estado == 'Baja' or empleado.estado == 'Suspendido' or empleado.estado == 'suspendido' %} 
                             bg-red-100 text-red-700 
-                            
                         {% else %} 
                             bg-yellow-100 text-yellow-700 
                         {% endif %}">
                             {{ empleado.get_estado_display }}
                         </span>
                     </td>
+
                     <td class="px-6 py-4 text-center">
                         <div class="flex justify-center">
-                            <a href="{% url 'empleados:editar_empleado' empleado.id %}"
-                                class="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 hover:text-blue-600 hover:border-blue-300 rounded-md transition-all text-xs font-medium shadow-sm">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke-width="1.5" stroke="currentColor" class="size-3.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 0 1 0 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.332.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 0 1 0-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.217.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.581-.495.644-.869l.214-1.28Z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                            <a href="{% url 'empleados:editar_empleado' empleado.id %}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 hover:text-blue-600 hover:border-blue-300 rounded-md transition-all text-xs font-medium shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-3.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 0 1 0 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.332.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 0 1 0-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.217.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.581-.495.644-.869l.214-1.28Z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                                 </svg>
                                 Gestionar
                             </a>
@@ -109,21 +101,16 @@
                     <td colspan="5" class="px-6 py-10 text-center text-gray-500">
                         <div class="flex flex-col items-center">
                             {% if request.GET.q %}
-                            <svg class="h-12 w-12 text-gray-300 mb-3" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                            <p>No encontramos empleados con "{{ request.GET.q }}".</p>
-                            <a href="{% url 'empleados:lista_empleados' %}"
-                                class="text-blue-600 hover:underline mt-2 text-sm">Limpiar búsqueda</a>
+                                <svg class="h-12 w-12 text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                                <p>No encontramos empleados con "{{ request.GET.q }}".</p>
+                                <a href="{% url 'empleados:lista_empleados' %}" class="text-blue-600 hover:underline mt-2 text-sm">Limpiar búsqueda</a>
                             {% else %}
-                            <svg class="h-12 w-12 text-gray-300 mb-3" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                            </svg>
-                            <p>No hay empleados registrados en el sistema.</p>
+                                <svg class="h-12 w-12 text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                                <p>No hay empleados registrados en el sistema.</p>
                             {% endif %}
                         </div>
                     </td>

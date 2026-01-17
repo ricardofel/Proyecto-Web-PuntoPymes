@@ -5,6 +5,7 @@
 
 {% block page_content %}
 <div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md">
+    
     <div class="border-b pb-4 mb-6">
         <h2 class="text-2xl font-bold text-gray-800">Registrar Nuevo Empleado</h2>
         <p class="text-sm text-gray-500">Complete la ficha técnica para dar de alta al colaborador.</p>
@@ -13,7 +14,6 @@
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %} 
 
-        {# BLOQUE DE ERRORES #}
         {% if form.errors %}
         <div class="mb-6 p-4 rounded-lg bg-red-50 border-l-4 border-red-500 text-red-700">
             <h3 class="font-bold mb-1">Revise los siguientes errores:</h3>
@@ -32,7 +32,6 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             
-            {# COLUMNA IZQUIERDA: DATOS DE LA EMPRESA #}
             <div class="space-y-4">
                 <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider border-b pb-2 mb-4">Datos Corporativos</h3>
                 
@@ -67,7 +66,6 @@
                     </div>
                 </div>
                 
-                {# SELECCIÓN DE ROL #}
                 <div class="flex flex-col bg-blue-50 p-3 rounded-md border border-blue-100 mt-2">
                     <label for="rol_usuario" class="font-semibold text-blue-800 text-sm mb-1">
                         Rol de Sistema <span class="text-red-500">*</span>
@@ -87,7 +85,6 @@
                 </div>
             </div>
 
-            {# COLUMNA DERECHA: DATOS PERSONALES #}
             <div class="space-y-4">
                 <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider border-b pb-2 mb-4">Información Personal</h3>
                 
@@ -129,7 +126,6 @@
             </div>
         </div>
 
-        {# --- SECCIÓN: CONFIGURACIÓN DE JORNADA --- #}
         <div class="mt-8 border-t border-gray-100 pt-6">
             <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Configuración de Jornada</h3>
             
@@ -166,7 +162,6 @@
             </div>
         </div>
 
-        {# Ocultamos campos que ya renderizamos manualmente #}
         {% for field in form %}
             {% if field.name not in 'empresa,unidad_org,puesto,manager,fecha_ingreso,estado,zona_horaria,nombres,apellidos,cedula,fecha_nacimiento,email,telefono,direccion,foto,hora_entrada_teorica,hora_salida_teorica,dias_laborales,dias_laborales_select' %}
                 <div class="flex flex-col mt-4 hidden"> {{ field }} </div>
@@ -185,7 +180,6 @@
     </form>
 </div>
 
-{# SCRIPT PARA EL BOTÓN DE LUNES A VIERNES #}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const btnStandard = document.getElementById('btn-lunes-viernes');

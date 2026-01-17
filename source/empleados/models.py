@@ -1,38 +1,59 @@
 import os
 from django.db import models
-from django.utils import timezone 
 from django.utils.translation import gettext_lazy as _
-from core.storage import private_storage    
+from core.storage import private_storage
 
-"""
-Modelos de la app empleados:
+# --- utilidades de sistema de archivos ---
 
-- Empleado
-- Contrato
-- Puesto
+def ruta_foto_empleado(instance, filename):
+    """
+    genera una ruta única para la foto de perfil basada en el id del empleado.
+    estructura: empleados/fotos/empleado_0000000X/archivo.ext
+    """
+    ext = filename.split('.')[-1]
+    folder_name = f"empleado_{instance.id:08d}"
+    file_name = f"{folder_name}.{ext}"
+    return os.path.join('empleados', 'fotos', folder_name, file_name)
 
-Ver diccionario de datos en:
-docs/Arquitectura_Estructura_TalentTrack.md
-"""
 
-# --- 1. MODELO PUESTO ---
+def ruta_contrato_dinamica(instance, filename):
+    """
+    genera una ruta organizada por carpetas de empleado para los contratos.
+    estructura: contratos/empleado_0000X/archivo.pdf
+    """
+    id_empleado = instance.empleado.id
+    return f'contratos/empleado_{id_empleado:05d}/{filename}'
+
+
+# --- modelos de datos ---
+
 class Puesto(models.Model):
-    # Tabla puesto
+    """
+    representa un cargo o posición laboral dentro de la estructura empresarial.
+    define las bandas salariales y el nivel jerárquico asociado.
+    """
     id = models.BigAutoField(primary_key=True)
     empresa = models.ForeignKey(
         "core.Empresa", on_delete=models.CASCADE, related_name="puestos"
     )
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField(blank=True, null=True)
+    
     nivel = models.CharField(
-        max_length=50, blank=True, null=True, help_text=_("Ej: Junior, Senior, C-Level")
+        max_length=50, 
+        blank=True, 
+        null=True, 
+        help_text=_("Ej: Junior, Senior, C-Level")
     )
+    
+    # rango salarial referencial para el puesto
     banda_salarial_min = models.DecimalField(
         max_digits=12, decimal_places=2, null=True, blank=True
     )
     banda_salarial_max = models.DecimalField(
         max_digits=12, decimal_places=2, null=True, blank=True
     )
+    
     estado = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
@@ -43,28 +64,11 @@ class Puesto(models.Model):
         return str(self.nombre)
 
 
-# --- UTILIDAD PARA FOTOS ---
-def ruta_foto_empleado(instance, filename):
-    # instance: es el objeto Empleado.
-    # filename: el nombre original del archivo (ej: "foto_playa.jpg").
-
-    # 1. Obtenemos la extensión del archivo original (ej: .jpg, .png)
-    ext = filename.split('.')[-1]
-
-    # 2. Creamos un nombre de carpeta único basado en el ID del empleado.
-    # Usamos ':08d' para que el ID tenga ceros a la izquierda y se vea profesional.
-    folder_name = f"empleado_{instance.id:08d}"
-
-    # 3. Creamos el nombre del archivo (puede ser igual al de la carpeta)
-    file_name = f"{folder_name}.{ext}"
-
-    # 4. Construimos la ruta final.
-    return os.path.join('empleados', 'fotos', folder_name, file_name)
-
-
-# --- 2. MODELO EMPLEADO (MODIFICADO) ---
 class Empleado(models.Model):
-    # Tabla empleado
+    """
+    entidad central que gestiona la información personal, laboral y de configuración
+    de asistencia del colaborador.
+    """
     
     class Estado(models.TextChoices):
         ACTIVO = "Activo", _("Activo")
@@ -72,7 +76,7 @@ class Empleado(models.Model):
         LICENCIA = "Licencia", _("Licencia")
         SUSPENDIDO = "Suspendido", _("Suspendido")
 
-    # --- DEFINICIÓN DE DÍAS (Para usar en el Formulario) ---
+    # constantes para mapeo de días laborales
     DIAS_SEMANA = [
         ('LUN', 'Lunes'),
         ('MAR', 'Martes'),
@@ -85,7 +89,7 @@ class Empleado(models.Model):
 
     id = models.BigAutoField(primary_key=True)
     
-    # Relaciones
+    # relaciones organizacionales
     empresa = models.ForeignKey(
         "core.Empresa", on_delete=models.CASCADE, related_name="empleados"
     )
@@ -103,7 +107,7 @@ class Empleado(models.Model):
         related_name="subordinados",
     )
 
-    # Datos Personales
+    # información personal e identificación
     nombres = models.CharField(max_length=100)
     apellidos = models.CharField(max_length=100)
     cedula = models.CharField(max_length=20, help_text=_("DNI/Cédula/Pasaporte"))
@@ -111,36 +115,31 @@ class Empleado(models.Model):
         max_length=150, unique=True, help_text=_("Correo corporativo único")
     )
     
-    # Foto
     foto = models.ImageField(upload_to=ruta_foto_empleado, blank=True, null=True)
-    
     telefono = models.CharField(max_length=20, blank=True, null=True)
     direccion = models.TextField(blank=True, null=True)
     
-    # Fechas
+    # fechas relevantes
     fecha_nacimiento = models.DateField(null=True, blank=True)
     fecha_ingreso = models.DateField()
     
-    # Estado
+    # estado y configuración regional
     estado = models.CharField(
         max_length=20, choices=Estado.choices, default=Estado.ACTIVO
     )
-    
     zona_horaria = models.CharField(max_length=50, blank=True, null=True)
 
-    # --- NUEVOS CAMPOS PARA EL DASHBOARD DE ASISTENCIA ---
-    # Estos campos definen el "Deber Ser" para calcular puntualidad (Verde/Naranja)
+    # configuración de asistencia y puntualidad
     hora_entrada_teorica = models.TimeField(default="09:00", help_text="Hora esperada de entrada")
     hora_salida_teorica = models.TimeField(default="18:00", help_text="Hora esperada de salida")
     
-    # CAMBIO IMPORTANTE: Este campo guarda los días como TEXTO separado por comas
-    # Ejemplo en BD: "LUN,MAR,MIE,JUE,VIE"
+    # almacenamiento de días laborales como cadena csv (ej: "LUN,MAR,MIE")
+    # esto facilita la persistencia simple sin tablas intermedias complejas.
     dias_laborales = models.CharField(
         max_length=50, 
         default="LUN,MAR,MIE,JUE,VIE", 
         help_text="Lista de códigos de días laborales separados por comas"
     )
-    # -----------------------------------------------------
 
     class Meta:
         db_table = "empleado"
@@ -153,8 +152,11 @@ class Empleado(models.Model):
     def __str__(self):
         return f"{self.nombres} {self.apellidos}"
 
-    # Lógica de guardado automático (Capitalización)
     def save(self, *args, **kwargs):
+        """
+        normalización de datos antes de persistir en base de datos.
+        aplica formato título a nombres/apellidos y capitalización al estado.
+        """
         if self.nombres:
             self.nombres = self.nombres.strip().title()
         if self.apellidos:
@@ -165,25 +167,16 @@ class Empleado(models.Model):
 
         super().save(*args, **kwargs)
 
-    # Helper para mostrar nombre completo en templates
     @property
     def nombre_completo(self):
         return f"{self.nombres} {self.apellidos}"
 
 
-def ruta_contrato_dinamica(instance, filename):
-    # Genera: contratos/empleado_00005/nombre_archivo.pdf
-    # El :05d rellena con ceros a la izquierda (1 -> 00001)
-    id_empleado = instance.empleado.id
-    extension = filename.split('.')[-1]
-    
-    # Opcional: Si quieres renombrar el archivo también (ej: contrato_2026-01-01.pdf)
-    # nombre_limpio = f"contrato_{instance.fecha_inicio}.{extension}"
-    # return f'contratos/empleado_{id_empleado:05d}/{nombre_limpio}'
-    
-    return f'contratos/empleado_{id_empleado:05d}/{filename}'
-
 class Contrato(models.Model):
+    """
+    historial de vinculaciones contractuales del empleado.
+    permite almacenar el documento firmado en un almacenamiento seguro (fuera de /media público).
+    """
     TIPOS = [
         ('Indefinido', 'Tiempo Indefinido'),
         ('Plazo Fijo', 'Plazo Fijo'),
@@ -199,10 +192,10 @@ class Contrato(models.Model):
     fecha_fin = models.DateField(null=True, blank=True)
     salario = models.DecimalField(max_digits=10, decimal_places=2)
     
-    # === CAMBIO AQUÍ: Usamos la función para la ruta ===
+    # archivo protegido mediante private_storage para evitar acceso público no autorizado
     archivo_pdf = models.FileField(
-        upload_to=ruta_contrato_dinamica, # <--- Aquí la magia de la carpeta
-        storage=private_storage,          # Mantenemos la seguridad
+        upload_to=ruta_contrato_dinamica,
+        storage=private_storage,
         null=True, blank=True,
         verbose_name="PDF Firmado"
     )
