@@ -2,6 +2,8 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.db import models
 
+
+
 from empleados.models import Empleado
 from .models import Rol, UsuarioRol
 
@@ -15,12 +17,24 @@ class UsuarioForm(forms.ModelForm):
         required=False,
         label="Asignar Rol",
     )
+    nuevo_password = forms.CharField(
+    required=False,
+    label="Contraseña",
+    widget=forms.PasswordInput(
+        attrs={
+            "class": "w-full rounded-lg border-slate-300 text-slate-900 shadow-sm "
+                     "focus:border-blue-500 focus:ring-blue-500 sm:text-sm placeholder-slate-400",
+            "placeholder": "••••••••••••",
+            "autocomplete": "new-password",
+        }
+    ),
+)
+
 
     class Meta:
         model = User
         fields = [
             "email",
-            "password",
             "empleado",
             "estado",
         ]
@@ -36,7 +50,7 @@ class UsuarioForm(forms.ModelForm):
                 attrs={
                     "class": "w-full rounded-lg border-slate-300 text-slate-900 shadow-sm "
                     "focus:border-blue-500 focus:ring-blue-500 sm:text-sm placeholder-slate-400",
-                    "placeholder": "••••••••",
+                    "placeholder": "••••••••••••",
                 }
             ),
             "estado": forms.CheckboxInput(
@@ -87,13 +101,10 @@ class UsuarioForm(forms.ModelForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        raw_password = self.cleaned_data.get("password")
+        raw_password = self.cleaned_data.get("nuevo_password")
 
         if raw_password:
             user.set_password(raw_password)
-        elif user.pk:
-            old_user = User.objects.get(pk=user.pk)
-            user.password = old_user.password
 
         if user.pk:
             old_user = User.objects.get(pk=user.pk)
