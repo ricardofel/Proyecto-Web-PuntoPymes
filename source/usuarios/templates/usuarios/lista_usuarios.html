@@ -7,7 +7,6 @@
 
 {% block page_content %}
 <div class="max-w-6xl mx-auto">
-  <!-- Encabezado de sección -->
   <div class="flex items-center justify-between mb-4">
     <div>
       <h2 class="text-lg font-semibold text-slate-900">Gestión de Usuarios</h2>
@@ -27,7 +26,6 @@
     {% endif %}
   </div>
 
-  <!-- Filtros de búsqueda -->
   <div class="bg-white rounded-2xl shadow-sm border border-slate-100 mb-4 p-4">
     <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
       <div>
@@ -98,7 +96,6 @@
     </form>
   </div>
 
-  <!-- Tabla de usuarios -->
   <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
     <table class="min-w-full divide-y divide-slate-200 text-sm">
       <thead class="bg-slate-50">
@@ -107,7 +104,7 @@
           <th class="px-4 py-2 text-left font-semibold text-slate-700">Empleado</th>
           <th class="px-4 py-2 text-left font-semibold text-slate-700">Rol</th>
           <th class="px-4 py-2 text-left font-semibold text-slate-700">Estado</th>
-          <th class="px-4 py-2 text-right font-semibold text-slate-700">Acciones</th>
+          <th class="px-4 py-2 text-center font-semibold text-slate-700">Acciones</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-100">
@@ -121,7 +118,7 @@
               {{ u.empleado|default:"—" }}
             </td>
 
-            <td class="px-6 py-4 text-sm text-slate-600">
+            <td class="px-4 py-2 text-sm text-slate-600">
               {% with rol=u.roles_asignados.first %}
                 {% if rol %}
                   {{ rol.nombre }}
@@ -147,10 +144,10 @@
               {% endif %}
             </td>
 
-            <td class="px-4 py-2 text-right">
+            <td class="px-4 py-2 text-center">
               <a
                 href="{% url 'usuarios:editar_usuario' u.id %}"
-                class="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                class="text-blue-600 hover:text-blue-800 text-xs font-bold px-3 py-1 bg-blue-50 rounded hover:bg-blue-100 transition-colors"
               >
                 Editar
               </a>

@@ -12,29 +12,54 @@ from ..forms import UsuarioForm, PerfilUsuarioForm
 
 User = get_user_model()
 
-
 @login_required
 @solo_superusuario_o_admin_rrhh
 def lista_usuarios(request):
     """
-    Listado de usuarios con búsqueda y filtros por estado y rol.
+    Listado de usuarios con búsqueda y filtros por estado, rol y EMPRESA (Multi-tenant).
     """
+    
+    # 1. INICIAMOS EL QUERYSET BASE
+    # Usamos select_related para optimizar la consulta a la BD
+    usuarios = User.objects.select_related("empleado", "empleado__empresa").prefetch_related("roles_asignados").exclude(id=request.user.id)
+
+    # 2. LOGICA DE FILTRADO MULTI-TENANT (LA CLAVE DEL ÉXITO 🔑)
+    
+    # CASO A: Superusuario Global
+    if request.user.is_superuser:
+        # Obtenemos la empresa seleccionada en el menú lateral (Middleware)
+        empresa_actual = getattr(request, 'empresa_actual', None)
+        
+        if empresa_actual:
+            # Filtramos usuarios cuyo EMPLEADO pertenezca a esa empresa
+            usuarios = usuarios.filter(empleado__empresa=empresa_actual)
+        else:
+            # Si no hay empresa seleccionada, mostramos todos (o podrías no mostrar nada)
+            pass
+
+    # CASO B: Admin RRHH (No Superuser)
+    elif hasattr(request.user, 'empleado') and request.user.empleado:
+        # Filtramos estrictamente por la empresa del empleado logueado
+        mi_empresa = request.user.empleado.empresa
+        usuarios = usuarios.filter(empleado__empresa=mi_empresa)
+    
+    # CASO C: Usuario "Huérfano" (Sin empleado asociado)
+    else:
+        # Por seguridad, no le mostramos nada
+        usuarios = usuarios.none()
+
+    # 3. FILTROS DE INTERFAZ (Búsqueda, Estado, Rol)
     q = request.GET.get("q", "").strip()
     filtro_estado = request.GET.get("estado", "").strip()
     filtro_rol = request.GET.get("rol", "").strip()
 
-    usuarios = (
-        User.objects.select_related("empleado")
-        .prefetch_related("roles_asignados")
-        .all()
-    )
-
-    # Búsqueda por correo o nombre del empleado
+    # Búsqueda por correo, nombre, apellido o cédula
     if q:
         usuarios = usuarios.filter(
             Q(email__icontains=q)
             | Q(empleado__nombres__icontains=q)
             | Q(empleado__apellidos__icontains=q)
+            | Q(empleado__cedula__icontains=q) # Agregué cédula también
         )
 
     # Filtro por estado (activo / inactivo)
@@ -47,10 +72,14 @@ def lista_usuarios(request):
     if filtro_rol:
         usuarios = usuarios.filter(roles_asignados__nombre=filtro_rol)
 
-    usuarios = usuarios.distinct()
+    # Ordenamiento final
+    usuarios = usuarios.distinct().order_by('-fecha_creacion')
 
     # Roles disponibles para el combo de filtros
     roles = Rol.objects.filter(estado=True).order_by("nombre")
+
+    # Enviamos la empresa actual al contexto por si quieres mostrarla en el título
+    empresa_actual_ctx = getattr(request, 'empresa_actual', None)
 
     context = {
         "usuarios": usuarios,
@@ -59,6 +88,7 @@ def lista_usuarios(request):
         "filtro_estado": filtro_estado,
         "filtro_rol": filtro_rol,
         "roles": roles,
+        "empresa_actual": empresa_actual_ctx
     }
     return render(request, "usuarios/lista_usuarios.html", context)
 

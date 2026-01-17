@@ -45,7 +45,13 @@
     }
 
     /* Toggle Button */
-    .sidebar-toggle { opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.3s ease; }
+    .sidebar-toggle { 
+        opacity: 0; 
+        pointer-events: none; 
+        transition: opacity 0.2s ease, transform 0.3s ease;
+        z-index: 50; /* Aseguramos que esté por encima */
+    }
+    
     #sidebar:hover .sidebar-toggle, 
     #sidebar:not(.is-collapsed) .sidebar-toggle { opacity: 1; pointer-events: auto; }
     #sidebar:not(.is-collapsed) .sidebar-toggle svg { transform: rotate(180deg); }
@@ -54,7 +60,14 @@
     #sidebar.is-collapsed .sidebar-text { opacity: 0; pointer-events: none; display: none; }
     #sidebar.is-collapsed #companySelector { display: none; }
     #sidebar.is-collapsed #logoFull { display: none; }
-    #sidebar.is-collapsed #logoSmall { display: block; }
+    #sidebar.is-collapsed #logoSmall { display: block; transition: opacity 0.2s; }
+    
+    /* --- CORRECCIÓN AQUÍ --- */
+    /* Cuando la barra está cerrada Y pasamos el mouse, ocultamos el logo pequeño */
+    /* para que no se mezcle con el botón de abrir */
+    #sidebar.is-collapsed:hover #logoSmall { opacity: 0; }
+    /* ----------------------- */
+
     #sidebar:not(.is-collapsed) #logoFull { display: block; }
     #sidebar:not(.is-collapsed) #logoSmall { display: none; }
 
@@ -77,13 +90,13 @@
     
     <aside id="sidebar" class="w-64 bg-white border-r border-slate-200 flex flex-col flex-shrink-0 z-30 overflow-x-hidden h-full relative">
       
-      <div id="sidebarHeader" class="h-16 border-b border-slate-100 flex items-center justify-between px-4 flex-shrink-0">
+      <div id="sidebarHeader" class="h-16 border-b border-slate-100 flex items-center justify-between px-4 flex-shrink-0 relative">
         <a href="{% url 'dashboard' %}" class="flex items-center gap-2 overflow-hidden min-w-0">
           <img id="logoSmall" src="{% static 'core/img/talentrack_small.svg' %}" alt="TT" class="h-8 w-8 object-contain" />
           <img id="logoFull" src="{% static 'core/img/talenttrack_logo.svg' %}" alt="Talent Track" class="h-8 w-auto object-contain" />
         </a>
 
-        <button type="button" id="sidebarToggle" class="sidebar-toggle w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-blue-600 flex items-center justify-center transition-colors absolute right-3" aria-label="Alternar menú">
+        <button type="button" id="sidebarToggle" class="sidebar-toggle w-8 h-8 rounded-lg bg-white border border-slate-200 shadow-sm hover:bg-slate-50 text-slate-500 hover:text-blue-600 flex items-center justify-center transition-all absolute right-3" aria-label="Alternar menú">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-4">
             <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
           </svg>
