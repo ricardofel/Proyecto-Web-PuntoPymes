@@ -40,7 +40,6 @@ class KPIForm(forms.ModelForm):
         }
 
 class KPIResultadoForm(forms.ModelForm):
-    class Meta:
         model = KPIResultado
         fields = ['periodo', 'valor', 'observacion']
         widgets = {
