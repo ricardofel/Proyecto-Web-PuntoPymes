@@ -1,5 +1,5 @@
 from rest_framework import viewsets
-from .models import Empleado
+from empleados.models import Empleado
 from .serializers import EmpleadoSerializer
 
 class EmpleadoViewSet(viewsets.ModelViewSet):

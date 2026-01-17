@@ -1,6 +1,6 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAdminUser
-from .models import LogAuditoria
+from auditoria.models import LogAuditoria
 from .serializers import LogAuditoriaSerializer
 
 class LogAuditoriaViewSet(viewsets.ReadOnlyModelViewSet):

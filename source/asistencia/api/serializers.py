@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import EventoAsistencia  # <--- Nombre correcto del modelo
+from ..models import EventoAsistencia  # <--- Nombre correcto del modelo
 
 class EventoAsistenciaSerializer(serializers.ModelSerializer):
     # Datos extra para que el JSON sea legible

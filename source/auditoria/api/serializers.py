@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import LogAuditoria
+from auditoria.models import LogAuditoria
 
 class LogAuditoriaSerializer(serializers.ModelSerializer):
     """

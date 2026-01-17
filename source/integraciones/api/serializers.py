@@ -1,10 +1,10 @@
 from rest_framework import serializers
-from .models import IntegracionErp, Webhook, LogIntegracion
+from integraciones.models import IntegracionErp, Webhook, LogIntegracion
 
 class IntegracionErpSerializer(serializers.ModelSerializer):
     """
-    serializador para configuraciones erp.
-    protege la api_key para que no sea visible en respuestas de lectura.
+    serializador para la gestión de configuraciones erp.
+    configura la api_key como campo de solo escritura para proteger credenciales.
     """
     class Meta:
         model = IntegracionErp
@@ -16,6 +16,7 @@ class IntegracionErpSerializer(serializers.ModelSerializer):
 class WebhookSerializer(serializers.ModelSerializer):
     """
     serializador para la configuración de webhooks salientes.
+    protege la secret_key evitando su exposición en respuestas de lectura.
     """
     class Meta:
         model = Webhook
@@ -26,9 +27,9 @@ class WebhookSerializer(serializers.ModelSerializer):
 
 class LogIntegracionSerializer(serializers.ModelSerializer):
     """
-    serializador de solo lectura para auditoría técnica de conexiones.
+    serializador de solo lectura para el historial técnico de conexiones.
+    incluye los nombres de las integraciones relacionadas para facilitar el análisis.
     """
-    # mostramos nombres en lugar de ids para facilitar el debug
     integracion_nombre = serializers.CharField(source='integracion.nombre', read_only=True)
     webhook_nombre = serializers.CharField(source='webhook.nombre', read_only=True)
 
