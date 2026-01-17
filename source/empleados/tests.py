@@ -1,194 +1,161 @@
-import os
-from django.shortcuts import render, redirect, get_object_or_404
-from django.views.generic import ListView
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
+from django.test import TestCase, RequestFactory
+from django.contrib.auth import get_user_model
 from django.db.models import Q
-from django.http import FileResponse, Http404
+from empleados.models import Empleado, Puesto, ruta_foto_empleado
+from empleados.forms import EmpleadoForm
+from empleados.views import ListaEmpleadosView
+from core.models import Empresa, UnidadOrganizacional
 
-# importaciones locales
-from .models import Empleado, Contrato
-from .forms import EmpleadoForm, ContratoForm
-from core.models import Empresa, Rol
-from core.storage import private_storage
+User = get_user_model()
 
-# --- vistas basadas en clases ---
-
-class ListaEmpleadosView(LoginRequiredMixin, ListView):
+class EmpleadoLogicWhiteBoxTests(TestCase):
     """
-    vista principal para listar empleados con funcionalidad de busqueda.
-    utiliza paginacion automatica de django.
+    [Caja Blanca] Tests para Lógica de Datos y Automatización.
+    Objetivo: Validar transformaciones en Forms y sincronización por Signals.
     """
-    model = Empleado
-    template_name = 'empleados/lista_empleados.html'
-    context_object_name = 'empleados'
-    paginate_by = 10
 
-    def get_queryset(self):
-        # optimizacion de consulta con select_related para evitar query n+1
-        queryset = Empleado.objects.select_related('puesto', 'unidad_org', 'empresa').all()
+    def setUp(self):
+        # Infraestructura mínima requerida
+        self.empresa = Empresa.objects.create(nombre_comercial="Empresa Test", ruc="123123")
+        self.unidad = UnidadOrganizacional.objects.create(nombre="RRHH", empresa=self.empresa)
+        self.puesto = Puesto.objects.create(nombre="Analista", empresa=self.empresa)
+
+    def test_form_procesamiento_dias_laborales(self):
+        print("\n📝 [TEST] Iniciando: test_form_procesamiento_dias_laborales")
+        print("   ↳ Objetivo: Validar que el Form convierte la lista ['LUN', 'MAR'] a string 'LUN,MAR'.")
+
+        # FIX: Agregamos hora_entrada y hora_salida porque el formulario las requiere
+        data_form = {
+            'nombres': 'Juan',
+            'apellidos': 'Perez',
+            'cedula': '0999999999',
+            'email': 'juan@test.com',
+            'fecha_ingreso': '2025-01-01',
+            'empresa': self.empresa.id,
+            'unidad_org': self.unidad.id,
+            'puesto': self.puesto.id,
+            'estado': 'Activo',
+            'hora_entrada_teorica': '09:00', # Agregado
+            'hora_salida_teorica': '18:00',  # Agregado
+            'dias_laborales_select': ['LUN', 'VIE'] 
+        }
+
+        # Instanciamos el form
+        form = EmpleadoForm(data=data_form, empresa_id=self.empresa.id)
         
-        # logica de busqueda por nombre, apellido o cedula
-        query = self.request.GET.get('q')
-        if query:
-            queryset = queryset.filter(
-                Q(nombres__icontains=query) | 
-                Q(apellidos__icontains=query) | 
-                Q(cedula__icontains=query)
-            )
-        return queryset.order_by('-id')
-
-
-# --- vistas basadas en funciones ---
-
-@login_required
-def crear_empleado_view(request):
-    """
-    gestiona el formulario de alta de nuevos empleados.
-    maneja la logica de roles y asignacion de empresa.
-    """
-    # obtenemos la empresa del usuario actual (asumiendo que tiene una asignada)
-    empresa_usuario = getattr(request.user, 'empresa', None)
-    empresa_id = empresa_usuario.id if empresa_usuario else None
-
-    if request.method == 'POST':
-        form = EmpleadoForm(request.POST, request.FILES, empresa_id=empresa_id)
         if form.is_valid():
-            empleado = form.save()
-            messages.success(request, f"Empleado {empleado.nombres} registrado exitosamente.")
-            return redirect('empleados:lista_empleados')
+            empleado = form.save(commit=False)
+            
+            # Verificamos la transformación interna
+            print(f"   ↳ Input (Lista): {data_form['dias_laborales_select']}")
+            print(f"   ↳ Output (Modelo): '{empleado.dias_laborales}'")
+            
+            self.assertEqual(empleado.dias_laborales, "LUN,VIE", "El formulario no concatenó correctamente la lista.")
+            print("     ✅ Éxito: La lógica de conversión de datos del formulario funciona.")
         else:
-            messages.error(request, "Por favor corrija los errores en el formulario.")
-    else:
-        form = EmpleadoForm(empresa_id=empresa_id)
+            self.fail(f"El formulario no fue válido: {form.errors}")
 
-    # carga de roles para el selector manual en el template
-    roles = Rol.objects.all()
-    
-    return render(request, 'empleados/crear_empleado.html', {
-        'form': form,
-        'roles_disponibles': roles
-    })
+    def test_signal_sincronizacion_usuario(self):
+        print("\n⚡ [TEST] Iniciando: test_signal_sincronizacion_usuario")
+        print("   ↳ Objetivo: Validar que al desactivar un empleado, su usuario de sistema se bloquea automáticamente.")
 
-
-@login_required
-def editar_empleado_view(request, pk):
-    """
-    permite la edicion de la ficha tecnica de un empleado existente.
-    """
-    empleado = get_object_or_404(Empleado, pk=pk)
-    empresa_id = empleado.empresa_id
-
-    if request.method == 'POST':
-        form = EmpleadoForm(request.POST, request.FILES, instance=empleado, empresa_id=empresa_id)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Información actualizada correctamente.")
-            return redirect('empleados:lista_empleados')
-        else:
-            messages.error(request, "No se pudieron guardar los cambios.")
-    else:
-        form = EmpleadoForm(instance=empleado, empresa_id=empresa_id)
-
-    return render(request, 'empleados/editar_empleado.html', {
-        'form': form,
-        'empleado': empleado
-    })
-
-
-@login_required
-def actualizar_foto_view(request, pk):
-    """
-    endpoint especifico para la actualizacion rapida de la foto de perfil
-    desde el modal en la vista de edicion.
-    """
-    empleado = get_object_or_404(Empleado, pk=pk)
-    
-    if request.method == 'POST' and request.FILES.get('foto'):
-        empleado.foto = request.FILES['foto']
-        empleado.save()
-        messages.success(request, "Foto de perfil actualizada.")
-    
-    return redirect('empleados:editar_empleado', pk=pk)
-
-
-@login_required
-def cambiar_estado_empleado_view(request, pk):
-    """
-    cambia el estado de un empleado (activo/inactivo) y redirige a la lista.
-    """
-    empleado = get_object_or_404(Empleado, pk=pk)
-    
-    # logica simple de alternancia o desactivacion
-    # aqui podrias implementar logica mas compleja si fuera necesario
-    if empleado.estado == Empleado.Estado.ACTIVO:
-        empleado.estado = Empleado.Estado.INACTIVO
-    else:
-        empleado.estado = Empleado.Estado.ACTIVO
-    
-    empleado.save()
-    messages.info(request, f"Estado de {empleado.nombres} actualizado.")
-    return redirect('empleados:lista_empleados')
-
-
-# --- gestion de contratos ---
-
-@login_required
-def lista_contratos_view(request, empleado_id):
-    """
-    muestra el historial de vinculaciones laborales de un empleado especifico.
-    """
-    empleado = get_object_or_404(Empleado, pk=empleado_id)
-    contratos = empleado.contratos.all().order_by('-fecha_inicio')
-    
-    return render(request, 'empleados/lista_contratos.html', {
-        'empleado': empleado,
-        'contratos': contratos
-    })
-
-
-@login_required
-def crear_contrato_view(request, empleado_id):
-    """
-    registra una nueva vinculacion laboral y maneja la subida del pdf firmado.
-    """
-    empleado = get_object_or_404(Empleado, pk=empleado_id)
-    
-    if request.method == 'POST':
-        form = ContratoForm(request.POST, request.FILES)
-        if form.is_valid():
-            contrato = form.save(commit=False)
-            contrato.empleado = empleado
-            contrato.save()
-            messages.success(request, "Contrato registrado correctamente.")
-            return redirect('empleados:lista_contratos', empleado_id=empleado.id)
-    else:
-        form = ContratoForm()
-    
-    return render(request, 'empleados/crear_contrato.html', {
-        'form': form,
-        'empleado': empleado
-    })
-
-
-@login_required
-def servir_contrato_privado(request, filepath):
-    """
-    vista de seguridad para servir archivos protegidos.
-    valida permisos y existencia del archivo antes de entregarlo.
-    """
-    # 1. limpieza de la ruta para evitar duplicidad de slashes
-    ruta_limpia = filepath.strip('/')
-    
-    # 2. verificacion de existencia en el almacenamiento privado
-    if not private_storage.exists(ruta_limpia):
-        # intento de recuperacion por si la ruta viene incompleta
-        if private_storage.exists(f'contratos/{ruta_limpia}'):
-             ruta_limpia = f'contratos/{ruta_limpia}'
-        else:
-             raise Http404("El documento no se encuentra disponible.")
+        email_test = 'sync@test.com'
         
-    # 3. entrega del archivo como respuesta binaria
-    archivo = private_storage.open(ruta_limpia)
-    return FileResponse(archivo)
+        # 1. Crear Empleado 
+        # (El signal se dispara AQUÍ y crea el Usuario automáticamente)
+        empleado = Empleado.objects.create(
+            nombres="Test", apellidos="Sync", cedula="11111", email=email_test,
+            fecha_ingreso="2025-01-01", empresa=self.empresa, unidad_org=self.unidad, puesto=self.puesto,
+            estado='Activo'
+        )
+        print("   ↳ Paso 1: Empleado creado. El signal debería haber creado el usuario.")
+
+        # FIX: En lugar de crear el usuario manual (que da error duplicado), lo buscamos.
+        usuario = User.objects.get(email=email_test)
+        
+        # Pre-verificación
+        self.assertTrue(usuario.estado, "El usuario debería iniciar activo (creado por signal).")
+
+        # 2. ACCIÓN: Cambiamos estado del empleado a 'Inactivo'
+        print("   ↳ Paso 2: Cambiando estado de empleado a 'Inactivo'...")
+        empleado.estado = 'Inactivo'
+        empleado.save() # Esto dispara el signal 'sync_empleado_con_usuario' nuevamente
+
+        # 3. VERIFICACIÓN
+        usuario.refresh_from_db()
+        print(f"   ↳ Estado final del Usuario: {usuario.estado}")
+        
+        self.assertFalse(usuario.estado, "El signal falló: El usuario sigue activo tras desactivar empleado.")
+        print("     ✅ Éxito: La señal de sincronización protegió el acceso al sistema.")
+
+
+class EmpleadoViewWhiteBoxTests(TestCase):
+    """
+    [Caja Blanca] Tests para Vistas y Utilidades.
+    Objetivo: Validar lógica de búsqueda y generación de rutas.
+    """
+
+    def setUp(self):
+        self.empresa = Empresa.objects.create(nombre_comercial="Empresa View", ruc="999")
+        self.unidad = UnidadOrganizacional.objects.create(nombre="IT", empresa=self.empresa)
+        self.puesto = Puesto.objects.create(nombre="Dev", empresa=self.empresa)
+        self.user = User.objects.create_user(email='view@test.com', password='123')
+        
+        # Datos de prueba para búsqueda
+        Empleado.objects.create(nombres="Carlos", apellidos="Santana", cedula="010101", email="c@t.com", fecha_ingreso="2025-01-01", empresa=self.empresa, unidad_org=self.unidad, puesto=self.puesto)
+        Empleado.objects.create(nombres="Maria", apellidos="Callas", cedula="020202", email="m@t.com", fecha_ingreso="2025-01-01", empresa=self.empresa, unidad_org=self.unidad, puesto=self.puesto)
+
+    def test_lista_empleados_logica_busqueda(self):
+        print("\n🔍 [TEST] Iniciando: test_lista_empleados_logica_busqueda")
+        print("   ↳ Objetivo: Validar que el QuerySet filtra por nombre, apellido O cédula (Lógica OR).")
+
+        # Simulamos Request con parámetro de búsqueda 'q'
+        request = RequestFactory().get('/empleados/', {'q': 'Santana'})
+        request.user = self.user
+        request.empresa_actual = self.empresa 
+
+        # Instanciamos la vista
+        vista = ListaEmpleadosView()
+        vista.request = request
+        vista.kwargs = {}
+
+        # Ejecución (Caja Blanca: get_queryset)
+        qs = vista.get_queryset()
+        
+        # Verificación
+        print(f"   ↳ Buscando 'Santana'. Resultados encontrados: {qs.count()}")
+        self.assertEqual(qs.count(), 1)
+        self.assertEqual(qs.first().nombres, "Carlos")
+
+        # Prueba 2: Búsqueda por cédula parcial
+        request = RequestFactory().get('/empleados/', {'q': '0202'}) 
+        request.user = self.user
+        request.empresa_actual = self.empresa
+        vista.request = request
+        qs = vista.get_queryset()
+
+        print(f"   ↳ Buscando cédula '0202'. Resultados encontrados: {qs.count()}")
+        self.assertEqual(qs.count(), 1)
+        self.assertEqual(qs.first().nombres, "Maria")
+        print("     ✅ Éxito: La lógica de búsqueda multicampo funciona.")
+
+    def test_utilidad_ruta_foto_dinamica(self):
+        print("\n📂 [TEST] Iniciando: test_utilidad_ruta_foto_dinamica")
+        print("   ↳ Objetivo: Validar que la función genera rutas con ID formateado (Padding de ceros).")
+
+        class EmpleadoMock:
+            id = 5
+        
+        instancia = EmpleadoMock()
+        filename = "foto_perfil.jpg"
+
+        # Ejecución directa
+        ruta_generada = ruta_foto_empleado(instancia, filename)
+        
+        # Verificación
+        expected_folder = "empleado_00000005"
+        
+        print(f"   ↳ Ruta generada: {ruta_generada}")
+        self.assertIn(expected_folder, ruta_generada)
+        self.assertTrue(ruta_generada.endswith(".jpg"))
+        print("     ✅ Éxito: La ruta del archivo se genera con formato estándar.")
