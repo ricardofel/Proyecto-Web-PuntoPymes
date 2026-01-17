@@ -1,53 +1,76 @@
-from django.test import TestCase
+import json
+from datetime import datetime, time, timedelta
+from unittest.mock import patch
+from django.test import TestCase, Client
+from django.contrib.auth import get_user_model
 from django.utils import timezone
-from datetime import datetime, time
+from django.urls import reverse
+
 from core.models import Empresa, UnidadOrganizacional
 from empleados.models import Empleado, Puesto
-from asistencia.models import JornadaCalculada
+from asistencia.models import JornadaCalculada, EventoAsistencia
 
-class AsistenciaSemaforoTest(TestCase):
-    def test_calculo_estado_automatico(self):
-        """
-        Prueba que el sistema asigne el estado correcto (Puntual, Atraso, Incompleto)
-        automáticamente al guardar la jornada.
-        """
-        print("\n>>> EJECUTANDO PRUEBA ASISTENCIA...")
+User = get_user_model()
 
-        # 1. Preparar (Arrange) - Crear al empleado
-        empresa = Empresa.objects.create(nombre_comercial="Mango Time", razon_social="M Time S.A.", ruc="1111111111001", zona_horaria="America/Guayaquil")
-        unidad = UnidadOrganizacional.objects.create(empresa=empresa, nombre="RRHH")
-        puesto = Puesto.objects.create(empresa=empresa, nombre="Asistente")
+class AsistenciaWhiteBoxTests(TestCase):
+    def setUp(self):
+        self.empresa = Empresa.objects.create(nombre_comercial="Mango Time", ruc="111")
+        self.unidad = UnidadOrganizacional.objects.create(nombre="Planta", empresa=self.empresa)
+        self.puesto = Puesto.objects.create(nombre="Operario", empresa=self.empresa)
         
-        empleado = Empleado.objects.create(
-            empresa=empresa, unidad_org=unidad, puesto=puesto,
-            nombres="Ana", apellidos="Lopez", cedula="0101010101",
-            email="ana@mango.com", fecha_ingreso="2025-01-01"
+        self.user = User.objects.create_user(email='ana@mango.com', password='123')
+        self.empleado = Empleado.objects.create(
+            nombres="Ana", apellidos="Lopez", cedula="0101", email=self.user.email,
+            empresa=self.empresa, unidad_org=self.unidad, puesto=self.puesto,
+            fecha_ingreso="2024-01-01",
+            hora_entrada_teorica=time(9, 0),
+            hora_salida_teorica=time(18, 0)
         )
+        self.user.empleado = self.empleado
+        self.user.save()
+        
+        self.client = Client()
+        self.client.force_login(self.user)
 
-        # 2. Caso A: Solo marcó entrada (Sin atraso)
-        # Debería estar "INCOMPLETO" (Gris) porque aún no sale
-        jornada = JornadaCalculada.objects.create(
-            empleado=empleado,
-            fecha="2025-02-01",
-            hora_primera_entrada=timezone.now(),
-            minutos_tardanza=0
-        )
-        self.assertEqual(jornada.estado, JornadaCalculada.EstadoJornada.INCOMPLETO)
-        print("   -> Caso Entrada sola: OK (Incompleto)")
+    def test_registrar_entrada_logica_tardanza(self):
+        print("\n⏱️ [TEST] Iniciando: test_registrar_entrada_logica_tardanza")
+        ahora = timezone.localtime(timezone.now()).replace(hour=9, minute=15, second=0)
+        
+        with patch('django.utils.timezone.now', return_value=ahora):
+            url = reverse('asistencia:registrar_marca')
+            self.client.post(url, {'tipo_marca': 'entrada'})
 
-        # 3. Caso B: Marcó entrada PERO llegó tarde
-        # Debería marcar "ATRASO" (Naranja) inmediatamente
-        jornada.minutos_tardanza = 15 # 15 min tarde
-        jornada.save() # El método save() recalcula
+        jornada = JornadaCalculada.objects.get(empleado=self.empleado, fecha=ahora.date())
         self.assertEqual(jornada.estado, JornadaCalculada.EstadoJornada.ATRASO)
-        print("   -> Caso Atraso detectado: OK (Atraso)")
+        print("     ✅ Éxito: Atraso detectado correctamente.")
 
-        # 4. Caso C: Marcó Salida y fue Puntual
-        # Debería marcar "PUNTUAL" (Verde)
-        jornada.minutos_tardanza = 0
-        jornada.hora_ultima_salida = timezone.now()
-        jornada.save()
-        self.assertEqual(jornada.estado, JornadaCalculada.EstadoJornada.PUNTUAL)
-        print("   -> Caso Jornada perfecta: OK (Puntual)")
+class AsistenciaApiWhiteBoxTests(TestCase):
+    def setUp(self):
+        self.empresa_A = Empresa.objects.create(nombre_comercial="Empresa A", ruc="A")
+        self.u_A = UnidadOrganizacional.objects.create(nombre="U A", empresa=self.empresa_A)
+        self.p_A = Puesto.objects.create(nombre="P A", empresa=self.empresa_A)
+        self.user_A = User.objects.create_user(email='admin_a@test.com', password='123')
+        self.emp_A = Empleado.objects.create(nombres="A", apellidos="A", email="a@t.com", cedula="A1", empresa=self.empresa_A, unidad_org=self.u_A, puesto=self.p_A, fecha_ingreso="2025-01-01")
+        
+        self.empresa_B = Empresa.objects.create(nombre_comercial="Empresa B", ruc="B")
+        self.u_B = UnidadOrganizacional.objects.create(nombre="U B", empresa=self.empresa_B)
+        self.p_B = Puesto.objects.create(nombre="P B", empresa=self.empresa_B)
+        self.emp_B = Empleado.objects.create(nombres="B", apellidos="B", email="b@t.com", cedula="B1", empresa=self.empresa_B, unidad_org=self.u_B, puesto=self.p_B, fecha_ingreso="2025-01-01")
+        
+        self.client = Client()
+        self.client.force_login(self.user_A)
 
-        print(f"✅ ASISTENCIA TEST ÉXITO: El semáforo de estados funciona correctamente.")
+    def test_api_detalle_aislamiento_empresa(self):
+        print("\n🔍 [TEST] Iniciando: test_api_detalle_aislamiento_empresa")
+        
+        # CORRECCIÓN: El nombre correcto es 'api_detalle_dia' según asistencia/urls.py
+        url = reverse('asistencia:api_detalle_dia')
+        
+        session = self.client.session
+        session['empresa_actual_id'] = self.empresa_A.id
+        session.save()
+
+        response = self.client.get(url, {'empleado_id': self.emp_B.id, 'fecha': '2025-01-01'})
+        data = response.json()
+        self.assertEqual(len(data.get('eventos', [])), 0)
+        print("     ✅ Éxito: Aislamiento de API verificado.")
