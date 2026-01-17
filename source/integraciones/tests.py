@@ -9,6 +9,7 @@ from integraciones.services.integracion_service import IntegracionService
 from empleados.models import Empleado, Puesto
 from core.models import Empresa, UnidadOrganizacional
 from solicitudes.models import SolicitudAusencia, TipoAusencia
+import talenttrack.api_router 
 
 User = get_user_model()
 
@@ -100,7 +101,12 @@ class IntegracionApiWhiteBoxTests(TestCase):
             ]
         }
 
-        url = reverse('integraciones:api_empleados_import')
+        try:
+            # Intentamos con el nombre estándar de DRF
+            url = reverse('integracionerp-importar-empleados')
+        except:
+            # Si tienes un namespace global en el proyecto, cámbialo aquí
+            url = "/api/v1/integraciones/erp/importar_empleados/"
         print(f"   ↳ URL generada: {url}")
 
         # CORRECCIÓN: Enviamos el Header X-API-KEY
