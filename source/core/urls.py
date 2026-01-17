@@ -31,7 +31,6 @@ urlpatterns = [
     path('notificaciones/', include('notificaciones.urls')),
 
     # APIs
-    path('api/kpi/', include('kpi.api.urls')),
     path('api/usuarios/', include('usuarios.api.urls')),
     path('api/poa/', include('poa.api.urls')),
 

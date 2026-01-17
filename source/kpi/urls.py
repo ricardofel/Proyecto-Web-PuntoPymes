@@ -1,7 +1,7 @@
 from django.urls import path
 from .views.kpi_view import (
     dashboard_view, 
-    kpi_recalcular_global_view, # <--- ¡Agregado aquí!
+    kpi_recalcular_global_view, 
     kpi_generar_default_view, 
     kpi_detalle_view, 
     kpi_recalcular_view,

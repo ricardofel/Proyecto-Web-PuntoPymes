@@ -1,75 +1,124 @@
-import json
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-from django.core.serializers.json import DjangoJSONEncoder
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.permissions import IsAdminUser, AllowAny
 
+# Imports de modelos (Rutas absolutas)
+from integraciones.models import IntegracionErp, Webhook, LogIntegracion
 from empleados.models import Empleado
 from asistencia.models import EventoAsistencia
-from integraciones.models import IntegracionErp, LogIntegracion
+
+# Imports de servicios y serializadores
 from integraciones.services.integracion_service import IntegracionService
+from .serializers import (
+    IntegracionErpSerializer, 
+    WebhookSerializer, 
+    LogIntegracionSerializer
+)
 
-@require_http_methods(["GET"])
-def exportar_nomina_api(request):
-    try:
-        # OPTIMIZACIÓN: select_related para traer puesto y unidad en la misma consulta
-        empleados = Empleado.objects.select_related('puesto', 'unidad_org').all()
+class IntegracionErpViewSet(viewsets.ModelViewSet):
+    """
+    API para gestionar conexiones ERP.
+    Incluye endpoints personalizados para sincronización de datos.
+    """
+    queryset = IntegracionErp.objects.all().order_by('nombre')
+    serializer_class = IntegracionErpSerializer
+    # Por defecto protegemos todo, pero en las acciones personalizadas
+    # gestionaremos la seguridad vía API Key si es necesario.
+    permission_classes = [IsAdminUser] 
+
+    # --- ACCIÓN 1: IMPORTAR EMPLEADOS (POST) ---
+    # URL: /api/integraciones/erp/importar_empleados/
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny], url_path='importar-empleados')
+    def importar_empleados(self, request):
+        """
+        Recibe un JSON con empleados desde el ERP y los crea/actualiza en el sistema.
+        Valida la seguridad mediante X-API-KEY en el header.
+        """
+        api_key = request.headers.get('X-API-KEY')
         
-        data = []
-        for emp in empleados:
-            data.append({
-                "id": emp.id,
-                "nombre": f"{emp.nombres} {emp.apellidos}",
-                "cargo": emp.puesto.nombre if emp.puesto else "S/N", # Sin DB hit extra
-                "departamento": emp.unidad_org.nombre if emp.unidad_org else "S/N",
-                "salario": float(emp.salario)
-            })
-        
-        return JsonResponse({"datos": data}, encoder=DjangoJSONEncoder)
-    except Exception as e:
-        return JsonResponse({"error": str(e)}, status=500)
+        # 1. Validación de Seguridad Manual (API Key)
+        integracion = IntegracionErp.objects.filter(api_key=api_key, activo=True).first()
+        if not integracion:
+             return Response({"error": "Unauthorized / API Key inválida"}, status=status.HTTP_401_UNAUTHORIZED)
 
-@csrf_exempt 
-@require_http_methods(["POST"])
-def importar_empleados_api(request):
-    api_key = request.headers.get('X-API-KEY')
-    
-    # 1. Validación API Key (simplificada)
-    integracion = IntegracionErp.objects.filter(api_key=api_key, activo=True).first()
-    if not integracion:
-         return JsonResponse({"error": "Unauthorized"}, status=401)
+        try:
+            # DRF ya procesa el JSON en request.data
+            empleados_data = request.data.get('empleados', [])
+            
+            # 2. Delegar al servicio (Lógica de negocio)
+            creados, errores = IntegracionService.importar_empleados(empleados_data, api_key)
+            
+            # 3. Loguear resultado (Auditoría)
+            LogIntegracion.objects.create(
+                integracion=integracion,
+                endpoint="/api/integraciones/erp/importar-empleados/",
+                codigo_respuesta=201 if not errores else 206, 
+                mensaje_respuesta=f"Procesados: {len(empleados_data)}. Creados: {creados}. Errores: {len(errores)}"
+            )
 
-    try:
-        body = json.loads(request.body)
-        empleados_data = body.get('empleados', [])
-        
-        # 2. Delegar al servicio
-        creados, errores = IntegracionService.importar_empleados(empleados_data, api_key)
-        
-        # 3. Loguear resultado
-        LogIntegracion.objects.create(
-            integracion=integracion,
-            endpoint="/api/v1/importar/",
-            codigo_respuesta=201 if not errores else 206, # 206 Partial Content
-            mensaje_respuesta=f"Creados: {creados}. Errores: {len(errores)}"
-        )
+            return Response({"creados": creados, "errores": errores}, status=status.HTTP_200_OK)
 
-        return JsonResponse({"creados": creados, "errores": errores})
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON"}, status=400)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-@require_http_methods(["GET"])
-def exportar_asistencia_api(request):
-    try:
-        # OPTIMIZACIÓN: Traer datos del empleado de una vez
-        eventos = EventoAsistencia.objects.select_related('empleado').order_by('-registrado_el')[:50]
-        
-        data = [{
-            "fecha": ev.registrado_el,
-            "empleado": f"{ev.empleado.nombres} {ev.empleado.apellidos}", # Sin DB hit extra
-            "tipo": ev.get_tipo_display()
-        } for ev in eventos]
+    # --- ACCIÓN 2: EXPORTAR NÓMINA (GET) ---
+    # URL: /api/integraciones/erp/exportar_nomina/
+    @action(detail=False, methods=['get'], permission_classes=[IsAdminUser], url_path='exportar-nomina')
+    def exportar_nomina(self, request):
+        """
+        Genera un JSON con la data necesaria para el cálculo de nómina externo.
+        """
+        try:
+            # Optimización de consulta (Join)
+            empleados = Empleado.objects.select_related('puesto', 'unidad_org').all()
+            
+            data = []
+            for emp in empleados:
+                # Nota: Asegúrate de que tu modelo Empleado tenga el campo 'salario' 
+                # o ajusta aquí para sacarlo del último contrato activo.
+                salario_actual = getattr(emp, 'salario', 0) 
+                
+                data.append({
+                    "id": emp.id,
+                    "nombre": f"{emp.nombres} {emp.apellidos}",
+                    "cargo": emp.puesto.nombre if emp.puesto else "S/N",
+                    "departamento": emp.unidad_org.nombre if emp.unidad_org else "S/N",
+                    "salario": float(salario_actual)
+                })
+            
+            return Response({"datos": data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        return JsonResponse({"eventos": data}, encoder=DjangoJSONEncoder)
-    except Exception as e:
-        return JsonResponse({"error": str(e)}, status=500)
+    # --- ACCIÓN 3: EXPORTAR ASISTENCIA (GET) ---
+    # URL: /api/integraciones/erp/exportar_asistencia/
+    @action(detail=False, methods=['get'], permission_classes=[IsAdminUser], url_path='exportar-asistencia')
+    def exportar_asistencia(self, request):
+        """
+        Devuelve los últimos 50 registros de asistencia para sincronización.
+        """
+        try:
+            eventos = EventoAsistencia.objects.select_related('empleado').order_by('-registrado_el')[:50]
+            
+            data = [{
+                "fecha": ev.registrado_el,
+                "empleado": f"{ev.empleado.nombres} {ev.empleado.apellidos}",
+                "tipo": ev.get_tipo_display()
+            } for ev in eventos]
+
+            return Response({"eventos": data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class WebhookViewSet(viewsets.ModelViewSet):
+    queryset = Webhook.objects.all().order_by('nombre')
+    serializer_class = WebhookSerializer
+    permission_classes = [IsAdminUser]
+
+
+class LogIntegracionViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = LogIntegracion.objects.select_related('integracion', 'webhook').all().order_by('-fecha')
+    serializer_class = LogIntegracionSerializer
+    permission_classes = [IsAdminUser]
