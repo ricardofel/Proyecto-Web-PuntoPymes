@@ -1,17 +1,27 @@
 from rest_framework import serializers
 from auditoria.models import LogAuditoria
 
+
 class LogAuditoriaSerializer(serializers.ModelSerializer):
     """
-    transforma los registros de auditoria a formato json.
-    agrega campos calculados para mejorar la legibilidad del log.
+    Serializa los registros de auditoría a formato JSON.
+    Expone campos derivados para mejorar la legibilidad del historial.
     """
-    # mostramos el email o identificador del usuario en lugar del id numérico
-    usuario_identificador = serializers.CharField(source='usuario.email', default='Sistema/Anónimo', read_only=True)
-    
-    # expone el texto legible de la acción (ej: 'Creación' en vez de 'C')
-    accion_display = serializers.CharField(source='get_accion_display', read_only=True)
+
+    # Muestra el email del usuario en lugar del ID interno
+    # Si no existe usuario, se interpreta como acción del sistema
+    usuario_identificador = serializers.CharField(
+        source="usuario.email",
+        default="Sistema/Anónimo",
+        read_only=True
+    )
+
+    # Expone la representación legible de la acción (choices)
+    accion_display = serializers.CharField(
+        source="get_accion_display",
+        read_only=True
+    )
 
     class Meta:
         model = LogAuditoria
-        fields = '__all__'
+        fields = "__all__"

@@ -5,5 +5,4 @@ class AuditoriaConfig(AppConfig):
     name = 'auditoria'
 
     def ready(self):
-        # ¡ESTO ES CRÍTICO! Sin esto, el espía duerme.
         import auditoria.signals

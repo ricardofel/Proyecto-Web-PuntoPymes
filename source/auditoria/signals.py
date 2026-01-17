@@ -3,66 +3,71 @@ from django.dispatch import receiver
 from django.apps import apps
 from auditoria.models import LogAuditoria
 from auditoria.middleware import get_current_user
-from auditoria.constants import AccionesLog # <--- Importamos
+from auditoria.constants import AccionesLog
 
-# --- 1. CONFIGURACIÓN ---
+# Configuración de apps cuyos modelos serán auditados
 APPS_DEL_PROYECTO = [
-    'empleados', 
-    'asistencia', 
-    'solicitudes', 
-    'kpi', 
-    'integraciones', 
+    'empleados',
+    'asistencia',
+    'solicitudes',
+    'kpi',
+    'integraciones',
     'core',
     'usuarios',
     'poa',
     'notificaciones',
 ]
 
+# Carga dinámica y segura de modelos a vigilar
 modelos_vigilados = []
-# Llenamos la lista de modelos de forma segura
 for app_label in APPS_DEL_PROYECTO:
     try:
         app_config = apps.get_app_config(app_label)
         modelos_vigilados.extend(app_config.get_models())
     except LookupError:
-        pass # Si la app no está instalada aún, la ignoramos
+        # La app no está instalada; se ignora
+        pass
+
 
 def obtener_detalle(instance):
+    """Obtiene una representación corta del objeto para el log."""
     return str(instance)[:500]
 
-# --- 2. SEÑAL GUARDAR (Crear/Editar) ---
+
 @receiver(post_save)
 def registrar_cambio(sender, instance, created, **kwargs):
+    """Registra creación o edición de modelos vigilados."""
     if sender in modelos_vigilados:
-        # Evitamos auditar el propio Log para no hacer bucles infinitos
-        if sender == LogAuditoria: 
+        # Evita auditar el propio modelo de logs
+        if sender == LogAuditoria:
             return
 
         usuario = get_current_user()
-        
+
         LogAuditoria.objects.create(
             usuario=usuario if (usuario and usuario.is_authenticated) else None,
-            accion=AccionesLog.CREAR if created else AccionesLog.EDITAR, # Constantes
+            accion=AccionesLog.CREAR if created else AccionesLog.EDITAR,
             modulo=sender._meta.app_label.upper(),
             modelo=sender._meta.model_name.upper(),
             objeto_id=str(instance.pk),
-            detalle=obtener_detalle(instance)
+            detalle=obtener_detalle(instance),
         )
 
-# --- 3. SEÑAL ELIMINAR ---
+
 @receiver(post_delete)
 def registrar_eliminacion(sender, instance, **kwargs):
+    """Registra eliminación de modelos vigilados."""
     if sender in modelos_vigilados:
-        if sender == LogAuditoria: 
+        if sender == LogAuditoria:
             return
 
         usuario = get_current_user()
-        
+
         LogAuditoria.objects.create(
             usuario=usuario if (usuario and usuario.is_authenticated) else None,
-            accion=AccionesLog.ELIMINAR, # Constantes
+            accion=AccionesLog.ELIMINAR,
             modulo=sender._meta.app_label.upper(),
             modelo=sender._meta.model_name.upper(),
             objeto_id=str(instance.pk),
-            detalle=obtener_detalle(instance)
+            detalle=obtener_detalle(instance),
         )
