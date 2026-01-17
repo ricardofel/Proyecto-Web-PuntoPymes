@@ -96,72 +96,127 @@
     </form>
   </div>
 
-  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-    <table class="min-w-full divide-y divide-slate-200 text-sm">
-      <thead class="bg-slate-50">
-        <tr>
-          <th class="px-4 py-2 text-left font-semibold text-slate-700">Correo</th>
-          <th class="px-4 py-2 text-left font-semibold text-slate-700">Empleado</th>
-          <th class="px-4 py-2 text-left font-semibold text-slate-700">Rol</th>
-          <th class="px-4 py-2 text-left font-semibold text-slate-700">Estado</th>
-          <th class="px-4 py-2 text-center font-semibold text-slate-700">Acciones</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-100">
-        {% for u in usuarios %}
-          <tr class="hover:bg-slate-50">
-            <td class="px-4 py-2 text-slate-800">
-              {{ u.email }}
-            </td>
-
-            <td class="px-4 py-2 text-slate-600">
-              {{ u.empleado|default:"—" }}
-            </td>
-
-            <td class="px-4 py-2 text-sm text-slate-600">
-              {% with rol=u.roles_asignados.first %}
-                {% if rol %}
-                  {{ rol.nombre }}
-                {% else %}
-                  Sin rol
-                {% endif %}
-              {% endwith %}
-            </td>
-
-            <td class="px-4 py-2">
-              {% if u.estado %}
-                <span
-                  class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700"
-                >
-                  Activo
-                </span>
-              {% else %}
-                <span
-                  class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500"
-                >
-                  Inactivo
-                </span>
-              {% endif %}
-            </td>
-
-            <td class="px-4 py-2 text-center">
-              <a
-                href="{% url 'usuarios:editar_usuario' u.id %}"
-                class="text-blue-600 hover:text-blue-800 text-xs font-bold px-3 py-1 bg-blue-50 rounded hover:bg-blue-100 transition-colors"
-              >
-                Editar
-              </a>
-            </td>
-          </tr>
-        {% empty %}
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200 text-sm">
+        <thead class="bg-slate-50">
           <tr>
-            <td colspan="5" class="px-4 py-6 text-center text-slate-500 text-sm">
-              No hay usuarios registrados todavía.
-            </td>
+            <th class="px-4 py-2 text-left font-semibold text-slate-700">Correo</th>
+            <th class="px-4 py-2 text-left font-semibold text-slate-700">Empleado</th>
+            <th class="px-4 py-2 text-left font-semibold text-slate-700">Rol</th>
+            <th class="px-4 py-2 text-left font-semibold text-slate-700">Estado</th>
+            <th class="px-4 py-2 text-center font-semibold text-slate-700">Acciones</th>
           </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for u in usuarios %}
+            <tr class="hover:bg-slate-50">
+              <td class="px-4 py-2 text-slate-800">
+                {{ u.email }}
+              </td>
+
+              <td class="px-4 py-2 text-slate-600">
+                {{ u.empleado|default:"—" }}
+              </td>
+
+              <td class="px-4 py-2 text-sm text-slate-600">
+                {% with rol=u.roles_asignados.first %}
+                  {% if rol %}
+                    {{ rol.nombre }}
+                  {% else %}
+                    Sin rol
+                  {% endif %}
+                {% endwith %}
+              </td>
+
+              <td class="px-4 py-2">
+                {% if u.estado %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">
+                    Activo
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">
+                    Inactivo
+                  </span>
+                {% endif %}
+              </td>
+
+              <td class="px-4 py-2 text-center">
+                <a
+                  href="{% url 'usuarios:editar_usuario' u.id %}"
+                  class="text-blue-600 hover:text-blue-800 text-xs font-bold px-3 py-1 bg-blue-50 rounded hover:bg-blue-100 transition-colors"
+                >
+                  Editar
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5" class="px-4 py-6 text-center text-slate-500 text-sm">
+                No hay usuarios registrados todavía.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if usuarios.has_other_pages %}
+    <div class="px-4 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between sm:px-6">
+        <div class="flex-1 flex justify-between sm:hidden">
+            {% if usuarios.has_previous %}
+                <a href="?page={{ usuarios.previous_page_number }}&q={{ q }}" class="relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50">
+                    Anterior
+                </a>
+            {% endif %}
+            {% if usuarios.has_next %}
+                <a href="?page={{ usuarios.next_page_number }}&q={{ q }}" class="ml-3 relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50">
+                    Siguiente
+                </a>
+            {% endif %}
+        </div>
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm text-slate-700">
+                    Mostrando <span class="font-medium">{{ usuarios.start_index }}</span> a <span class="font-medium">{{ usuarios.end_index }}</span> de <span class="font-medium">{{ usuarios.paginator.count }}</span> resultados
+                </p>
+            </div>
+            <div>
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    {% if usuarios.has_previous %}
+                        <a href="?page={{ usuarios.previous_page_number }}&q={{ q }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50">
+                            <span class="sr-only">Anterior</span>
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                    {% endif %}
+
+                    {% for i in usuarios.paginator.page_range %}
+                        {% if usuarios.number == i %}
+                            <span class="relative inline-flex items-center px-4 py-2 border border-blue-500 bg-blue-50 text-sm font-medium text-blue-600 z-10">
+                                {{ i }}
+                            </span>
+                        {% else %}
+                            <a href="?page={{ i }}&q={{ q }}" class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">
+                                {{ i }}
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if usuarios.has_next %}
+                        <a href="?page={{ usuarios.next_page_number }}&q={{ q }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50">
+                            <span class="sr-only">Siguiente</span>
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+    </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

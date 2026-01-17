@@ -1,5 +1,5 @@
 from django.db import models
-
+from integraciones.constants import EstadoIntegracion, EventosWebhook
 class IntegracionErp(models.Model):
     """Configuración de conexiones a sistemas externos (SAP, Oracle, etc.)"""
     nombre = models.CharField(max_length=50, help_text="Ej: SAP HANA, Oracle Netsuite")
@@ -11,8 +11,8 @@ class IntegracionErp(models.Model):
     fecha_ultima_sincronizacion = models.DateTimeField(null=True, blank=True)
     estado_sincronizacion = models.CharField(
         max_length=20, 
-        choices=[('ok', 'Exitoso'), ('error', 'Error')],
-        default='ok'
+        choices=EstadoIntegracion.OPCIONES,
+        default=EstadoIntegracion.EXITOSO
     )
 
     class Meta:
@@ -24,12 +24,7 @@ class IntegracionErp(models.Model):
 
 
 class Webhook(models.Model):
-    """Disparadores HTTP para notificar eventos a apps externas (Slack, Teams, etc.)"""
-    EVENTOS = [
-        ('empleado_creado', 'Nuevo Empleado'),
-        ('solicitud_aprobada', 'Vacaciones Aprobadas'),
-        ('alerta_kpi', 'Alerta de KPI Bajo'),
-    ]
+    EVENTOS = EventosWebhook.OPCIONES
 
     nombre = models.CharField(max_length=100, help_text="Ej: Notificar a Slack RRHH")
     evento = models.CharField(max_length=50, choices=EVENTOS)

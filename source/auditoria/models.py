@@ -1,23 +1,21 @@
 from django.db import models
 from django.conf import settings
+from auditoria.constants import AccionesLog  # <--- Importamos
 
 class LogAuditoria(models.Model):
-    ACCIONES = [
-        ('CREAR', 'Creación'),
-        ('EDITAR', 'Edición'),
-        ('ELIMINAR', 'Eliminación'),
-    ]
+    # Usamos las constantes importadas
+    ACCIONES = AccionesLog.OPCIONES
 
     usuario = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
-        on_delete=models.SET_NULL, # Si borran al usuario, queda el log
+        on_delete=models.SET_NULL, 
         null=True, blank=True
     )
     accion = models.CharField(max_length=10, choices=ACCIONES)
-    modulo = models.CharField(max_length=50) # Ej: EMPLEADOS
-    modelo = models.CharField(max_length=50) # Ej: Empleado
-    objeto_id = models.CharField(max_length=50) # ID del objeto afectado
-    detalle = models.TextField() # Resumen de qué pasó
+    modulo = models.CharField(max_length=50) 
+    modelo = models.CharField(max_length=50) 
+    objeto_id = models.CharField(max_length=50) 
+    detalle = models.TextField() 
     
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     fecha = models.DateTimeField(auto_now_add=True)

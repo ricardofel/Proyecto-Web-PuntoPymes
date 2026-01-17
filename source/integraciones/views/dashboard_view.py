@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.utils import timezone
 from integraciones.models import IntegracionErp, Webhook, LogIntegracion
 from usuarios.decorators import solo_superusuario
+from integraciones.services.integracion_service import IntegracionService
 # --- 1. VISTA PRINCIPAL DEL DASHBOARD ---
 @login_required
 @solo_superusuario
@@ -44,59 +45,19 @@ def logs_actualizados_view(request):
 @login_required
 @solo_superusuario
 def probar_conexion_erp_view(request, pk):
-    """
-    Realiza un PING REAL (HTTP GET) al servidor externo.
-    """
     erp = get_object_or_404(IntegracionErp, pk=pk)
     
-    # Si la integración está PAUSADA (inactiva), no permitimos probar conexión
     if not erp.activo:
-        messages.warning(request, f"La integración con {erp.nombre} está pausada. Actívela primero.")
+        messages.warning(request, "Integración pausada.")
         return redirect('integraciones:dashboard')
 
-    # URL real configurada en la base de datos
-    url = erp.url_api
+    # Usamos el servicio
+    exito, mensaje = IntegracionService.probar_conexion_erp(erp)
     
-    try:
-        # 1. Petición REAL a internet
-        # Timeout de 5 segundos para no colgar el servidor si no responde
-        response = requests.get(url, timeout=5)
-        
-        # 2. Análisis de la respuesta real
-        status_code = response.status_code
-        
-        # Consideramos éxito si el servidor responde (incluso 401/403 significa que está vivo)
-        if 200 <= status_code < 500:
-            erp.estado_sincronizacion = 'ok'
-            erp.fecha_ultima_sincronizacion = timezone.now()
-            erp.save()
-            
-            LogIntegracion.objects.create(
-                integracion=erp,
-                endpoint=url,
-                codigo_respuesta=status_code,
-                mensaje_respuesta=f"Conexión exitosa. Tiempo respuesta: {response.elapsed.total_seconds()}s"
-            )
-            messages.success(request, f"Servidor respondió correctamente (Código {status_code}).")
-            
-        else:
-            # El servidor dio error interno (500+)
-            raise Exception(f"Servidor devolvió error interno {status_code}")
-
-    except requests.exceptions.RequestException as e:
-        # 3. Captura de errores REALES (Sin internet, URL mal escrita, DNS fallido)
-        erp.estado_sincronizacion = 'error'
-        erp.save()
-        
-        mensaje_error = f"Fallo de conexión: {str(e)}"
-        
-        LogIntegracion.objects.create(
-            integracion=erp,
-            endpoint=url,
-            codigo_respuesta=0, # 0 indica que no hubo respuesta HTTP
-            mensaje_respuesta=mensaje_error[:200] # Cortamos si es muy largo
-        )
-        messages.error(request, f"No se pudo conectar con {erp.nombre}. Verifique la URL.")
+    if exito:
+        messages.success(request, mensaje)
+    else:
+        messages.error(request, mensaje)
         
     return redirect('integraciones:dashboard')
 
@@ -124,51 +85,16 @@ def cambiar_estado_erp_view(request, pk):
 @login_required
 @solo_superusuario
 def probar_webhook_view(request, pk):
-    """
-    Envía un payload JSON de prueba a la URL destino del Webhook.
-    """
-    webhook = get_object_or_404(Webhook, pk=pk)
+    hook = get_object_or_404(Webhook, pk=pk)
     
-    if not webhook.activo:
-        messages.warning(request, f"El webhook {webhook.nombre} está inactivo.")
-        return redirect('integraciones:dashboard')
-
-    # Datos de prueba simulando un evento real
-    payload = {
-        "evento": webhook.evento,
-        "timestamp": timezone.now().isoformat(),
-        "sistema_origen": "Talent Track RRHH",
-        "datos": {
-            "empleado": "Tony Stark",
-            "accion": "Contratación",
-            "departamento": "Ingeniería",
-            "mensaje": "Se ha registrado un nuevo ingreso en el sistema."
-        }
-    }
-
-    try:
-        # 1. Disparo REAL a internet (POST request)
-        response = requests.post(webhook.url_destino, json=payload, timeout=5)
-        
-        # 2. Registrar el intento
-        LogIntegracion.objects.create(
-            webhook=webhook, # Asegúrate que tu modelo Log tenga este campo, si no, usa 'endpoint'
-            endpoint=webhook.url_destino,
-            codigo_respuesta=response.status_code,
-            mensaje_respuesta=f"Webhook disparado. Respuesta: {response.text[:100]}"
-        )
-        
-        if 200 <= response.status_code < 300:
-            messages.success(request, f"Evento enviado exitosamente a {webhook.nombre} (Code {response.status_code})")
-        else:
-            messages.warning(request, f"El servidor remoto recibió el evento pero respondió con error: {response.status_code}")
-
-    except requests.exceptions.RequestException as e:
-        LogIntegracion.objects.create(
-            endpoint=webhook.url_destino,
-            codigo_respuesta=0,
-            mensaje_respuesta=f"Fallo envío Webhook: {str(e)}"
-        )
-        messages.error(request, f"No se pudo enviar el evento. Verifique la URL.")
+    payload = {"evento": "TEST", "mensaje": "Prueba manual desde Dashboard"}
+    
+    # Usamos el servicio
+    codigo = IntegracionService.disparar_webhook(hook, payload)
+    
+    if 200 <= codigo < 300:
+        messages.success(request, f"Webhook enviado (Código {codigo})")
+    else:
+        messages.error(request, f"Error al enviar (Código {codigo})")
 
     return redirect('integraciones:dashboard')
