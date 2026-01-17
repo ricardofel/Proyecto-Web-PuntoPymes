@@ -1,22 +1,18 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from notificaciones.services.notificacion_service import NotificacionService
 from notificaciones.models import Notificacion
 
 @login_required
-def listar_notificaciones(request):
-    """Muestra el historial completo de notificaciones del usuario"""
-    notificaciones = Notificacion.objects.filter(usuario=request.user)
+def lista_notificaciones(request):
+    """Muestra todas y las marca como leídas al entrar."""
     
-    # Opcional: Marcar todo como leído al entrar a ver el historial
-    # notificaciones.update(leido=True) 
+    # 1. Obtenemos todas antes de marcar como leídas (para el historial)
+    todas = Notificacion.objects.filter(usuario=request.user)
     
-    return render(request, 'notificaciones/lista.html', {
-        'notificaciones': notificaciones
+    # 2. Marcamos todo como leído usando el servicio
+    NotificacionService.marcar_como_leidas(request.user)
+    
+    return render(request, "notificaciones/lista.html", {
+        "notificaciones": todas
     })
-
-@login_required
-def marcar_todas_leidas(request):
-    """Acción invisible que limpia el contador rojo"""
-    Notificacion.objects.filter(usuario=request.user, leido=False).update(leido=True)
-    # Regresa a la página donde estaba el usuario
-    return redirect(request.META.get('HTTP_REFERER', '/'))
