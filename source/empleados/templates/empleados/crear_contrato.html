@@ -1,0 +1,84 @@
+{% extends 'core/base_dashboard.html' %}
+
+{% block header_title %}Nuevo Contrato{% endblock %}
+{% block header_subtitle %}Registrar vinculación laboral para {{ empleado.nombres }}{% endblock %}
+
+{% block page_content %}
+<div class="max-w-3xl mx-auto">
+    
+    <div class="mb-6">
+        <a href="{% url 'empleados:lista_contratos' empleado.id %}" class="text-sm text-slate-500 hover:text-blue-600 flex items-center gap-1 font-medium transition-colors w-max">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Volver al historial
+        </a>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        
+        <form method="POST" enctype="multipart/form-data" class="p-8">
+            {% csrf_token %}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                
+                <div class="md:col-span-1">
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tipo de Contrato</label>
+                    {{ form.tipo }}
+                </div>
+
+                <div class="md:col-span-1">
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Cargo en Papel</label>
+                    {{ form.cargo_en_contrato }}
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Fecha Inicio</label>
+                    {{ form.fecha_inicio }}
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Fecha Fin (Opcional)</label>
+                    {{ form.fecha_fin }}
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Salario Mensual</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500 text-sm">$</span>
+                        {{ form.salario }} 
+                    </div>
+                </div>
+
+                <div class="flex items-center h-full pt-6">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        {{ form.estado }}
+                        <span class="text-sm font-bold text-slate-700">Contrato Vigente (Activo)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="mb-6 p-4 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Documento PDF (Contrato Firmado)</label>
+                {{ form.archivo_pdf }}
+                <p class="text-[10px] text-slate-400 mt-2">
+                    El archivo se guardará en una carpeta privada y segura.
+                </p>
+            </div>
+
+            <div class="mb-8">
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Observaciones</label>
+                {{ form.observaciones }}
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                <a href="{% url 'empleados:lista_contratos' empleado.id %}" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                    Cancelar
+                </a>
+                <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 shadow-md shadow-blue-200 transition-all transform hover:scale-105">
+                    Guardar Contrato
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

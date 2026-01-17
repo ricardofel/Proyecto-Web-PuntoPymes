@@ -2,7 +2,7 @@ import os
 from django.db import models
 from django.utils import timezone 
 from django.utils.translation import gettext_lazy as _
-from core.storage import private_storage
+from core.storage import private_storage    
 
 """
 Modelos de la app empleados:
@@ -171,7 +171,18 @@ class Empleado(models.Model):
         return f"{self.nombres} {self.apellidos}"
 
 
-# --- 3. MODELO CONTRATO (RECUPERADO) ---
+def ruta_contrato_dinamica(instance, filename):
+    # Genera: contratos/empleado_00005/nombre_archivo.pdf
+    # El :05d rellena con ceros a la izquierda (1 -> 00001)
+    id_empleado = instance.empleado.id
+    extension = filename.split('.')[-1]
+    
+    # Opcional: Si quieres renombrar el archivo también (ej: contrato_2026-01-01.pdf)
+    # nombre_limpio = f"contrato_{instance.fecha_inicio}.{extension}"
+    # return f'contratos/empleado_{id_empleado:05d}/{nombre_limpio}'
+    
+    return f'contratos/empleado_{id_empleado:05d}/{filename}'
+
 class Contrato(models.Model):
     TIPOS = [
         ('Indefinido', 'Tiempo Indefinido'),
@@ -180,19 +191,18 @@ class Contrato(models.Model):
         ('Eventual', 'Eventual / Pasantía'),
     ]
 
-    empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE, related_name='contratos')
+    empleado = models.ForeignKey('Empleado', on_delete=models.CASCADE, related_name='contratos')
     tipo = models.CharField(max_length=50, choices=TIPOS)
     
-    # Datos del papel
     cargo_en_contrato = models.CharField(max_length=100)
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField(null=True, blank=True)
     salario = models.DecimalField(max_digits=10, decimal_places=2)
     
-    # --- AQUÍ USAMOS EL STORAGE PRIVADO ---
+    # === CAMBIO AQUÍ: Usamos la función para la ruta ===
     archivo_pdf = models.FileField(
-        upload_to='contratos/%Y/',  # Se guardará en: private_media/contratos/2025/archivo.pdf
-        storage=private_storage,    # <--- La clave de la seguridad
+        upload_to=ruta_contrato_dinamica, # <--- Aquí la magia de la carpeta
+        storage=private_storage,          # Mantenemos la seguridad
         null=True, blank=True,
         verbose_name="PDF Firmado"
     )

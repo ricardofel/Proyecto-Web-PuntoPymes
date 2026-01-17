@@ -10,9 +10,11 @@ from django.views.generic import ListView
 from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
+from django.http import FileResponse, Http404
 
 # --- 2. Imports del Core (Mixins y Lógica Global) ---
 from core.mixins import FiltradoEmpresaMixin
+from core.storage import private_storage
 
 # --- 3. Imports de Usuarios (Decoradores y Roles) ---
 from usuarios.decorators import solo_superusuario_o_admin_rrhh
@@ -20,7 +22,7 @@ from usuarios.models import Rol, UsuarioRol
 
 # --- 4. Imports Locales (Empleados) ---
 from .models import Empleado, Contrato
-from .forms import EmpleadoForm
+from .forms import EmpleadoForm, ContratoForm
 
 # =========================================================
 # 1. LISTA DE EMPLEADOS (Protegida y Filtrada)
@@ -199,3 +201,51 @@ def cambiar_estado_empleado_view(request, pk):
             
         messages.success(request, f"Estado cambiado a {nuevo_estado}")
     return redirect('empleados:editar_empleado', pk=pk)
+
+
+def crear_contrato_view(request, empleado_id):
+    empleado = get_object_or_404(Empleado, pk=empleado_id)
+    
+    if request.method == 'POST':
+        form = ContratoForm(request.POST, request.FILES) # <--- IMPORTANTE: request.FILES
+        if form.is_valid():
+            contrato = form.save(commit=False)
+            contrato.empleado = empleado # Asignamos el empleado AQUÍ
+            contrato.save() # Al guardar, se ejecuta upload_to usando contrato.empleado.id
+            messages.success(request, "Contrato registrado correctamente.")
+            return redirect('empleados:lista_contratos', empleado_id=empleado.id)
+    else:
+        form = ContratoForm()
+    
+    return render(request, 'empleados/crear_contrato.html', {
+        'form': form, 
+        'empleado': empleado
+    })
+
+@login_required
+def servir_contrato_privado(request, filepath):
+    # 1. Limpieza de seguridad: Quitamos barras al inicio o final
+    filepath = filepath.strip('/')
+    
+    # 2. FIX DE DOBLE RUTA: 
+    # A veces la BD guarda "contratos/archivo.pdf" y a veces solo "archivo.pdf".
+    # Si la ruta que nos llega YA empieza con 'contratos/', la usamos tal cual.
+    # Si NO empieza con 'contratos/', se lo agregamos (por si acaso).
+    
+    # En tu caso, la BD YA TIENE "contratos/...", así que confiamos en filepath.
+    ruta_final = filepath
+
+    # Debug (opcional, lo verás en la consola negra donde corre el server)
+    print(f"--- INTENTANDO ABRIR: {ruta_final} ---")
+
+    # 3. Verificar existencia
+    if not private_storage.exists(ruta_final):
+        # Intento de rescate: Probamos agregando 'contratos/' si falló el anterior
+        if private_storage.exists(f'contratos/{ruta_final}'):
+             ruta_final = f'contratos/{ruta_final}'
+        else:
+             raise Http404(f"El documento no se encuentra en: {ruta_final}")
+        
+    # 4. Servir archivo
+    archivo = private_storage.open(ruta_final)
+    return FileResponse(archivo)
