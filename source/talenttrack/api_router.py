@@ -1,25 +1,44 @@
 from rest_framework import routers
 
-# --- IMPORTACIONES ---
+# 1. Core
+from core.api.views import EmpresaViewSet, UnidadOrganizacionalViewSet
+
+# 2. RRHH
 from empleados.api.views import EmpleadoViewSet
 from asistencia.api.views import EventoAsistenciaViewSet
-from auditoria.api.views import LogAuditoriaViewSet
-from integraciones.api.views import (
-    IntegracionErpViewSet, WebhookViewSet, LogIntegracionViewSet
-)
-from kpi.api.views import KPIViewSet, KPIResultadoViewSet
-from notificaciones.api.views import NotificacionViewSet
-from poa.api.views import ObjetivoViewSet, MetaTacticoViewSet, ActividadViewSet
+
+# 3. Solicitudes
 from solicitudes.api.views import (
     TipoAusenciaViewSet, SolicitudAusenciaViewSet, RegistroVacacionesViewSet
 )
 
-# 1. Importamos Usuarios
+# 4. Seguridad y Auditoría
+from auditoria.api.views import LogAuditoriaViewSet
 from usuarios.api.views import UsuarioViewSet, RolViewSet
 
+# 5. Integraciones
+from integraciones.api.views import (
+    IntegracionErpViewSet, WebhookViewSet, LogIntegracionViewSet
+)
+
+# 6. Desempeño y Estrategia
+from kpi.api.views import KPIViewSet, KPIResultadoViewSet
+from poa.api.views import ObjetivoViewSet, MetaTacticoViewSet, ActividadViewSet
+
+# 7. Notificaciones
+from notificaciones.api.views import NotificacionViewSet
+
+
+# --- CONFIGURACIÓN DEL ROUTER ---
 router = routers.DefaultRouter()
 
-# RRHH Core
+# === REGISTRO DE RUTAS ===
+
+# Core
+router.register(r'core/empresas', EmpresaViewSet)
+router.register(r'core/unidades', UnidadOrganizacionalViewSet)
+
+# RRHH
 router.register(r'empleados', EmpleadoViewSet)
 router.register(r'asistencias', EventoAsistenciaViewSet)
 
@@ -28,17 +47,17 @@ router.register(r'solicitudes/tipos', TipoAusenciaViewSet)
 router.register(r'solicitudes/gestion', SolicitudAusenciaViewSet, basename='solicitud')
 router.register(r'solicitudes/saldos', RegistroVacacionesViewSet, basename='saldo_vacaciones')
 
-# Seguridad y Auditoría
+# Usuarios y Seguridad
+router.register(r'usuarios', UsuarioViewSet, basename='usuario')
+router.register(r'roles', RolViewSet)
 router.register(r'auditoria', LogAuditoriaViewSet)
-router.register(r'usuarios', UsuarioViewSet, basename='usuario') # <--- NUEVO
-router.register(r'roles', RolViewSet) # <--- NUEVO
 
 # Integraciones
 router.register(r'integraciones/erp', IntegracionErpViewSet)
 router.register(r'integraciones/webhooks', WebhookViewSet)
 router.register(r'integraciones/logs', LogIntegracionViewSet)
 
-# Desempeño y Estrategia
+# KPIs y POA
 router.register(r'kpis/definiciones', KPIViewSet)
 router.register(r'kpis/resultados', KPIResultadoViewSet)
 router.register(r'poa/objetivos', ObjetivoViewSet)
