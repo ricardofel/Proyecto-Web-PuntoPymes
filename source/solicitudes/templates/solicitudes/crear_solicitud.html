@@ -9,86 +9,250 @@
 <div class="max-w-3xl mx-auto">
     <div class="bg-white p-8 rounded-lg shadow-xl border border-gray-100">
         <h2 class="text-xl font-semibold text-gray-800 border-b pb-4 mb-6">
-            {% if es_edicion %}Editando Solicitud #{{ solicitud.id }}{% else %}Detalles de la Ausencia{% endif %}
+            {% if es_edicion %}Editando Solicitud #{{ form.instance.id }}{% else %}Detalles de la Ausencia{% endif %}
         </h2>
 
-        <form method="post" enctype="multipart/form-data">
+        {# === IMPORTANTE: enctype obligatorio para subir archivos === #}
+        <form method="post" enctype="multipart/form-data" id="form-solicitud">
             {% csrf_token %} 
             
+            {% if form.non_field_errors %}
+                <div class="mb-4 p-4 bg-red-50 text-red-700 rounded-md">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
             <div class="space-y-6">
                 
-                {# TIPO DE SOLICITUD #}
+                {# 1. TIPO DE SOLICITUD #}
                 <div>
-                    <label for="ausencia" class="block text-sm font-medium text-gray-700 mb-1">
-                        Tipo de Solicitud <span class="text-red-500">*</span>
-                    </label>
-                    <select id="ausencia" name="ausencia" required
-                        class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        <option value="" disabled {% if not solicitud %}selected{% endif %}>Selecciona un tipo...</option>
-                        {% for tipo in tipos_ausencia %}
-                            <option value="{{ tipo.id }}" 
-                                {% if solicitud and solicitud.ausencia_id == tipo.id %}selected{% endif %}>
-                                {{ tipo.nombre }}
-                            </option>
-                        {% endfor %}
-                    </select>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Solicitud <span class="text-red-500">*</span></label>
+                    {{ form.ausencia }}
+                    {% if form.ausencia.errors %}
+                        <p class="text-xs text-red-500 mt-1">{{ form.ausencia.errors.0 }}</p>
+                    {% endif %}
                 </div>
 
-                {# FECHAS #}
+                {# 2. FECHAS #}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label for="fecha_inicio" class="block text-sm font-medium text-gray-700 mb-1">Fecha Inicio <span class="text-red-500">*</span></label>
-                        {# IMPORTANTE: El filtro date:'Y-m-d' es necesario para que el input type="date" reconozca el valor #}
-                        <input type="date" id="fecha_inicio" name="fecha_inicio" required 
-                               value="{{ solicitud.fecha_inicio|date:'Y-m-d'|default:'' }}"
-                            class="block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Inicio <span class="text-red-500">*</span></label>
+                        {{ form.fecha_inicio }}
+                        {% if form.fecha_inicio.errors %}
+                            <p class="text-xs text-red-500 mt-1">{{ form.fecha_inicio.errors.0 }}</p>
+                        {% endif %}
                     </div>
                     <div>
-                        <label for="fecha_fin" class="block text-sm font-medium text-gray-700 mb-1">Fecha Fin <span class="text-red-500">*</span></label>
-                        <input type="date" id="fecha_fin" name="fecha_fin" required
-                               value="{{ solicitud.fecha_fin|date:'Y-m-d'|default:'' }}"
-                            class="block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Fin <span class="text-red-500">*</span></label>
+                        {{ form.fecha_fin }}
+                        {% if form.fecha_fin.errors %}
+                            <p class="text-xs text-red-500 mt-1">{{ form.fecha_fin.errors.0 }}</p>
+                        {% endif %}
                     </div>
                 </div>
 
-                {# DÍAS HÁBILES #}
+                {# 3. MOTIVO #}
                 <div>
-                    <label for="dias_habiles" class="block text-sm font-medium text-gray-700 mb-1">Total Días Hábiles <span class="text-red-500">*</span></label>
-                    {# Usamos stringformat:'f' para decimales en inputs number #}
-                    <input type="number" id="dias_habiles" name="dias_habiles" required step="0.5" min="0.5"
-                           value="{{ solicitud.dias_habiles|default:'' }}"
-                        class="block w-full md:w-1/3 py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                </div>
-
-                {# MOTIVO #}
-                <div>
-                    <label for="motivo" class="block text-sm font-medium text-gray-700 mb-1">Motivo / Justificación <span class="text-red-500">*</span></label>
-                    <textarea id="motivo" name="motivo" rows="4" required
-                        class="block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">{{ solicitud.motivo|default:'' }}</textarea>
-                </div>
-
-                {# ADJUNTO #}
-                <div>
-                    <label for="adjunto" class="block text-sm font-medium text-gray-700 mb-1">Documento (Opcional)</label>
-                    {% if solicitud.adjunto_url %}
-                        <p class="text-xs text-blue-600 mb-2">Archivo actual: {{ solicitud.adjunto_url }}</p>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Motivo / Justificación <span class="text-red-500">*</span></label>
+                    {{ form.motivo }}
+                    {% if form.motivo.errors %}
+                        <p class="text-xs text-red-500 mt-1">{{ form.motivo.errors.0 }}</p>
                     {% endif %}
-                    <input type="file" id="adjunto" name="adjunto"
-                        class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors">
+                </div>
+
+                {# 4. GESTOR DE ARCHIVOS #}
+                <div class="border-t border-gray-100 pt-6 mt-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-3">Documentos de Soporte</label>
+                    
+                    {# Input Real de Django (Oculto) #}
+                    <div class="hidden">
+                        {{ form.archivos_nuevos }}
+                    </div>
+                    {# Mostramos errores del archivo si los hubiera #}
+                    {% if form.archivos_nuevos.errors %}
+                        <p class="text-xs text-red-500 mb-2">{{ form.archivos_nuevos.errors.0 }}</p>
+                    {% endif %}
+
+                    {# Botón Visual #}
+                    <button type="button" id="btn-agregar-archivo" 
+                            class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition-colors mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Agregar Archivo
+                    </button>
+
+                    {# Contenedor de Fichas #}
+                    <div class="space-y-3" id="contenedor-archivos">
+                        
+                        {# Archivos ya guardados (Solo edición) #}
+                        {% if adjuntos_existentes %}
+                            {% for adj in adjuntos_existentes %}
+                                <div id="adjunto-db-{{ adj.id }}" class="flex items-center justify-between p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
+                                    <div class="flex items-center gap-3 overflow-hidden">
+                                        <div class="bg-white p-1.5 rounded text-indigo-500 shadow-sm">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                        </div>
+                                        <div class="flex flex-col">
+                                            <a href="{% url 'solicitudes:descargar_adjunto' adj.id %}" target="_blank" class="text-sm font-medium text-indigo-900 hover:underline truncate">
+                                                {{ adj.filename }}
+                                            </a>
+                                            <span class="text-xs text-indigo-400">Guardado previamente</span>
+                                        </div>
+                                    </div>
+                                    
+                                    {# Botón Eliminar BD - CORREGIDO CON COMILLAS #}
+                                    <button type="button" onclick="eliminarAdjuntoDB('{{ adj.id }}')" 
+                                            class="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-white transition-all" title="Eliminar">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+
+                        {# Aquí JS insertará los nuevos #}
+                    </div>
+                    
+                    {# Mensaje Vacío - CORREGIDO CON CLASE HIDDEN #}
+                    <p class="text-xs text-gray-400 mt-3 {% if adjuntos_existentes %}hidden{% endif %}" id="msg-vacio">
+                        No hay archivos seleccionados.
+                    </p>
                 </div>
             </div>
 
             <div class="pt-8 border-t border-gray-200 mt-8 flex justify-end gap-3">
-                <a href="{% url 'solicitudes:vista_empleado' %}"
-                    class="inline-flex items-center px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors font-medium text-sm shadow-sm">
+                <a href="{% url 'solicitudes:vista_empleado' %}" class="inline-flex items-center px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors font-medium text-sm shadow-sm">
                     Cancelar
                 </a>
-                <button type="submit"
-                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
-                    {% if es_edicion %}Actualizar Solicitud{% else %}Enviar Solicitud{% endif %}
+                <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                    {% if es_edicion %}Guardar Cambios{% else %}Enviar Solicitud{% endif %}
                 </button>
             </div>
         </form>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        const inputReal = document.getElementById('id_archivos_nuevos');
+        const btnAgregar = document.getElementById('btn-agregar-archivo');
+        const contenedor = document.getElementById('contenedor-archivos');
+        const msgVacio = document.getElementById('msg-vacio');
+        
+        const dt = new DataTransfer();
+
+        btnAgregar.addEventListener('click', () => {
+            const inputTemp = document.createElement('input');
+            inputTemp.type = 'file';
+            inputTemp.multiple = true; 
+            
+            inputTemp.onchange = (e) => {
+                const files = e.target.files;
+                for (let i = 0; i < files.length; i++) {
+                    dt.items.add(files[i]);
+                }
+                inputReal.files = dt.files;
+                renderizarFichasNuevas();
+            };
+            
+            inputTemp.click();
+        });
+
+        window.renderizarFichasNuevas = function() {
+            const fichasNuevas = document.querySelectorAll('.ficha-nueva-js');
+            fichasNuevas.forEach(el => el.remove());
+
+            if (dt.files.length > 0) {
+                msgVacio.classList.add('hidden'); 
+                
+                for (let i = 0; i < dt.files.length; i++) {
+                    const file = dt.files[i];
+                    
+                    const div = document.createElement('div');
+                    div.className = 'ficha-nueva-js flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg animate-fade-in';
+                    div.innerHTML = `
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <div class="bg-white p-1.5 rounded text-gray-500 shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-sm font-medium text-gray-700 truncate">${file.name}</span>
+                                <span class="text-xs text-green-600">Listo para subir</span>
+                            </div>
+                        </div>
+                        <button type="button" onclick="eliminarDeListaSubida(${i})" class="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-white transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    `;
+                    contenedor.appendChild(div);
+                }
+            } else {
+                verificarVacio();
+            }
+        };
+
+        window.eliminarDeListaSubida = function(index) {
+            dt.items.remove(index);
+            inputReal.files = dt.files;
+            renderizarFichasNuevas();
+        };
+
+        function verificarVacio() {
+            const hayArchivosBD = document.querySelectorAll('[id^="adjunto-db-"]').length > 0;
+            const hayArchivosNuevos = dt.files.length > 0;
+            
+            if (!hayArchivosBD && !hayArchivosNuevos) {
+                msgVacio.classList.remove('hidden');
+            } else {
+                msgVacio.classList.add('hidden');
+            }
+        }
+        
+        window.eliminarAdjuntoDB = function(id) {
+            if (!confirm('¿Eliminar este archivo guardado permanentemente?')) return;
+
+            fetch(`/solicitudes/eliminar-adjunto/${id}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                },
+            })
+            .then(response => {
+                if (response.ok) {
+                    const el = document.getElementById(`adjunto-db-${id}`);
+                    if (el) {
+                        el.style.opacity = '0';
+                        setTimeout(() => {
+                            el.remove();
+                            verificarVacio(); 
+                        }, 300);
+                    }
+                } else {
+                    alert('Error al eliminar.');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    });
+</script>
+
+<style>
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+        animation: fadeIn 0.3s ease-out forwards;
+    }
+</style>
 {% endblock %}
