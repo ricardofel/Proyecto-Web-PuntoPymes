@@ -1,67 +1,39 @@
-# kpi/calculators.py
 from django.contrib.auth import get_user_model
 from empleados.models import Empleado
-
-User = get_user_model()
+from kpi.constants import CodigosKPI
 
 def calcular_valor_automatico(kpi):
     """
-    Calculadora automática basada en datos existentes del sistema.
-    Siempre retorna un número (float o int).
+    Calculadora basada en CÓDIGO, no en nombre.
     """
-    nombre = (kpi.nombre or "").lower()
     empresa = kpi.empresa
+    codigo = kpi.codigo
 
-    # 1) Empleados Activos
-    if "empleados activos" in nombre:
+    if codigo == CodigosKPI.HEADCOUNT:
         return Empleado.objects.filter(
-            empresa=empresa,
+            empresa=empresa, 
             estado=Empleado.Estado.ACTIVO
         ).count()
 
-    # 2) Empleados Inactivos
-    elif "empleados inactivos" in nombre:
-        return Empleado.objects.filter(
-            empresa=empresa,
-            estado=Empleado.Estado.INACTIVO
-        ).count()
+    elif codigo == CodigosKPI.PUNTUALIDAD:
+        # Lógica placeholder (aquí conectarías con asistencia)
+        return 95.0 
 
-    # 3) Total de Empleados
-    elif "total de empleados" in nombre or "total empleados" in nombre:
-        return Empleado.objects.filter(empresa=empresa).count()
+    elif codigo == CodigosKPI.AUSENTISMO:
+        # Lógica placeholder
+        return 2.5
 
-    # 4) % Empleados Activos
-    elif "porcentaje de empleados activos" in nombre:
-        total = Empleado.objects.filter(empresa=empresa).count()
-        if total == 0:
-            return 0.0
-        activos = Empleado.objects.filter(
-            empresa=empresa,
+    elif codigo == CodigosKPI.SALARIO_PROM:
+        from django.db.models import Avg
+        promedio = Empleado.objects.filter(
+            empresa=empresa, 
             estado=Empleado.Estado.ACTIVO
-        ).count()
-        return round((activos / total) * 100, 2)
+        ).aggregate(Avg('salario'))['salario__avg']
+        return round(promedio, 2) if promedio else 0.0
 
-    # 5) Usuarios Activos (tu User usa "estado")
-    elif "usuarios activos" in nombre:
-        return User.objects.filter(estado=True).count()
+    elif codigo == CodigosKPI.MANUAL:
+        # Si es manual, no calculamos nada, retornamos el último valor o 0
+        ultimo = kpi.resultados.order_by('-periodo').first()
+        return ultimo.valor if ultimo else 0.0
 
-    # 6) % Empleados con Usuario (match flexible)
-    elif "porcentaje" in nombre and "empleados" in nombre and "usuario" in nombre:
-        total = Empleado.objects.filter(empresa=empresa).count()
-        if total == 0:
-            return 0.0
-        con_usuario = Empleado.objects.filter(
-            empresa=empresa,
-            usuario__isnull=False
-        ).count()
-        return round((con_usuario / total) * 100, 2)
-
-    # 7) Empleados sin Usuario (match flexible)
-    elif "empleados" in nombre and "sin" in nombre and "usuario" in nombre:
-        return Empleado.objects.filter(
-            empresa=empresa,
-            usuario__isnull=True
-        ).count()
-
-    # ✅ Default seguro: nunca devolver None
     return 0.0
