@@ -1,6 +1,8 @@
 from notificaciones.services.notificacion_service import NotificacionService
 
-def notificaciones_context(request):
+# CAMBIO IMPORTANTE: El nombre debe ser 'notificaciones_globales'
+# para que coincida con lo que espera tu settings.py
+def notificaciones_globales(request):
     """
     Inyecta las notificaciones en TODAS las plantillas.
     Optimizado para ser ligero.
