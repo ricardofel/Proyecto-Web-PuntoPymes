@@ -15,7 +15,7 @@
       </p>
     </div>
 
-    {# Nota: sólo el superusuario de Django puede crear usuarios #}
+    {# Nota: el botón solo se muestra al superuser (la validación real depende del backend) #}
     {% if request.user.is_superuser %}
       <a
         href="{% url 'usuarios:crear_usuario' %}"

@@ -4,14 +4,22 @@ from empleados.models import Empleado
 from core.models import Empresa
 from core.storage import private_storage
 
-# utilidad para generar ruta de archivo basada en empleado y solicitud
+
 def ruta_adjunto_solicitud(instance, filename):
+    """
+    Ruta de almacenamiento para adjuntos de solicitudes.
+
+    Estructura:
+    solicitudes/empleado_00005/solicitud_10/documento.pdf
+    """
     folder_name = f"empleado_{instance.solicitud.empleado.id:05d}"
     subfolder = f"solicitud_{instance.solicitud.id}"
     return os.path.join('solicitudes', folder_name, subfolder, filename)
 
-# modelo para configurar tipos de ausencia y sus reglas
 class TipoAusencia(models.Model):
+    """
+    Catálogo de tipos de ausencia (por empresa).
+    """
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField(blank=True)
@@ -24,8 +32,11 @@ class TipoAusencia(models.Model):
     def __str__(self):
         return self.nombre
 
-# modelo principal para registrar solicitudes de ausencia
 class SolicitudAusencia(models.Model):
+    """
+    Solicitud de ausencia realizada por un empleado.
+    Soporta adjuntos mediante el modelo AdjuntoSolicitud.
+    """
     class Estado(models.TextChoices):
         PENDIENTE = 'pendiente', 'Pendiente'
         APROBADO = 'aprobado', 'Aprobado'
@@ -35,31 +46,35 @@ class SolicitudAusencia(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
     empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE, related_name='solicitudes')
     ausencia = models.ForeignKey(TipoAusencia, on_delete=models.PROTECT)
-    
+
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField()
-    
+
+    # Días hábiles calculados para el rango de fechas
     dias_habiles = models.IntegerField(default=0)
-    
+
     motivo = models.TextField()
-    
+
+    # Estado del flujo de aprobación
     estado = models.CharField(
-        max_length=20, 
-        choices=Estado.choices, 
+        max_length=20,
+        choices=Estado.choices,
         default=Estado.PENDIENTE
     )
-    
+
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.empleado} - {self.ausencia}"
 
-# modelo para almacenar múltiples archivos adjuntos vinculados a una solicitud
 class AdjuntoSolicitud(models.Model):
+    """
+    Adjuntos asociados a una solicitud (permite múltiples archivos por solicitud).
+    """
     solicitud = models.ForeignKey(
-        SolicitudAusencia, 
-        on_delete=models.CASCADE, 
+        SolicitudAusencia,
+        on_delete=models.CASCADE,
         related_name='adjuntos'
     )
     archivo = models.FileField(
@@ -75,16 +90,20 @@ class AdjuntoSolicitud(models.Model):
     def __str__(self):
         return f"Adjunto {self.filename()} para Solicitud {self.solicitud.id}"
 
-# historial de acciones de aprobación o rechazo
 class AprobacionAusencia(models.Model):
+    """
+    Historial de acciones sobre una solicitud (aprobar / rechazar / devolver).
+    """
     solicitud = models.ForeignKey(SolicitudAusencia, on_delete=models.CASCADE, related_name='aprobaciones')
     aprobador = models.ForeignKey(Empleado, on_delete=models.PROTECT)
-    accion = models.CharField(max_length=20) 
+    accion = models.CharField(max_length=20)
     comentario = models.TextField(blank=True, null=True)
     fecha_accion = models.DateTimeField(auto_now_add=True)
 
-# control de saldos de vacaciones por empleado y periodo
 class RegistroVacaciones(models.Model):
+    """
+    Registro de saldo de vacaciones por empleado y periodo.
+    """
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
     empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
     periodo = models.CharField(max_length=50)

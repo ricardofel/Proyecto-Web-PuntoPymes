@@ -1,20 +1,43 @@
 from django.db import models
-from django.utils.translation import gettext_lazy as _
 
 
 class Empresa(models.Model):
-    # Tabla empresa
+    """
+    Modelo Empresa.
+
+    Representa la entidad principal para multitenencia.
+    Contiene información legal, comercial y de configuración básica.
+    """
+
     id = models.BigAutoField(primary_key=True)
+
+    # Información básica de la empresa
     nombre_comercial = models.CharField(max_length=150)
     razon_social = models.CharField(max_length=255)
     ruc = models.CharField(max_length=20, unique=True)
+
+    # Configuración territorial y monetaria (códigos ISO)
     pais = models.CharField(
-        max_length=2, blank=True, null=True, help_text="ISO 3166-1 alpha-2"
+        max_length=2,
+        blank=True,
+        null=True,
+        help_text="ISO 3166-1 alpha-2",
     )
-    moneda = models.CharField(max_length=3, blank=True, null=True, help_text="ISO 4217")
+    moneda = models.CharField(
+        max_length=3,
+        blank=True,
+        null=True,
+        help_text="ISO 4217",
+    )
+
+    # Identidad visual y estado
     logo_url = models.TextField(blank=True, null=True)
     estado = models.BooleanField(default=True)
+
+    # Configuración operativa
     zona_horaria = models.CharField(max_length=50)
+
+    # Auditoría
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -25,23 +48,35 @@ class Empresa(models.Model):
 
 
 class UnidadOrganizacional(models.Model):
-    # Tabla unidad_organizacional
+    """
+    Modelo UnidadOrganizacional.
+
+    Representa la estructura jerárquica interna de una empresa
+    (sucursales, departamentos, filiales, etc.).
+    """
+
     id = models.BigAutoField(primary_key=True)
 
-    # FK1: empresa_id [FK, NOT NULL]
+    # Empresa a la que pertenece la unidad (multitenencia)
     empresa = models.ForeignKey(
-        Empresa, on_delete=models.CASCADE, related_name="unidades"
+        Empresa,
+        on_delete=models.CASCADE,
+        related_name="unidades",
     )
 
-    # FK2: padre_id [FK, NULL]
+    # Relación jerárquica (unidad padre)
     padre = models.ForeignKey(
-        "self", on_delete=models.SET_NULL, null=True, blank=True, related_name="hijos"
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="hijos",
     )
 
-    # nombre: VARCHAR(100) [NOT NULL]
+    # Identificación de la unidad
     nombre = models.CharField(max_length=100)
 
-    # tipo: VARCHAR(50) -- Coincidencia exacta con el diagrama (help_text agregado)
+    # Tipo de unidad organizacional
     tipo = models.CharField(
         max_length=50,
         blank=True,
@@ -49,7 +84,7 @@ class UnidadOrganizacional(models.Model):
         help_text="Ej: 'Sucursal', 'Departamento', 'Filial'",
     )
 
-    # ubicacion: VARCHAR(255) -- Coincidencia exacta con el diagrama
+    # Ubicación física o descriptiva
     ubicacion = models.CharField(
         max_length=255,
         blank=True,
@@ -57,10 +92,10 @@ class UnidadOrganizacional(models.Model):
         help_text="Dirección física o descripción",
     )
 
-    # estado: BOOLEAN [DEFAULT TRUE]
+    # Estado lógico de la unidad
     estado = models.BooleanField(default=True)
 
-    # fecha_creacion: TIMESTAMPTZ [DEFAULT NOW()]
+    # Auditoría
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:

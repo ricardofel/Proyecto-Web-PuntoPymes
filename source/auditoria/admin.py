@@ -1,25 +1,38 @@
 from django.contrib import admin
 from auditoria.models import LogAuditoria
 
+
 @admin.register(LogAuditoria)
 class LogAuditoriaAdmin(admin.ModelAdmin):
-    # Columnas que verás en la lista
-    list_display = ('fecha', 'usuario', 'accion', 'modulo', 'modelo', 'detalle')
-    
-    # Filtros laterales para buscar rápido
-    list_filter = ('accion', 'modulo', 'fecha', 'usuario')
-    
-    # Barra de búsqueda
-    search_fields = ('detalle', 'usuario__email', 'objeto_id')
-    
-    # Nadie debe poder modificar la historia (Solo lectura)
-    readonly_fields = ('fecha', 'usuario', 'accion', 'modulo', 'modelo', 'objeto_id', 'detalle', 'ip_address')
+    # Columnas visibles en el listado
+    list_display = ("fecha", "usuario", "accion", "modulo", "modelo", "detalle")
+
+    # Filtros laterales
+    list_filter = ("accion", "modulo", "fecha", "usuario")
+
+    # Campos habilitados para búsqueda
+    search_fields = ("detalle", "usuario__email", "objeto_id")
+
+    # Campos de solo lectura para preservar la integridad del log
+    readonly_fields = (
+        "fecha",
+        "usuario",
+        "accion",
+        "modulo",
+        "modelo",
+        "objeto_id",
+        "detalle",
+        "ip_address",
+    )
 
     def has_add_permission(self, request):
-        return False # No permitir crear logs falsos
-    
+        # Evita la creación manual de registros de auditoría
+        return False
+
     def has_change_permission(self, request, obj=None):
-        return False # No permitir alterar la evidencia
-    
+        # Evita la modificación de registros existentes
+        return False
+
     def has_delete_permission(self, request, obj=None):
-        return False # No permitir borrar rastros
+        # Evita la eliminación de registros de auditoría
+        return False

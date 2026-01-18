@@ -4,25 +4,30 @@ from django.utils.html import format_html
 from django.urls import reverse
 
 from .models import (
-    TipoAusencia, 
-    SolicitudAusencia, 
-    AprobacionAusencia, 
+    TipoAusencia,
+    SolicitudAusencia,
+    AprobacionAusencia,
     RegistroVacaciones,
     AdjuntoSolicitud
 )
 
 # adjuntar multiples archivos a la vez
 class AdjuntoSolicitudInline(admin.TabularInline):
+    """
+    Inline para gestionar adjuntos de una solicitud desde el admin.
+    Incluye enlace de descarga usando la ruta por ID de adjunto.
+    """
     model = AdjuntoSolicitud
-    extra = 0
+    extra = 0  # No muestra filas vacías adicionales
     fields = ('archivo', 'ver_documento', 'fecha_subida')
     readonly_fields = ('ver_documento', 'fecha_subida')
 
     def ver_documento(self, obj):
+        # Link directo al endpoint de descarga del adjunto
         if obj.archivo:
             url = reverse('solicitudes:descargar_adjunto', args=[obj.id])
             return format_html(
-                '<a class="button" href="{}" target="_blank" style="background-color: #4F46E5; color: white; padding: 4px 10px; border-radius: 4px; text-decoration: none;">Descargar PDF</a>', 
+                '<a class="button" href="{}" target="_blank" style="background-color: #4F46E5; color: white; padding: 4px 10px; border-radius: 4px; text-decoration: none;">Descargar PDF</a>',
                 url
             )
         return "-"
@@ -44,8 +49,10 @@ class TipoAusenciaAdmin(admin.ModelAdmin):
     list_display_links = ("nombre",)
     list_editable = ("estado", "afecta_sueldo", "requiere_documento", "descuenta_vacaciones")
 
+
 @admin.register(SolicitudAusencia)
 class SolicitudAusenciaAdmin(admin.ModelAdmin):
+    # Incluye contador de adjuntos como indicador rápido en la lista
     list_display = (
         "empleado",
         "ausencia",
@@ -56,8 +63,8 @@ class SolicitudAusenciaAdmin(admin.ModelAdmin):
         "total_adjuntos",
         "fecha_creacion",
     )
-    
 
+    # Adjuntos visibles/editables dentro de la solicitud
     inlines = [AdjuntoSolicitudInline]
 
     fieldsets = (
@@ -65,9 +72,9 @@ class SolicitudAusenciaAdmin(admin.ModelAdmin):
         (_("Periodo y Días"), {"fields": ("fecha_inicio", "fecha_fin", "dias_habiles")}),
         (_("Detalles y Estado"), {"fields": ("motivo", "estado")}),
     )
-    
+
     list_filter = ("empresa", "estado", "ausencia", "fecha_inicio")
-    
+
     search_fields = (
         "empleado__nombres",
         "empleado__apellidos",
@@ -79,19 +86,23 @@ class SolicitudAusenciaAdmin(admin.ModelAdmin):
 
     # visualizacion de archivos tipo lista
     def total_adjuntos(self, obj):
+        """
+        Muestra cuántos archivos están asociados a la solicitud.
+        """
         count = obj.adjuntos.count()
         if count > 0:
             return format_html('<strong style="color: #4F46E5;">{} archivos</strong>', count)
         return "Sin adjuntos"
-    
+
     total_adjuntos.short_description = "Documentación"
+
 
 @admin.register(AprobacionAusencia)
 class AprobacionAusenciaAdmin(admin.ModelAdmin):
     list_display = (
         "solicitud",
         "aprobador",
-        "accion", 
+        "accion",
         "fecha_accion",
         "comentario",
     )
@@ -100,6 +111,7 @@ class AprobacionAusenciaAdmin(admin.ModelAdmin):
         "solicitud__empleado__nombres",
         "comentario",
     )
+
 
 @admin.register(RegistroVacaciones)
 class RegistroVacacionesAdmin(admin.ModelAdmin):

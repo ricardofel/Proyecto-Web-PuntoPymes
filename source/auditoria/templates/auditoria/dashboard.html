@@ -3,14 +3,14 @@
 {% block title %}Auditoría del Sistema{% endblock %}
 
 {% block header_title %}Registro de Auditoría{% endblock %}
-{% block header_subtitle %}Historial forense de acciones de usuarios{% endblock %}
+{% block header_subtitle %}Historial de acciones de usuarios{% endblock %}
 
 {% block page_content %}
 <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
     
     <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
         <form method="get" class="flex gap-2 w-full max-w-md">
-            <input type="text" name="q" value="{{ query }}" placeholder="Buscar en detalles (ej: Tony Stark)..." 
+            <input type="text" name="q" value="{{ query }}" placeholder="Buscar en detalles (ej: correo o palabra clave)..." 
                    class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500">
             <button type="submit" class="btn bg-slate-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-slate-700">
                 Buscar

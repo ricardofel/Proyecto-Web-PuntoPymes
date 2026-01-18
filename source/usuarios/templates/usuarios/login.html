@@ -5,15 +5,18 @@
     <meta charset="UTF-8" />
     <title>TalentTrack – Iniciar sesión</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Tailwind CDN -->
+
+    <!-- Tailwind CSS (CDN para estilos base) -->
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
 
   <body class="min-h-screen bg-slate-100 flex items-center justify-center">
     <div class="w-full max-w-md">
-      <!-- Tarjeta -->
+
+      <!-- Contenedor principal del login -->
       <div class="bg-white shadow-lg rounded-2xl px-8 py-8">
-        <!-- Logo + título -->
+
+        <!-- Logo y encabezado -->
         <div class="text-center mb-6">
           <div class="flex justify-center mb-3">
             <img
@@ -28,12 +31,17 @@
           </p>
         </div>
 
-        <!-- Mensajes (éxito / error) -->
+        <!-- Mensajes del sistema (errores o información) -->
         {% if messages %}
         <div class="mb-4 space-y-2">
           {% for message in messages %}
           <div
-            class="text-sm px-4 py-3 rounded-xl border {% if message.tags == 'error' %} bg-red-50 text-red-700 border-red-200 {% else %} bg-blue-50 text-blue-700 border-blue-200 {% endif %}"
+            class="text-sm px-4 py-3 rounded-xl border
+                   {% if message.tags == 'error' %}
+                     bg-red-50 text-red-700 border-red-200
+                   {% else %}
+                     bg-blue-50 text-blue-700 border-blue-200
+                   {% endif %}"
           >
             {{ message }}
           </div>
@@ -41,11 +49,11 @@
         </div>
         {% endif %}
 
-        <!-- FORMULARIO -->
+        <!-- Formulario de autenticación -->
         <form method="post" class="space-y-5">
           {% csrf_token %}
 
-          <!-- Correo -->
+          <!-- Campo: correo electrónico -->
           <div class="space-y-1">
             <label
               for="id_email"
@@ -64,7 +72,7 @@
             />
           </div>
 
-          <!-- Contraseña -->
+          <!-- Campo: contraseña -->
           <div class="space-y-1">
             <label
               for="id_password"
@@ -82,7 +90,7 @@
             />
           </div>
 
-          <!-- Botón -->
+          <!-- Acción principal -->
           <div class="pt-2">
             <button
               type="submit"

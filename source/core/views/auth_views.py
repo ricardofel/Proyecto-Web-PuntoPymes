@@ -16,21 +16,22 @@ User = get_user_model()
 
 
 def login_view(request):
-    # Si ya está logueado, lo mandamos al dashboard
+    # Si el usuario ya está autenticado, redirigir al dashboard.
     if request.user.is_authenticated:
-        return redirect("dashboard")  # o "core:dashboard" si lo tienes con namespace
+        return redirect("dashboard")
 
-    email_inicial = ""  # para rellenar el campo si hay error
+    # Se reutiliza para repoblar el campo email ante errores de autenticación.
+    email_inicial = ""
 
     if request.method == "POST":
         email_inicial = request.POST.get("email", "").strip().lower()
         password = request.POST.get("password", "")
 
-        # Aunque usamos email, el parámetro se llama username
+        # authenticate usa el parámetro "username" incluso si internamente trabajas con email.
         user = authenticate(request, username=email_inicial, password=password)
 
         if user is not None:
-            # Respetamos el estado del usuario (tu bandera de negocio)
+            # Respetar la bandera de negocio `estado` (si existe).
             if not getattr(user, "estado", True):
                 messages.error(
                     request,
@@ -38,9 +39,9 @@ def login_view(request):
                 )
             else:
                 login(request, user)
-                return redirect("dashboard")  # o "core:dashboard"
+                return redirect("dashboard")
         else:
-            # 👇 Disparamos el signal para que tu logger lo capture
+            # Emitir signal para registrar intentos fallidos (si hay listeners configurados).
             user_login_failed.send(
                 sender=User,
                 credentials={"username": email_inicial},
@@ -55,14 +56,19 @@ def login_view(request):
 
 
 def logout_view(request):
+    """
+    Cierra sesión y redirige a la pantalla de login.
+    """
     logout(request)
     messages.success(request, "Has cerrado sesión correctamente.")
-    return redirect("login")  # asegúrate que tu URL de login se llame "login"
+    return redirect("login")
 
 
 @login_required
 def dashboard_view(request):
-    # De momento lo dejamos sencillo; tú ya tienes algo aquí
+    """
+    Vista simple de dashboard (placeholder).
+    """
     return render(request, "core/dashboard.html")
 
 
@@ -70,16 +76,18 @@ def dashboard_view(request):
 def password_change_view(request):
     """
     Permite al usuario cambiar su contraseña dentro del sistema.
-    - Pide contraseña actual, nueva y confirmación.
+
+    - Solicita contraseña actual, nueva y confirmación.
     - Mantiene la sesión activa después del cambio.
     """
     if request.method == "POST":
         form = PasswordChangeForm(user=request.user, data=request.POST)
         if form.is_valid():
-            user = form.save()  # guarda la nueva contraseña hasheada
-            update_session_auth_hash(request, user)  # 👈 mantiene la sesión activa
+            user = form.save()
+            # Mantener la sesión activa tras actualizar el hash de contraseña.
+            update_session_auth_hash(request, user)
             messages.success(request, "Tu contraseña se ha actualizado correctamente.")
-            return redirect("dashboard")  # o "core:dashboard" si usas namespace
+            return redirect("dashboard")
         else:
             messages.error(request, "Por favor corrige los errores en el formulario.")
     else:

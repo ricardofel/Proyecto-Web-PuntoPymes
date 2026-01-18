@@ -5,14 +5,12 @@ from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _
 
 """
-Modelos de la app poa (Plan Operativo Anual):
+Modelos de la app POA (Plan Operativo Anual):
 
-- Objetivo (Estratégico)
-- MetaTactico (Táctico - Tabla 'meta')
-- Actividad (Operativo)
-- Tablas pivote de asignación de equipos
-
-Ver diccionario de datos Tablas 18 a 23.
+- Objetivo (estratégico)
+- MetaTactico (táctico) -> tabla 'meta'
+- Actividad (operativo)
+- Tablas pivote para asignación de responsables/equipos
 """
 
 
@@ -29,7 +27,7 @@ class Objetivo(models.Model):
     descripcion = models.TextField(blank=True, null=True)
     anio = models.IntegerField(help_text=_("Año fiscal (ej: 2025)"))
 
-    # ✅ AHORA tiene choices (el Select ya tendrá opciones)
+    # Estado del objetivo (controla ciclo de vida)
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default="activo")
 
     fecha_creacion = models.DateTimeField(auto_now_add=True)
@@ -46,6 +44,10 @@ class Objetivo(models.Model):
 
     @property
     def avance(self) -> int:
+        """
+        Avance consolidado del objetivo en porcentaje (0 a 100),
+        calculado como: sum(valor_actual) / sum(valor_esperado).
+        """
         agg = self.metas_tacticas.aggregate(
             total_esperado=Sum("valor_esperado"),
             total_actual=Sum("valor_actual"),
@@ -103,11 +105,10 @@ class MetaTactico(models.Model):
     valor_esperado = models.DecimalField(max_digits=5, decimal_places=2, default=100)
     valor_actual = models.DecimalField(max_digits=5, decimal_places=2, default=0)
 
-
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField()
 
-    # ✅ choices también aquí
+    # Estado de la meta (controla ciclo de vida)
     estado = models.CharField(
         max_length=20, choices=ESTADO_CHOICES, default="pendiente"
     )
@@ -157,6 +158,7 @@ class Actividad(models.Model):
 
     porcentaje_avance = models.IntegerField(default=0)
 
+    # Estado de la actividad (controla ciclo de vida)
     estado = models.CharField(
         max_length=20, choices=ESTADO_CHOICES, default="pendiente"
     )

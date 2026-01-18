@@ -1,4 +1,13 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 
-# Lista vacía para que Django encuentre el archivo y no se queje
-urlpatterns = []
+from .viewsets import UsuarioViewSet, RolViewSet
+
+
+router = DefaultRouter()
+router.register(r'usuarios', UsuarioViewSet)
+router.register(r'roles', RolViewSet)
+
+urlpatterns = [
+    path('', include(router.urls)),
+]

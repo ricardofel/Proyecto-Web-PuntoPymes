@@ -2,8 +2,8 @@
 
 class NombresRoles:
     """
-    Constantes para los nombres de roles en el sistema.
-    Usar esto evita errores de escritura (typos) en el código.
+    Nombres canónicos de roles del sistema.
+    Centraliza los valores para evitar inconsistencias y errores tipográficos.
     """
     SUPERUSUARIO = "Superusuario"
     ADMIN_RRHH = "Admin RRHH"

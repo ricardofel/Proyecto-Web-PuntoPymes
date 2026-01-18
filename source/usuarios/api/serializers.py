@@ -12,6 +12,7 @@ class RolSerializer(serializers.ModelSerializer):
         model = Rol
         fields = '__all__'
 
+
 class UsuarioSerializer(serializers.ModelSerializer):
     """
     Perfil de usuario con información de permisos y empleado asociado.

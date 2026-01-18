@@ -15,7 +15,7 @@
   </div>
 
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-    
+
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
       <div>
         <h3 class="text-lg font-bold text-slate-900">Metas Tácticas</h3>
@@ -47,6 +47,7 @@
       hx-swap="innerHTML"
       class="min-h-[200px]"
     >
+      <!-- Placeholder mientras HTMX carga el partial -->
       <div class="flex flex-col items-center justify-center py-12 text-slate-400">
         <svg class="animate-spin h-8 w-8 text-blue-600 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -98,8 +99,8 @@
   </div>
 </div>
 
-
 <script>
+  // Asegura CSRF en requests HTMX.
   document.body.addEventListener('htmx:configRequest', (event) => {
     event.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
   });
@@ -107,23 +108,23 @@
 
 <script>
   document.body.addEventListener('close-modal', function(evt) {
-      // 1. PRIORIDAD MÁXIMA: Cerrar modales ANTES de cualquier cosa
+      // Cierra modales conocidos que pueden estar abiertos.
       const ids = ['modalObjetivoCrear', 'modalMetaCrear', 'modalActividadCrear'];
       ids.forEach(id => {
           const el = document.getElementById(id);
           if (el) {
-              el.classList.add('hidden'); // Ocultar visualmente
+              el.classList.add('hidden');
           }
       });
 
-      // 2. Restaurar el scroll del cuerpo
+      // Restaura scroll del body.
       document.body.classList.remove('modal-open');
       document.body.style.overflow = 'auto';
 
-      // 3. (Opcional) Mostrar alerta si la librería existe
-      // Usamos evt.detail.value si viene como string directo del servidor
+      // Mensaje del servidor (HTMX event) o fallback.
       const msg = evt.detail.value || evt.detail.message || 'Operación exitosa';
-      
+
+      // Muestra toast si SweetAlert2 está disponible.
       if (typeof Swal !== 'undefined') {
           Swal.fire({
               icon: 'success',
@@ -134,7 +135,7 @@
               timer: 3000
           });
       } else {
-          console.warn('SweetAlert2 no está cargado, pero el modal se cerró correctamente.');
+          console.warn('SweetAlert2 no está cargado; el modal se cerró correctamente.');
       }
   });
 </script>

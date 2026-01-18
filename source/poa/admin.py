@@ -8,7 +8,7 @@ from .models import (
     ActividadEmpleado,
 )
 
-
+# Admin de modelos principales: configuración de listados, filtros y búsqueda.
 @admin.register(Objetivo)
 class ObjetivoAdmin(admin.ModelAdmin):
     list_display = ("nombre", "anio", "empresa", "estado", "avance", "fecha_creacion")
@@ -38,7 +38,7 @@ class ActividadAdmin(admin.ModelAdmin):
     search_fields = ("nombre", "meta__nombre")
 
 
-# Tablas pivote (opcional, útil para debugging)
+# Modelos de relación (tablas pivote): registro simple para gestión/inspección desde admin.
 admin.site.register(ObjetivoEmpleado)
 admin.site.register(MetaEmpleado)
 admin.site.register(ActividadEmpleado)
