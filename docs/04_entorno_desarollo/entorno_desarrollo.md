@@ -24,20 +24,17 @@ cd <CARPETA_DEL_PROYECTO>
 
 # 3️⃣ Crear y activar el entorno virtual
 
+CREAR:
 ```bash
 py -3.11 -m venv venv
 ```
 
-Activar:
-
-Windows:
-
+ACTIVAR:
 ```bash
 venv\Scripts\activate
 ```
 
 Deberías ver algo como:
-
 ```
 (venv) PS C:\Proyecto-Web-PuntoPymes>
 ```
@@ -46,6 +43,12 @@ Deberías ver algo como:
 
 # 4️⃣ Instalar dependencias
 
+Moverse a:
+```
+cd source
+```
+
+EJECUTAR:
 ```bash
 pip install -r requirements.txt
 ```
@@ -73,7 +76,7 @@ Luego ejecutar:
 
 ```sql
 CREATE DATABASE talenttrack_dev;
-CREATE USER talent_user WITH PASSWORD 'talent_pass';
+CREATE USER talent_user WITH PASSWORD 'example_password';
 GRANT ALL PRIVILEGES ON DATABASE talenttrack_dev TO talent_user;
 GRANT ALL ON SCHEMA public TO talent_user;
 ALTER SCHEMA public OWNER TO talent_user;
@@ -83,27 +86,20 @@ ALTER SCHEMA public OWNER TO talent_user;
 
 # 6️⃣ Crear el archivo .env
 
-Moverse a:
-
-```
-cd source
-```
-
-Copiar:
-
+EJECUTAR:
 ```bash
 copy .env.example .env
 ```
 
 Verificar contenido del `.env`:
-
+Reemplazar el valor de DB_PASSWORD
 ```
 DEBUG=True
 SECRET_KEY=<<REPLACE_WITH_SECRET_KEY>>
 
 ALLOWED_HOSTS=localhost,127.0.0.1
 
-DB_NAME=puntopymes_dev
+DB_NAME=talenttrack_dev
 DB_USER=postgres
 DB_PASSWORD=<<REPLACE_WITH_PASSWORD>>
 DB_HOST=localhost
@@ -116,21 +112,34 @@ TAILWIND_APP_NAME=theme
 
 # 7️⃣ Aplicar migraciones
 
+EJECUTAR:
+```bash
+python manage.py makemigrations
+```
 ```bash
 python manage.py migrate
 ```
 
 ---
 
-# 8️⃣ Crear súperusuario
+# 8️⃣ Inicializar Roles del Sistema
 
+EJECUTAR
+```bash
+python manage.py crear_roles
+```
+
+# 9️⃣ Crear Superusuario
+
+EJECUTAR:
 ```bash
 python manage.py createsuperuser
 ```
+Te pedira crear un user y una clave
 
 ---
 
-# 9️⃣ Ejecutar servidor
+# 🔟 Ejecutar servidor
 
 ```bash
 python manage.py runserver
@@ -194,7 +203,7 @@ Proyecto-Web-PuntoPymes/
 - *.pyc
 - media/
 - staticfiles/
-
+- private_media
 ---
 
 # 🟦 Checklist rápido
@@ -207,11 +216,8 @@ Proyecto-Web-PuntoPymes/
 6. Dar permisos
 7. Configurar .env
 8. Migrar
-9. Superusuario
-10. Runserver
+9. Crear Roles
+10. Superusuario
+11. Runserver
 
 ---
-
-# 💙 Contacto técnico
-
-Cualquier problema → contactar a Queen. Besos
