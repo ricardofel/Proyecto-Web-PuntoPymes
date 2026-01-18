@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Q
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST 
+from django.views.decorators.http import require_POST, require_safe, require_http_methods
 from django.http import FileResponse, JsonResponse
 
 from .models import SolicitudAusencia, AprobacionAusencia, AdjuntoSolicitud
@@ -10,6 +10,7 @@ from .forms import SolicitudAusenciaForm
 
 
 @login_required
+@require_http_methods(["GET", "POST"])
 def responer_solicitudes_view(request, solicitud_id):
     """
     Vista de aprobación para jefaturas/administración:
@@ -33,7 +34,6 @@ def responer_solicitudes_view(request, solicitud_id):
         if accion in ['aprobar', 'rechazar', 'devolver']:
             AprobacionAusencia.objects.create(solicitud=solicitud, aprobador=aprobador, accion=accion, comentario=comentario)
 
-            # Actualiza el estado según la acción
             if accion == 'aprobar': solicitud.estado = SolicitudAusencia.Estado.APROBADO
             elif accion == 'rechazar': solicitud.estado = SolicitudAusencia.Estado.RECHAZADO
             elif accion == 'devolver': solicitud.estado = SolicitudAusencia.Estado.DEVUELTO
@@ -45,6 +45,7 @@ def responer_solicitudes_view(request, solicitud_id):
 
 
 @login_required
+@require_http_methods(["GET", "POST"])
 def crear_solicitud_view(request):
     """
     Crea una solicitud de ausencia para el empleado autenticado.
@@ -57,17 +58,7 @@ def crear_solicitud_view(request):
     empleado = request.user.empleado
 
     if request.method == 'POST':
-        # Logs de diagnóstico (útiles en depuración; idealmente se reemplazan por logging)
-        print("\n" + "="*50)
-        print("[DEBUG] INTENTO DE CREAR SOLICITUD")
-        print(f"[DEBUG] Usuario: {request.user}")
-        print(f"[DEBUG] POST Data (Texto): {request.POST}")
-        print(f"[DEBUG] FILES Data (Archivos): {request.FILES}")
-
         archivos_raw = request.FILES.getlist('archivos_nuevos')
-        print(f"[DEBUG] Lista 'archivos_nuevos': {archivos_raw}")
-        print("="*50 + "\n")
-
         form = SolicitudAusenciaForm(request.POST, request.FILES, empleado=empleado)
 
         if form.is_valid():
@@ -78,24 +69,23 @@ def crear_solicitud_view(request):
                 nueva_solicitud.estado = SolicitudAusencia.Estado.PENDIENTE
                 nueva_solicitud.save() 
 
-                # Persistencia de adjuntos asociados a la solicitud
                 for f in archivos_raw:
                     AdjuntoSolicitud.objects.create(solicitud=nueva_solicitud, archivo=f)
 
                 messages.success(request, "Solicitud creada correctamente.")
                 return redirect('solicitudes:vista_empleado')
-            except Exception as e:
-                messages.error(request, f"Error interno al guardar.")
+            except Exception:
+                messages.error(request, "Error interno al guardar.")
         else:
-            print("[DEBUG] ❌ EL FORMULARIO NO ES VÁLIDO")
-            print(f"[DEBUG] Errores: {form.errors}")
-            messages.error(request, "Error en el formulario. Revisa la consola.")
+            messages.error(request, "Error en el formulario. Revisa los campos.")
     else:
         form = SolicitudAusenciaForm(empleado=empleado)
 
     return render(request, 'solicitudes/crear_solicitud.html', {'form': form, 'es_edicion': False})
 
+
 @login_required
+@require_http_methods(["GET", "POST"])
 def editar_solicitud_view(request, solicitud_id):
     """
     Edita una solicitud propia si está en estado PENDIENTE o DEVUELTO.
@@ -111,12 +101,6 @@ def editar_solicitud_view(request, solicitud_id):
         return redirect('solicitudes:vista_empleado')
 
     if request.method == 'POST':
-        # Logs de diagnóstico (útiles en depuración; idealmente se reemplazan por logging)
-        print("\n" + "="*50)
-        print(f"[DEBUG] EDITANDO SOLICITUD #{solicitud_id}")
-        print(f"[DEBUG] FILES: {request.FILES}")
-        print("="*50 + "\n")
-
         form = SolicitudAusenciaForm(request.POST, request.FILES, instance=solicitud, empleado=request.user.empleado)
         
         if form.is_valid():
@@ -124,7 +108,6 @@ def editar_solicitud_view(request, solicitud_id):
             solicitud_editada.estado = SolicitudAusencia.Estado.PENDIENTE 
             solicitud_editada.save()
 
-            # Adjunta archivos adicionales si se enviaron
             archivos = request.FILES.getlist('archivos_nuevos')
             for f in archivos:
                 AdjuntoSolicitud.objects.create(solicitud=solicitud_editada, archivo=f)
@@ -144,6 +127,7 @@ def editar_solicitud_view(request, solicitud_id):
         'es_edicion': True
     })
 
+
 @login_required
 @require_POST
 def eliminar_solicitud_view(request, solicitud_id):
@@ -157,6 +141,7 @@ def eliminar_solicitud_view(request, solicitud_id):
     else:
         messages.error(request, "No se puede eliminar.")
     return redirect('solicitudes:vista_empleado')
+
 
 @login_required
 @require_POST
@@ -180,16 +165,19 @@ def eliminar_adjunto_ajax(request, adjunto_id):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+
 @login_required
+@require_safe
 def descargar_adjunto_view(request, adjunto_id): 
     """
     Descarga un adjunto asociado a una solicitud.
-    (La validación de acceso depende de la implementación existente.)
     """
     adjunto = get_object_or_404(AdjuntoSolicitud, pk=adjunto_id)
     return FileResponse(adjunto.archivo)
 
+
 @login_required
+@require_safe
 def lista_solicitudes_view(request):
     """
     Vista para administración: lista global de solicitudes con búsqueda.
@@ -218,7 +206,9 @@ def lista_solicitudes_view(request):
 
     return render(request, 'solicitudes/lista_solicitudes.html', {'solicitudes': solicitudes, 'query': query})
 
+
 @login_required
+@require_safe
 def empleado_view(request):
     """
     Vista del empleado: muestra únicamente sus solicitudes, con búsqueda simple.

@@ -4,7 +4,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.contrib import messages
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_safe
 from django.http import JsonResponse
 
 from empleados.models import Empleado
@@ -12,6 +12,7 @@ from .models import JornadaCalculada, EventoAsistencia
 
 # redirección inicial según el rol del usuario
 @login_required
+@require_safe
 def asistencia_home_view(request):
     usuario = request.user
     es_jefe = (
@@ -25,6 +26,7 @@ def asistencia_home_view(request):
         return redirect('asistencia:zona_marcaje')
 
 @login_required
+@require_safe
 def zona_marcaje_view(request):
     return render(request, 'asistencia/registro_entradasalida.html')
 
@@ -61,7 +63,6 @@ def registrar_marca_view(request):
         ip_address=request.META.get('REMOTE_ADDR')
     )
 
-    # obtención o creación de la jornada del día
     jornada, created = JornadaCalculada.objects.get_or_create(
         empleado=empleado,
         fecha=hoy
@@ -75,7 +76,6 @@ def registrar_marca_view(request):
             hora_teorica_aware = timezone.make_aware(hora_teorica_naive, timezone.get_current_timezone())
             margen = timedelta(minutes=0) 
 
-            # cálculo de atrasos
             if ahora > (hora_teorica_aware + margen):
                 diferencia = ahora - hora_teorica_aware
                 minutos_tarde = int(diferencia.total_seconds() / 60)
@@ -92,7 +92,6 @@ def registrar_marca_view(request):
     elif accion == 'salida':
         jornada.hora_ultima_salida = ahora
         
-        # cálculo de tiempo trabajado
         if jornada.hora_primera_entrada:
             tiempo_trabajado = ahora - jornada.hora_primera_entrada
             jornada.minutos_trabajados = int(tiempo_trabajado.total_seconds() / 60)
@@ -106,7 +105,6 @@ def registrar_marca_view(request):
         duracion_teorica = fin_teorico - inicio_teorico
         minutos_objetivo = int(duracion_teorica.total_seconds() / 60)
 
-        # validación de cumplimiento de jornada
         if jornada.minutos_trabajados < (minutos_objetivo - 1):
             jornada.estado = JornadaCalculada.EstadoJornada.FALTA
             faltan = minutos_objetivo - jornada.minutos_trabajados
@@ -128,6 +126,7 @@ def registrar_marca_view(request):
 
 # panel de control y calendario de asistencia
 @login_required
+@require_safe
 def dashboard_asistencia_view(request):
     usuario = request.user
     es_jefe = (
@@ -144,7 +143,6 @@ def dashboard_asistencia_view(request):
     if es_jefe and empresa_actual:
         lista_empleados = Empleado.objects.filter(empresa=empresa_actual, estado='Activo')
     
-    # selección del empleado a visualizar
     if es_jefe:
         empleado_id = request.GET.get('empleado_id')
         if empleado_id:
@@ -167,7 +165,6 @@ def dashboard_asistencia_view(request):
     fecha_actual_obj = date(anio, mes, 1)
     semanas_datos = []
 
-    # generación de datos del calendario
     if target_empleado:
         cal = calendar.Calendar(firstweekday=6)
         matriz_mes = cal.monthdayscalendar(anio, mes)
@@ -199,7 +196,6 @@ def dashboard_asistencia_view(request):
                     })
             semanas_datos.append(semana_lista)
 
-    # navegación entre meses
     mes_anterior = fecha_actual_obj - timedelta(days=1)
     mes_siguiente = (fecha_actual_obj + timedelta(days=32)).replace(day=1)
     
@@ -222,6 +218,7 @@ def dashboard_asistencia_view(request):
     return render(request, 'asistencia/dashboard_asistencia.html', context)
 
 @login_required
+@require_safe
 def obtener_detalle_dia_view(request):
     empleado_id = request.GET.get('empleado_id')
     fecha_str = request.GET.get('fecha')
@@ -231,7 +228,6 @@ def obtener_detalle_dia_view(request):
     
     empresa_actual = getattr(request, 'empresa_actual', None)
     
-    # consulta de eventos asegurando el filtro por empresa
     eventos = EventoAsistencia.objects.filter(
         empleado_id=empleado_id,
         empleado__empresa=empresa_actual,
