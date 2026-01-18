@@ -1,9 +1,10 @@
 """
-WSGI config for talenttrack project.
+Configuración WSGI para el proyecto TalentTrack.
 
-It exposes the WSGI callable as a module-level variable named ``application``.
+Este módulo expone el callable WSGI a nivel de módulo con el nombre
+``application``, utilizado por servidores de producción (Gunicorn, uWSGI, etc.).
 
-For more information on this file, see
+Documentación oficial:
 https://docs.djangoproject.com/en/5.0/howto/deployment/wsgi/
 """
 
@@ -11,6 +12,8 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'talenttrack.settings')
+# Definición del módulo de configuración principal de Django
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "talenttrack.settings")
 
+# Callable WSGI utilizado por el servidor de aplicaciones
 application = get_wsgi_application()

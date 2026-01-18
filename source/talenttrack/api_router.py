@@ -1,38 +1,39 @@
 from rest_framework import routers
 
-# 1. Core
+# Core
 from core.api.views import EmpresaViewSet, UnidadOrganizacionalViewSet
 
-# 2. RRHH
+# RRHH
 from empleados.api.views import EmpleadoViewSet
 from asistencia.api.views import EventoAsistenciaViewSet
 
-# 3. Solicitudes
+# Solicitudes
 from solicitudes.api.views import (
-    TipoAusenciaViewSet, SolicitudAusenciaViewSet, RegistroVacacionesViewSet
+    TipoAusenciaViewSet,
+    SolicitudAusenciaViewSet,
+    RegistroVacacionesViewSet,
 )
 
-# 4. Seguridad y Auditoría
+# Seguridad y Auditoría
 from auditoria.api.views import LogAuditoriaViewSet
 from usuarios.api.views import UsuarioViewSet, RolViewSet
 
-# 5. Integraciones
+# Integraciones
 from integraciones.api.views import (
-    IntegracionErpViewSet, WebhookViewSet, LogIntegracionViewSet
+    IntegracionErpViewSet,
+    WebhookViewSet,
+    LogIntegracionViewSet,
 )
 
-# 6. Desempeño y Estrategia
+# Desempeño y Estrategia
 from kpi.api.views import KPIViewSet, KPIResultadoViewSet
 from poa.api.views import ObjetivoViewSet, MetaTacticoViewSet, ActividadViewSet
 
-# 7. Notificaciones
+# Notificaciones
 from notificaciones.api.views import NotificacionViewSet
 
 
-# --- CONFIGURACIÓN DEL ROUTER ---
 router = routers.DefaultRouter()
-
-# === REGISTRO DE RUTAS ===
 
 # Core
 router.register(r'core/empresas', EmpresaViewSet)
