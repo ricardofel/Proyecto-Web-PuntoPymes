@@ -53,82 +53,73 @@ class ListaEmpleadosView(FiltradoEmpresaMixin, ListView):
 
 
 # --- vistas basadas en funciones ---
-
 @login_required
-@require_http_methods(["GET", "POST"]) # Blindaje explícito
+@require_http_methods(["GET", "POST"])
 def crear_empleado_view(request):
-    """
-    Gestiona el alta de empleados y la creación automática de su usuario.
-    Acepta GET (formulario) y POST (creación).
-    """
+    # Obtenemos el contexto de la empresa desde el middleware
     empresa_actual = getattr(request, 'empresa_actual', None)
-    empresa_id = empresa_actual.id if empresa_actual else None
 
     if request.method == 'POST':
-        form = EmpleadoForm(request.POST, request.FILES, empresa_id=empresa_id)
+        # Pasamos empresa_actual al formulario para gestionar su visibilidad
+        form = EmpleadoForm(request.POST, request.FILES, empresa_actual=empresa_actual)
         rol_id = request.POST.get('rol_usuario')
 
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    # 1. Preparación del objeto empleado
+                    # 1. Creación del Empleado
                     empleado = form.save(commit=False)
                     if empresa_actual:
                         empleado.empresa = empresa_actual
                     empleado.save()
                     
-                    # 2. Gestión del usuario de sistema asociado
+                    # 2. Gestión del Usuario de Sistema
                     email = form.cleaned_data.get('email') or empleado.email
                     
                     if email:
                         User = get_user_model()
-                        # Generación de contraseña segura
-                        password_acceso = get_random_string(length=12)
+                        user = User.objects.filter(email=email).first()
                         
-                        user = None
-                        if User.objects.filter(email=email).exists():
-                            # Vinculación con usuario existente
-                            user = User.objects.get(email=email)
-                            user.estado = True 
-                            if hasattr(user, 'empleado'): 
-                                user.empleado = empleado
-                            user.save()
-                            messages.success(request, "Usuario vinculado existente.")
-                        else:
-                            # Creación de nuevo usuario
+                        if not user:
+                            # Creamos el usuario SIN el campo 'username' para evitar errores
+                            password_acceso = get_random_string(length=12)
                             user = User.objects.create_user(
-                                username=email, email=email, password=password_acceso, estado=True 
+                                email=email, 
+                                password=password_acceso, 
+                                estado=True
                             )
-                            if hasattr(user, 'empleado'): 
-                                user.empleado = empleado
-                            user.save()
                             messages.success(request, f"Usuario creado. Clave temporal: {password_acceso}")
+                        else:
+                            messages.info(request, "El empleado se ha vinculado a un usuario existente.")
 
-                        # 3. Asignación de Roles
-                        if user:
-                            rol_obj = None
-                            if rol_id: 
-                                rol_obj = Rol.objects.filter(id=rol_id).first()
-                            
-                            if not rol_obj: 
-                                rol_obj = Rol.objects.filter(nombre="Empleado").first()
+                        # Vinculación bidireccional
+                        user.empleado = empleado
+                        user.save()
 
-                            if rol_obj:
-                                UsuarioRol.objects.filter(usuario=user).delete()
-                                UsuarioRol.objects.create(usuario=user, rol=rol_obj)
+                        # 3. Asignación de Roles (Usando UsuarioRol)
+                        if rol_id:
+                            rol_obj = Rol.objects.filter(id=rol_id).first()
+                        else:
+                            rol_obj = Rol.objects.filter(nombre="Empleado").first()
+
+                        if user and rol_obj:
+                            # Limpieza y asignación
+                            UsuarioRol.objects.filter(usuario=user).delete()
+                            UsuarioRol.objects.create(usuario=user, rol=rol_obj)
+
                     else:
-                        messages.warning(request, "Empleado creado SIN acceso al sistema (falta email).")
+                        messages.warning(request, "Empleado registrado sin acceso al sistema (Falta email).")
 
                 return redirect('empleados:lista_empleados')
 
             except Exception as e:
-                messages.error(request, f"Error al guardar: {e}")
+                messages.error(request, f"Error del sistema: {e}")
         else:
-             messages.error(request, "Error en el formulario. Verifique los campos.")
+            messages.error(request, "El formulario contiene errores. Revise los campos.")
     
-    # Manejo del método GET
     else:
-        form = EmpleadoForm(empresa_id=empresa_id)
+        # GET: Inicializamos el formulario con el contexto de la empresa
+        form = EmpleadoForm(empresa_actual=empresa_actual)
 
     roles_disponibles = Rol.objects.filter(estado=True)
 
@@ -137,40 +128,77 @@ def crear_empleado_view(request):
         'roles_disponibles': roles_disponibles
     })
 
-
 @login_required
-@require_http_methods(["GET", "POST"]) # Blindaje explícito
+@require_http_methods(["GET", "POST"])
 def editar_empleado_view(request, pk):
-    """
-    Permite la edición de datos del empleado.
-    Acepta GET (ver datos) y POST (guardar cambios).
-    """
     empleado = get_object_or_404(Empleado, pk=pk)
-    empresa_id = empleado.empresa.id if empleado.empresa else None
-    
+    empresa_actual = getattr(request, 'empresa_actual', None)
+
     if request.method == 'POST':
-        form = EmpleadoForm(request.POST, request.FILES, instance=empleado, empresa_id=empresa_id)
+        form = EmpleadoForm(request.POST, request.FILES, instance=empleado, empresa_actual=empresa_actual)
+        rol_id = request.POST.get('rol_usuario')
+
         if form.is_valid():
-            form.save()
-            messages.success(request, "Empleado actualizado.")
-            return redirect('empleados:lista_empleados')
+            try:
+                with transaction.atomic():
+                    # 1. Actualizar datos del empleado
+                    empleado = form.save()
+
+                    # 2. Gestión del Usuario de Sistema
+                    email = form.cleaned_data.get('email')
+                    if email:
+                        User = get_user_model()
+                        user = getattr(empleado, 'usuario', None)
+                        
+                        # Si no tiene usuario vinculado, buscamos si existe uno suelto por email
+                        if not user:
+                            user = User.objects.filter(email=email).first()
+                        
+                        if user:
+                            # Actualizar email si cambió
+                            if user.email != email:
+                                user.email = email
+                                user.save()
+                            
+                            # Asegurar vinculación (OneToOne)
+                            if not hasattr(user, 'empleado'):
+                                user.empleado = empleado
+                                user.save()
+
+                            # 3. Actualizar Rol (Usando UsuarioRol explícito)
+                            if rol_id:
+                                rol_obj = Rol.objects.filter(id=rol_id).first()
+                                if rol_obj:
+                                    # Borramos roles viejos y ponemos el nuevo
+                                    UsuarioRol.objects.filter(usuario=user).delete()
+                                    UsuarioRol.objects.create(usuario=user, rol=rol_obj)
+
+                    messages.success(request, "Empleado actualizado correctamente.")
+                    return redirect('empleados:lista_empleados')
+
+            except Exception as e:
+                messages.error(request, f"Error al actualizar: {e}")
+        else:
+            messages.error(request, "Verifique los errores en el formulario.")
+    
     else:
-        form = EmpleadoForm(instance=empleado, empresa_id=empresa_id)
+        # GET
+        form = EmpleadoForm(instance=empleado, empresa_actual=empresa_actual)
 
     roles_disponibles = Rol.objects.filter(estado=True)
     
+    # Pre-selección del rol actual en el HTML
     rol_actual_id = None
-    usuario_asociado = get_user_model().objects.filter(email=empleado.email).first()
-    if usuario_asociado:
-        ur = UsuarioRol.objects.filter(usuario=usuario_asociado).first()
-        if ur: rol_actual_id = ur.rol.id
+    if hasattr(empleado, 'usuario') and empleado.usuario:
+        usuario_rol = UsuarioRol.objects.filter(usuario=empleado.usuario).first()
+        if usuario_rol:
+            rol_actual_id = usuario_rol.rol.id
 
     return render(request, 'empleados/editar_empleado.html', {
-        'form': form, 
+        'form': form,
         'empleado': empleado,
         'roles_disponibles': roles_disponibles,
-        'rol_actual_id': rol_actual_id,
-        'es_edicion': True
+        'rol_actual_id': rol_actual_id
     })
 
 
