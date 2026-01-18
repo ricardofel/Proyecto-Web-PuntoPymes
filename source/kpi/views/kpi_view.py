@@ -20,7 +20,7 @@ def dashboard_view(request):
     Vista principal del Dashboard de KPIs.
     Calcula automáticamente los valores del mes si faltan y muestra semáforos.
     """
-    empresa = _empresa_actual(request)
+    empresa = request.empresa_actual
     
     # 1. Aseguramos que existan los KPIs base (Headcount, Ausentismo, etc.)
     KPIService.asegurar_defaults(empresa)

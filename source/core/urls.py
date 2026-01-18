@@ -3,7 +3,7 @@ from django.conf import settings
 from django.conf.urls.static import static  
 
 from core.views.auth_views import login_view, logout_view
-from core.views import auth_views, organization_views, config_views
+from core.views import auth_views, organization_views, config_views, home_views
 from core.views.core_views import visor_universal
 from core.views.home_views import dashboard_view
 
@@ -13,6 +13,9 @@ urlpatterns = [
     path("logout/", logout_view, name="logout"),
     path("", dashboard_view, name="dashboard"),
     path("password-change/", auth_views.password_change_view, name="password_change"),
+
+    # Selección de Empresa (Superusuario)
+    path("fijar-entorno/<int:empresa_id>/", home_views.fijar_entorno_modal, name="fijar_entorno"),
 
     # Organización
     path("organizacion/", organization_views.organizacion_dashboard, name="organizacion"),

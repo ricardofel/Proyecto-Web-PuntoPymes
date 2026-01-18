@@ -1,10 +1,27 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.apps import apps
+from django.contrib import messages
 
 from empleados.models import Empleado
-from core.models import UnidadOrganizacional
+from core.models import UnidadOrganizacional, Empresa
 
+@login_required
+def fijar_entorno_modal(request, empresa_id):
+    """
+    Vista llamada desde el modal para fijar la empresa en la sesión.
+    """
+    if request.user.is_superuser:
+        empresa = get_object_or_404(Empresa, pk=empresa_id)
+        
+        request.session['empresa_entorno_id'] = empresa.id
+        
+        request.session.modified = True
+        request.session.save()
+        
+        messages.success(request, f"Entorno cambiado a: {empresa.nombre_comercial}")
+    
+    return redirect('dashboard')
 
 @login_required
 def dashboard_view(request):
