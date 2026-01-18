@@ -36,32 +36,32 @@
                 <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider border-b pb-2 mb-4">Datos Corporativos</h3>
                 
                 <div class="flex flex-col">
-                    <label class="font-semibold text-gray-700 text-sm mb-1">Empresa</label>
+                    <label for="{{ form.empresa.id_for_label }}" class="font-semibold text-gray-700 text-sm mb-1">Empresa</label>
                     {{ form.empresa }}
                 </div>
 
                 <div class="grid grid-cols-1 gap-4">
                     <div class="flex flex-col">
-                        <label class="font-semibold text-gray-700 text-sm mb-1">Unidad Org.</label>
+                        <label for="{{ form.unidad_org.id_for_label }}" class="font-semibold text-gray-700 text-sm mb-1">Unidad Org.</label>
                         {{ form.unidad_org }}
                     </div>
                     <div class="flex flex-col">
-                        <label class="font-semibold text-gray-700 text-sm mb-1">Puesto</label>
+                        <label for="{{ form.puesto.id_for_label }}" class="font-semibold text-gray-700 text-sm mb-1">Puesto</label>
                         {{ form.puesto }}
                     </div>
                     <div class="flex flex-col">
-                        <label class="font-semibold text-gray-700 text-sm mb-1">Jefe Inmediato</label>
+                        <label for="{{ form.manager.id_for_label }}" class="font-semibold text-gray-700 text-sm mb-1">Jefe Inmediato</label>
                         {{ form.manager }}
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div class="flex flex-col">
-                        <label class="font-semibold text-gray-700 text-sm mb-1">F. Ingreso</label>
+                        <label for="{{ form.fecha_ingreso.id_for_label }}" class="font-semibold text-gray-700 text-sm mb-1">F. Ingreso</label>
                         {{ form.fecha_ingreso }}
                     </div>
                     <div class="flex flex-col">
-                        <label class="font-semibold text-gray-700 text-sm mb-1">Estado</label>
+                        <label for="{{ form.estado.id_for_label }}" class="font-semibold text-gray-700 text-sm mb-1">Estado</label>
                         {{ form.estado }}
                     </div>
                 </div>
@@ -80,7 +80,7 @@
                 </div>
 
                 <div class="flex flex-col mt-2">
-                    <label class="font-semibold text-gray-700 text-sm mb-1">Zona Horaria</label>
+                    <label for="{{ form.zona_horaria.id_for_label }}" class="font-semibold text-gray-700 text-sm mb-1">Zona Horaria</label>
                     {{ form.zona_horaria }}
                 </div>
             </div>
@@ -90,37 +90,37 @@
                 
                 <div class="grid grid-cols-2 gap-4">
                     <div class="flex flex-col">
-                        <label class="font-semibold text-gray-700 text-sm mb-1">Nombres</label>
+                        <label for="{{ form.nombres.id_for_label }}" class="font-semibold text-gray-700 text-sm mb-1">Nombres</label>
                         {{ form.nombres }}
                     </div>
                     <div class="flex flex-col">
-                        <label class="font-semibold text-gray-700 text-sm mb-1">Apellidos</label>
+                        <label for="{{ form.apellidos.id_for_label }}" class="font-semibold text-gray-700 text-sm mb-1">Apellidos</label>
                         {{ form.apellidos }}
                     </div>
                 </div>
 
                 <div class="flex flex-col">
-                    <label class="font-semibold text-gray-700 text-sm mb-1">Cédula</label>
+                    <label for="{{ form.cedula.id_for_label }}" class="font-semibold text-gray-700 text-sm mb-1">Cédula</label>
                     {{ form.cedula }}
                 </div>
 
                 <div class="flex flex-col">
-                    <label class="font-semibold text-gray-700 text-sm mb-1">Fecha Nacimiento</label>
+                    <label for="{{ form.fecha_nacimiento.id_for_label }}" class="font-semibold text-gray-700 text-sm mb-1">Fecha Nacimiento</label>
                     {{ form.fecha_nacimiento }}
                 </div>
 
                 <div class="flex flex-col">
-                    <label class="font-semibold text-gray-700 text-sm mb-1">Email</label>
+                    <label for="{{ form.email.id_for_label }}" class="font-semibold text-gray-700 text-sm mb-1">Email</label>
                     {{ form.email }}
                 </div>
 
                 <div class="flex flex-col">
-                    <label class="font-semibold text-gray-700 text-sm mb-1">Teléfono</label>
+                    <label for="{{ form.telefono.id_for_label }}" class="font-semibold text-gray-700 text-sm mb-1">Teléfono</label>
                     {{ form.telefono }}
                 </div>
 
                 <div class="flex flex-col">
-                    <label class="font-semibold text-gray-700 text-sm mb-1">Dirección</label>
+                    <label for="{{ form.direccion.id_for_label }}" class="font-semibold text-gray-700 text-sm mb-1">Dirección</label>
                     {{ form.direccion }}
                 </div>
             </div>
@@ -131,17 +131,17 @@
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="flex flex-col">
-                    <label class="font-semibold text-gray-700 text-sm mb-1">Hora de Entrada</label>
+                    <label for="{{ form.hora_entrada_teorica.id_for_label }}" class="font-semibold text-gray-700 text-sm mb-1">Hora de Entrada</label>
                     {{ form.hora_entrada_teorica }}
                 </div>
 
                 <div class="flex flex-col">
-                    <label class="font-semibold text-gray-700 text-sm mb-1">Hora de Salida</label>
+                    <label for="{{ form.hora_salida_teorica.id_for_label }}" class="font-semibold text-gray-700 text-sm mb-1">Hora de Salida</label>
                     {{ form.hora_salida_teorica }}
                 </div>
 
                 <div class="flex flex-col">
-                    <label class="font-semibold text-gray-700 text-sm mb-1">Días Laborales</label>
+                    <span class="font-semibold text-gray-700 text-sm mb-1">Días Laborales</span>
                     
                     <button type="button" id="btn-lunes-viernes" class="mb-3 text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-100 border border-indigo-200 transition-colors w-max font-medium">
                         Seleccionar Lunes a Viernes

@@ -1,17 +1,18 @@
 import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST, require_safe
 from django.core.serializers.json import DjangoJSONEncoder
 
 from empleados.models import Empleado
 from asistencia.models import EventoAsistencia
 
 
-@require_http_methods(["GET"])
+@require_safe
 def exportar_nomina_api(request):
     """
     Exporta un JSON con empleados y datos básicos para nómina.
+    Acceso de solo lectura (GET).
     """
     try:
         empleados = Empleado.objects.all()
@@ -43,12 +44,11 @@ def exportar_nomina_api(request):
 
 
 @csrf_exempt
-@require_http_methods(["POST"])
+@require_POST
 def importar_empleados_api(request):
     """
     Importa empleados desde un JSON recibido por POST.
-
-    Asigna claves foráneas fijas (IDs=1) según las reglas actuales del sistema.
+    Exento de CSRF para permitir integraciones externas (API).
     """
     try:
         body = json.loads(request.body)
@@ -83,12 +83,15 @@ def importar_empleados_api(request):
 
     except json.JSONDecodeError:
         return JsonResponse({"error": "JSON inválido"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
 
 
-@require_http_methods(["GET"])
+@require_safe
 def exportar_asistencia_api(request):
     """
     Exporta los últimos 50 eventos de asistencia.
+    Acceso de solo lectura (GET).
     """
     try:
         eventos = EventoAsistencia.objects.all().order_by("-registrado_el")[:50]
