@@ -34,3 +34,9 @@ private_media/
 # Sistema
 .DS_Store
 Thumbs.db
+
+#sonar
+.coverage
+coverage.xml
+.sonar/
+.scannerwork/
