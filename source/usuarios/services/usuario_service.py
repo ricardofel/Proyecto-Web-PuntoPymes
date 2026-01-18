@@ -11,11 +11,8 @@ class UsuarioService:
     @transaction.atomic
     def crear_o_actualizar_usuario(usuario, data, editor):
         """
-        Crea o actualiza un usuario y sincroniza:
-        - contraseña (si se envía),
-        - roles (solo si el editor es superuser),
-        - flags is_staff/is_superuser según el rol,
-        - y estado del empleado asociado.
+        Crea o actualiza un usuario.
+        GARANTIZA que no se pierda el empleado asignado si el formulario envía None.
         """
 
         # Contraseña: solo se cambia si el campo viene con valor
@@ -23,23 +20,24 @@ class UsuarioService:
         if nuevo_password:
             usuario.set_password(nuevo_password)
 
-        # Restricciones para editores no superuser:
-        # evita que modifiquen flags de permisos y, en edición, conserva valores originales.
+        if usuario.pk:
+            # Obtenemos la versión actual de la base de datos
+            usuario_original = User.objects.get(pk=usuario.pk)
+
+            nuevo_empleado = data.get('empleado')
+            
+            if nuevo_empleado is None:
+                usuario.empleado = usuario_original.empleado
+        
+        # Restricciones de permisos (Solo para NO superusuarios)
         if not editor.is_superuser:
             if usuario.pk:
-                usuario_original = User.objects.get(pk=usuario.pk)
                 usuario.is_staff = usuario_original.is_staff
                 usuario.is_superuser = usuario_original.is_superuser
-
-                # Si el empleado no viene en data, se conserva el actual
-                if 'empleado' not in data:
-                    usuario.empleado = usuario_original.empleado
             else:
-                # En creación por no superuser, fuerza permisos mínimos
                 usuario.is_staff = False
                 usuario.is_superuser = False
 
-        # Persistencia de datos base del usuario
         usuario.save()
 
         # Gestión de roles: solo superuser puede modificar roles y permisos
