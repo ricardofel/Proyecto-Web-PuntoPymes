@@ -53,7 +53,7 @@
                                 </div>
 
                                 <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button class="text-gray-400 hover:text-blue-600" type="button">
+                                    <button class="text-gray-400 hover:text-blue-600" type="button" aria-label="Editar puesto">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
                                         </svg>
@@ -113,7 +113,7 @@
                                 </div>
 
                                 <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button class="text-gray-400 hover:text-blue-600" type="button">
+                                    <button class="text-gray-400 hover:text-blue-600" type="button" aria-label="Editar tipo de solicitud">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
                                         </svg>
@@ -144,6 +144,7 @@
                 type="button"
                 onclick="document.getElementById('modalPuesto').classList.add('hidden')"
                 class="text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label="Cerrar modal"
             >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -155,22 +156,22 @@
             {% csrf_token %}
 
             <div>
-                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nombre del Puesto</label>
+                <label for="{{ form_puesto.nombre.id_for_label }}" class="block text-xs font-bold text-gray-700 uppercase mb-1">Nombre del Puesto</label>
                 {{ form_puesto.nombre }}
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nivel / Seniority</label>
+                <label for="{{ form_puesto.nivel.id_for_label }}" class="block text-xs font-bold text-gray-700 uppercase mb-1">Nivel / Seniority</label>
                 {{ form_puesto.nivel }}
             </div>
 
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Salario Min</label>
+                    <label for="{{ form_puesto.banda_salarial_min.id_for_label }}" class="block text-xs font-bold text-gray-700 uppercase mb-1">Salario Min</label>
                     {{ form_puesto.banda_salarial_min }}
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Salario Max</label>
+                    <label for="{{ form_puesto.banda_salarial_max.id_for_label }}" class="block text-xs font-bold text-gray-700 uppercase mb-1">Salario Max</label>
                     {{ form_puesto.banda_salarial_max }}
                 </div>
             </div>
@@ -202,6 +203,7 @@
                 type="button"
                 onclick="document.getElementById('modalAusencia').classList.add('hidden')"
                 class="text-gray-400 hover:text-gray-600"
+                aria-label="Cerrar modal"
             >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -213,28 +215,28 @@
             {% csrf_token %}
 
             <div>
-                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nombre Solicitud</label>
+                <label for="{{ form_ausencia.nombre.id_for_label }}" class="block text-xs font-bold text-gray-700 uppercase mb-1">Nombre Solicitud</label>
                 {{ form_ausencia.nombre }}
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Descripción / Reglas</label>
+                <label for="{{ form_ausencia.descripcion.id_for_label }}" class="block text-xs font-bold text-gray-700 uppercase mb-1">Descripción / Reglas</label>
                 {{ form_ausencia.descripcion }}
             </div>
 
             <div class="space-y-3 pt-2">
-                <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <div class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
                     {{ form_ausencia.descuenta_vacaciones }}
-                    <span class="text-sm text-gray-700 font-medium">Descuenta de Vacaciones</span>
-                </label>
-                <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <label for="{{ form_ausencia.descuenta_vacaciones.id_for_label }}" class="text-sm text-gray-700 font-medium cursor-pointer w-full">Descuenta de Vacaciones</label>
+                </div>
+                <div class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
                     {{ form_ausencia.requiere_documento }}
-                    <span class="text-sm text-gray-700 font-medium">Requiere Adjuntar Documento</span>
-                </label>
-                <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <label for="{{ form_ausencia.requiere_documento.id_for_label }}" class="text-sm text-gray-700 font-medium cursor-pointer w-full">Requiere Adjuntar Documento</label>
+                </div>
+                <div class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
                     {{ form_ausencia.afecta_sueldo }}
-                    <span class="text-sm text-gray-700 font-medium">Afecta al Sueldo (Descuento)</span>
-                </label>
+                    <label for="{{ form_ausencia.afecta_sueldo.id_for_label }}" class="text-sm text-gray-700 font-medium cursor-pointer w-full">Afecta al Sueldo (Descuento)</label>
+                </div>
             </div>
 
             <div class="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-50">
