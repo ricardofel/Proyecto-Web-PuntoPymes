@@ -3,7 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from solicitudes.models import SolicitudAusencia, RegistroVacaciones
+
+from solicitudes.models import SolicitudAusencia, RegistroVacaciones, TipoAusencia
 from .serializers import (
     TipoAusenciaSerializer,
     SolicitudAusenciaSerializer,

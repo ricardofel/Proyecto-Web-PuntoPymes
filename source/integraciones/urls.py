@@ -1,3 +1,4 @@
+from django.urls import path
 from .views.dashboard_view import (
     integraciones_dashboard_view,
     logs_actualizados_view,
