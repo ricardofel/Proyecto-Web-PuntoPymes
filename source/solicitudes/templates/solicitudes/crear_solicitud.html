@@ -12,7 +12,6 @@
             {% if es_edicion %}Editando Solicitud #{{ form.instance.id }}{% else %}Detalles de la Ausencia{% endif %}
         </h2>
 
-        {# === IMPORTANTE: enctype obligatorio para subir archivos === #}
         <form method="post" enctype="multipart/form-data" id="form-solicitud">
             {% csrf_token %} 
             
@@ -24,7 +23,6 @@
 
             <div class="space-y-6">
                 
-                {# 1. TIPO DE SOLICITUD #}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Solicitud <span class="text-red-500">*</span></label>
                     {{ form.ausencia }}
@@ -33,7 +31,6 @@
                     {% endif %}
                 </div>
 
-                {# 2. FECHAS #}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Inicio <span class="text-red-500">*</span></label>
@@ -51,7 +48,6 @@
                     </div>
                 </div>
 
-                {# 3. MOTIVO #}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Motivo / Justificación <span class="text-red-500">*</span></label>
                     {{ form.motivo }}
@@ -60,20 +56,16 @@
                     {% endif %}
                 </div>
 
-                {# 4. GESTOR DE ARCHIVOS #}
                 <div class="border-t border-gray-100 pt-6 mt-6">
                     <label class="block text-sm font-medium text-gray-700 mb-3">Documentos de Soporte</label>
                     
-                    {# Input Real de Django (Oculto) #}
                     <div class="hidden">
                         {{ form.archivos_nuevos }}
                     </div>
-                    {# Mostramos errores del archivo si los hubiera #}
                     {% if form.archivos_nuevos.errors %}
                         <p class="text-xs text-red-500 mb-2">{{ form.archivos_nuevos.errors.0 }}</p>
                     {% endif %}
 
-                    {# Botón Visual #}
                     <button type="button" id="btn-agregar-archivo" 
                             class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition-colors mb-4">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -82,10 +74,8 @@
                         Agregar Archivo
                     </button>
 
-                    {# Contenedor de Fichas #}
                     <div class="space-y-3" id="contenedor-archivos">
                         
-                        {# Archivos ya guardados (Solo edición) #}
                         {% if adjuntos_existentes %}
                             {% for adj in adjuntos_existentes %}
                                 <div id="adjunto-db-{{ adj.id }}" class="flex items-center justify-between p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
@@ -103,7 +93,6 @@
                                         </div>
                                     </div>
                                     
-                                    {# Botón Eliminar BD - CORREGIDO CON COMILLAS #}
                                     <button type="button" onclick="eliminarAdjuntoDB('{{ adj.id }}')" 
                                             class="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-white transition-all" title="Eliminar">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -114,10 +103,8 @@
                             {% endfor %}
                         {% endif %}
 
-                        {# Aquí JS insertará los nuevos #}
                     </div>
                     
-                    {# Mensaje Vacío - CORREGIDO CON CLASE HIDDEN #}
                     <p class="text-xs text-gray-400 mt-3 {% if adjuntos_existentes %}hidden{% endif %}" id="msg-vacio">
                         No hay archivos seleccionados.
                     </p>
@@ -146,6 +133,7 @@
         
         const dt = new DataTransfer();
 
+        // Manejo de carga de archivos (uno a uno)
         btnAgregar.addEventListener('click', () => {
             const inputTemp = document.createElement('input');
             inputTemp.type = 'file';
@@ -163,6 +151,7 @@
             inputTemp.click();
         });
 
+        // Renderizado visual de archivos nuevos
         window.renderizarFichasNuevas = function() {
             const fichasNuevas = document.querySelectorAll('.ficha-nueva-js');
             fichasNuevas.forEach(el => el.remove());
@@ -217,6 +206,7 @@
             }
         }
         
+        // Eliminación de archivos guardados (AJAX)
         window.eliminarAdjuntoDB = function(id) {
             if (!confirm('¿Eliminar este archivo guardado permanentemente?')) return;
 
@@ -241,7 +231,7 @@
                     alert('Error al eliminar.');
                 }
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => {});
         }
     });
 </script>

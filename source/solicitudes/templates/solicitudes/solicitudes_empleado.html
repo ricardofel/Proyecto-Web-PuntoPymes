@@ -5,7 +5,6 @@
 {% block page_content %}
 <div class="bg-white p-6 rounded-lg shadow min-h-[400px]">
 
-    {# --- CABECERA --- #}
     <div class="flex justify-between items-center mb-6">
         <form method="get" class="relative w-full sm:max-w-md group mr-4">
             <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -21,7 +20,6 @@
     </div>
     <hr class="mb-6"/>
 
-    {# --- TABLA --- #}
     <div class="overflow-visible border rounded-lg">
         <table class="w-full text-left text-sm text-gray-600">
             <thead class="bg-gray-50 text-xs uppercase font-semibold text-gray-700">
@@ -60,7 +58,6 @@
                     <td class="px-6 py-4 text-right">
                         <div class="flex items-center justify-end gap-2">
                             
-                            {# --- NUEVO: BOTÓN DE COMENTARIO (Si existe) --- #}
                             {% with ultimo=solicitud.aprobaciones.last %}
                                 {% if ultimo and ultimo.comentario %}
                                 <button type="button" 
@@ -74,7 +71,6 @@
                                 {% endif %}
                             {% endwith %}
 
-                            {# --- LÓGICA EXISTENTE DE ACCIONES --- #}
                             {% if solicitud.estado == 'pendiente' or solicitud.estado == 'devuelto' %}
                                 <div class="relative inline-block text-left">
                                     <button type="button" onclick="toggleMenu('menu-{{ solicitud.id }}')" class="p-2 rounded-full hover:bg-gray-200 text-gray-500 transition-colors focus:outline-none">
@@ -117,7 +113,6 @@
     </div>
 </div>
 
-{# --- MODAL DE ELIMINAR --- #}
 <div id="deleteModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeDeleteModal()"></div>
@@ -144,7 +139,6 @@
     </div>
 </div>
 
-{# --- MODAL DE COMENTARIO (NUEVO) --- #}
 <div id="commentModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="cerrarComentario()"></div>
@@ -195,7 +189,6 @@
         document.getElementById('deleteModal').classList.add('hidden');
     }
 
-    
     function verComentario(texto, accion, autor) {
         document.getElementById('modal-texto-comentario').innerText = texto;
         document.getElementById('modal-autor').innerText = 'Acción: ' + accion + ' | Por: ' + autor;

@@ -1,15 +1,8 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-"""
-Modelos de la app asistencia:
-- Turno (Configuración de horarios)
-- EventoAsistencia (Marcaciones GPS/Biométrico)
-- JornadaCalculada (Resumen diario procesado)
-"""
-
+# modelo para la configuración de turnos y horarios
 class Turno(models.Model):
-    # Tabla turno
     id = models.BigAutoField(primary_key=True)
     empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     nombre = models.CharField(max_length=50)
@@ -27,9 +20,8 @@ class Turno(models.Model):
     def __str__(self):
         return f"{self.nombre} ({self.hora_inicio} - {self.hora_fin})"
 
-
+# registro de eventos de marcación como entradas y salidas
 class EventoAsistencia(models.Model):
-    # Tabla evento_asistencia
     class TipoEvento(models.TextChoices):
         CHECK_IN = "check_in", _("Entrada")
         CHECK_OUT = "check_out", _("Salida")
@@ -64,16 +56,15 @@ class EventoAsistencia(models.Model):
             models.Index(fields=["empleado", "registrado_el"]),
         ]
 
-
+# resumen diario de asistencia para análisis y reportes
 class JornadaCalculada(models.Model):
-    # Tabla jornada_calculada (Alimenta el Dashboard Visual)
     class EstadoJornada(models.TextChoices):
-        PUNTUAL = "puntual", _("Puntual")       # Verde
-        ATRASO = "atraso", _("Atraso")          # Naranja
-        FALTA = "falta", _("Falta")             # Rojo
-        PERMISO = "permiso", _("Permiso")       # Azul
-        INCOMPLETO = "incompleto", _("Incompleto") # Gris (Aún no marca salida)
-        LIBRE = "libre", _("Día Libre")         # Gris claro
+        PUNTUAL = "puntual", _("Puntual")
+        ATRASO = "atraso", _("Atraso")
+        FALTA = "falta", _("Falta")
+        PERMISO = "permiso", _("Permiso")
+        INCOMPLETO = "incompleto", _("Incompleto")
+        LIBRE = "libre", _("Día Libre")
 
     id = models.BigAutoField(primary_key=True)
     empleado = models.ForeignKey("empleados.Empleado", on_delete=models.CASCADE)
@@ -89,7 +80,7 @@ class JornadaCalculada(models.Model):
     estado = models.CharField(
         max_length=20,
         choices=EstadoJornada.choices,
-        default=EstadoJornada.FALTA,   # Por defecto es falta hasta que marque
+        default=EstadoJornada.FALTA,
         help_text=_("Estado calculado para el dashboard"),
     )
     
@@ -106,7 +97,6 @@ class JornadaCalculada(models.Model):
     def __str__(self):
         return f"{self.empleado} - {self.fecha} ({self.estado})"
 
-    # --- CAMBIO APLICADO: Método save limpio ---
+    # método de guardado básico sin lógica automática
     def save(self, *args, **kwargs):
-        # Eliminamos la lógica automática para que respete lo que decide la Vista.
         super().save(*args, **kwargs)

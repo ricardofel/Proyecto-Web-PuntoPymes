@@ -8,10 +8,7 @@ class KPIService:
     
     @staticmethod
     def asegurar_defaults(empresa):
-        """
-        Crea o actualiza los KPIs base obligatorios para la empresa.
-        Usa 'codigo' para identificar unicidad y evitar duplicados.
-        """
+        # definición de kpis base del sistema
         defaults = [
             {
                 "codigo": CodigosKPI.HEADCOUNT,
@@ -26,7 +23,7 @@ class KPIService:
                 "nombre": "Ausentismo Laboral",
                 "unidad_medida": "%",
                 "frecuencia": "mensual",
-                "meta_default": 5.0, # Ejemplo: Máximo 5%
+                "meta_default": 5.0,
                 "descripcion": "Porcentaje de ausencias respecto a días laborales."
             },
             {
@@ -57,7 +54,7 @@ class KPIService:
         
         creados = 0
         for data in defaults:
-            # update_or_create: Si existe el código, actualiza el nombre/meta. Si no, lo crea.
+            # creación o actualización de definiciones de kpi
             obj, created = KPI.objects.update_or_create(
                 empresa=empresa,
                 codigo=data["codigo"], 
@@ -74,22 +71,16 @@ class KPIService:
 
     @staticmethod
     def garantizar_resultados_actuales(empresa):
-        """
-        Revisa TODOS los KPIs automáticos. Si falta el resultado de ESTE MES, 
-        lo calcula y lo guarda. No recalcula los que ya existen (para eficiencia).
-        """
+        # generación de resultados faltantes para el mes actual
         periodo = timezone.now().strftime("%Y-%m")
         
-        # Obtenemos todos los KPIs automáticos activos
         kpis = KPI.objects.filter(empresa=empresa, estado=True).exclude(codigo=CodigosKPI.MANUAL)
         
         calculados = 0
         for kpi in kpis:
-            # Verificamos si ya existe resultado para este mes específico
             existe = KPIResultado.objects.filter(kpi=kpi, periodo=periodo).exists()
             
             if not existe:
-                # Si falta, calculamos
                 valor = calcular_valor_automatico(kpi)
                 KPIResultado.objects.create(
                     kpi=kpi,
@@ -103,10 +94,7 @@ class KPIService:
 
     @staticmethod
     def recalcular_todo(empresa):
-        """
-        Fuerza el recálculo de TODOS los KPIs automáticos para este mes,
-        sobreescribiendo valores si ya existen.
-        """
+        # actualización forzada de todos los kpis automáticos
         periodo = timezone.now().strftime("%Y-%m")
         kpis = KPI.objects.filter(empresa=empresa, estado=True).exclude(codigo=CodigosKPI.MANUAL)
         

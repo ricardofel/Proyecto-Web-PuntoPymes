@@ -1,25 +1,23 @@
 from django.contrib import admin
 from .models import Turno, EventoAsistencia, JornadaCalculada
 
-# 1. Configuración de Turnos
+# configuración de turnos
 @admin.register(Turno)
 class TurnoAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'hora_inicio', 'hora_fin', 'tolerancia_minutos', 'empresa', 'estado')
     list_filter = ('estado', 'empresa')
     search_fields = ('nombre',)
 
-# 2. Configuración de Eventos (Marcaciones GPS/Biométrico)
+# configuración de eventos de asistencia
 @admin.register(EventoAsistencia)
 class EventoAsistenciaAdmin(admin.ModelAdmin):
     list_display = ('empleado', 'tipo', 'registrado_el', 'origen', 'precision_gps')
     list_filter = ('tipo', 'registrado_el', 'origen', 'empleado__empresa')
     search_fields = ('empleado__nombres', 'empleado__apellidos')
     date_hierarchy = 'registrado_el'
-    
-    # Hacemos que sea solo lectura la fecha para no alterar auditoría fácilmente
     readonly_fields = ('registrado_el',)
 
-# 3. Configuración de Jornada Calculada (Lo que alimenta el Dashboard)
+# visualización de jornadas calculadas
 @admin.register(JornadaCalculada)
 class JornadaCalculadaAdmin(admin.ModelAdmin):
     list_display = (
@@ -28,13 +26,13 @@ class JornadaCalculadaAdmin(admin.ModelAdmin):
         'hora_primera_entrada', 
         'hora_ultima_salida', 
         'minutos_tardanza', 
-        'estado_coloreado' # Usamos una función para ver el estado bonito
+        'estado_coloreado'
     )
     list_filter = ('estado', 'fecha', 'empleado__empresa')
     search_fields = ('empleado__nombres', 'empleado__apellidos')
     date_hierarchy = 'fecha'
 
-    # Función para mostrar el estado con etiquetas de color en el Admin
+    # visualización de estado con color
     @admin.display(description='Estado')
     def estado_coloreado(self, obj):
         from django.utils.html import format_html

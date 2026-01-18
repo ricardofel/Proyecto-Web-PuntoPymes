@@ -4,15 +4,13 @@ from empleados.models import Empleado
 from core.models import Empresa
 from core.storage import private_storage
 
-# --- UTILIDAD PARA RUTAS ---
+# utilidad para generar ruta de archivo basada en empleado y solicitud
 def ruta_adjunto_solicitud(instance, filename):
-    # Genera: solicitudes/empleado_00005/solicitud_10/documento.pdf
-    # Organizamos por ID de empleado y luego por ID de solicitud
     folder_name = f"empleado_{instance.solicitud.empleado.id:05d}"
     subfolder = f"solicitud_{instance.solicitud.id}"
     return os.path.join('solicitudes', folder_name, subfolder, filename)
 
-# 1. TIPO DE AUSENCIA 
+# modelo para configurar tipos de ausencia y sus reglas
 class TipoAusencia(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
     nombre = models.CharField(max_length=100)
@@ -26,7 +24,7 @@ class TipoAusencia(models.Model):
     def __str__(self):
         return self.nombre
 
-# 2. SOLICITUD DE AUSENCIA
+# modelo principal para registrar solicitudes de ausencia
 class SolicitudAusencia(models.Model):
     class Estado(models.TextChoices):
         PENDIENTE = 'pendiente', 'Pendiente'
@@ -41,12 +39,9 @@ class SolicitudAusencia(models.Model):
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField()
     
-    # CAMBIO: Ahora es IntegerField (Entero)
     dias_habiles = models.IntegerField(default=0)
     
     motivo = models.TextField()
-    
-    # NOTA: Eliminamos 'archivo_adjunto' de aquí porque usaremos el modelo AdjuntoSolicitud
     
     estado = models.CharField(
         max_length=20, 
@@ -60,12 +55,12 @@ class SolicitudAusencia(models.Model):
     def __str__(self):
         return f"{self.empleado} - {self.ausencia}"
 
-# === NUEVO MODELO PARA MÚLTIPLES ARCHIVOS ===
+# modelo para almacenar múltiples archivos adjuntos vinculados a una solicitud
 class AdjuntoSolicitud(models.Model):
     solicitud = models.ForeignKey(
         SolicitudAusencia, 
         on_delete=models.CASCADE, 
-        related_name='adjuntos' # Clave para acceder desde la solicitud: solicitud.adjuntos.all()
+        related_name='adjuntos'
     )
     archivo = models.FileField(
         upload_to=ruta_adjunto_solicitud,
@@ -80,7 +75,7 @@ class AdjuntoSolicitud(models.Model):
     def __str__(self):
         return f"Adjunto {self.filename()} para Solicitud {self.solicitud.id}"
 
-# 3. APROBACIÓN (Historial)
+# historial de acciones de aprobación o rechazo
 class AprobacionAusencia(models.Model):
     solicitud = models.ForeignKey(SolicitudAusencia, on_delete=models.CASCADE, related_name='aprobaciones')
     aprobador = models.ForeignKey(Empleado, on_delete=models.PROTECT)
@@ -88,7 +83,7 @@ class AprobacionAusencia(models.Model):
     comentario = models.TextField(blank=True, null=True)
     fecha_accion = models.DateTimeField(auto_now_add=True)
 
-# 4. REGISTRO DE VACACIONES
+# control de saldos de vacaciones por empleado y periodo
 class RegistroVacaciones(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
     empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)

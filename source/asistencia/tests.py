@@ -33,7 +33,7 @@ class AsistenciaWhiteBoxTests(TestCase):
         self.client.force_login(self.user)
 
     def test_registrar_entrada_logica_tardanza(self):
-        print("\n⏱️ [TEST] Iniciando: test_registrar_entrada_logica_tardanza")
+        print("\n [TEST] Iniciando: test_registrar_entrada_logica_tardanza")
         ahora = timezone.localtime(timezone.now()).replace(hour=9, minute=15, second=0)
         
         with patch('django.utils.timezone.now', return_value=ahora):
@@ -42,7 +42,7 @@ class AsistenciaWhiteBoxTests(TestCase):
 
         jornada = JornadaCalculada.objects.get(empleado=self.empleado, fecha=ahora.date())
         self.assertEqual(jornada.estado, JornadaCalculada.EstadoJornada.ATRASO)
-        print("     ✅ Éxito: Atraso detectado correctamente.")
+        print("     Éxito: Atraso detectado correctamente.")
 
 class AsistenciaApiWhiteBoxTests(TestCase):
     def setUp(self):
@@ -61,9 +61,8 @@ class AsistenciaApiWhiteBoxTests(TestCase):
         self.client.force_login(self.user_A)
 
     def test_api_detalle_aislamiento_empresa(self):
-        print("\n🔍 [TEST] Iniciando: test_api_detalle_aislamiento_empresa")
+        print("\n [TEST] Iniciando: test_api_detalle_aislamiento_empresa")
         
-        # CORRECCIÓN: El nombre correcto es 'api_detalle_dia' según asistencia/urls.py
         url = reverse('asistencia:api_detalle_dia')
         
         session = self.client.session
@@ -73,4 +72,4 @@ class AsistenciaApiWhiteBoxTests(TestCase):
         response = self.client.get(url, {'empleado_id': self.emp_B.id, 'fecha': '2025-01-01'})
         data = response.json()
         self.assertEqual(len(data.get('eventos', [])), 0)
-        print("     ✅ Éxito: Aislamiento de API verificado.")
+        print("      Éxito: Aislamiento de API verificado.")

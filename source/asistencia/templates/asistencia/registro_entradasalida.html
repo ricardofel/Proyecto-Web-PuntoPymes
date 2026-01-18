@@ -95,7 +95,7 @@
         const ampm = horas >= 12 ? 'PM' : 'AM';
         
         horas = horas % 12;
-        horas = horas ? horas : 12; // La hora 0 es 12
+        horas = horas ? horas : 12; 
         minutos = minutos < 10 ? '0' + minutos : minutos;
         
         const strHora = horas + ':' + minutos + ' ' + ampm;
@@ -104,7 +104,7 @@
             elemento.innerText = strHora;
         }
     }
-    // Actualizar cada segundo (1000ms)
+    
     setInterval(actualizarReloj, 1000);
 </script>
 

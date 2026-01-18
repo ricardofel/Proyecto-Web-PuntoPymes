@@ -32,11 +32,11 @@
                     <span class="text-[10px] text-slate-400">Meta: {{ kpi.meta_default|default:"N/A" }}</span>
                     {% if kpi.color_estado == 'green' %}
                         <span class="inline-flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-                            ✓ En meta
+                            En meta
                         </span>
                     {% elif kpi.color_estado == 'red' %}
                         <span class="inline-flex items-center gap-1 text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
-                            ⚠ Bajo meta
+                            Bajo meta
                         </span>
                     {% endif %}
                 </div>

@@ -8,19 +8,18 @@ from .models import (
     SolicitudAusencia, 
     AprobacionAusencia, 
     RegistroVacaciones,
-    AdjuntoSolicitud  # <--- IMPORTANTE: Importamos el nuevo modelo
+    AdjuntoSolicitud
 )
 
-# === 1. CONFIGURACIÓN PARA VER LOS MÚLTIPLES ARCHIVOS ===
+# adjuntar multiples archivos a la vez
 class AdjuntoSolicitudInline(admin.TabularInline):
     model = AdjuntoSolicitud
-    extra = 0 # No muestra filas vacías extra
+    extra = 0
     fields = ('archivo', 'ver_documento', 'fecha_subida')
     readonly_fields = ('ver_documento', 'fecha_subida')
 
     def ver_documento(self, obj):
         if obj.archivo:
-            # Usamos la nueva ruta que recibe el ID del adjunto
             url = reverse('solicitudes:descargar_adjunto', args=[obj.id])
             return format_html(
                 '<a class="button" href="{}" target="_blank" style="background-color: #4F46E5; color: white; padding: 4px 10px; border-radius: 4px; text-decoration: none;">Descargar PDF</a>', 
@@ -28,9 +27,6 @@ class AdjuntoSolicitudInline(admin.TabularInline):
             )
         return "-"
     ver_documento.short_description = "Acción"
-
-
-# === 2. TUS CLASES ADMIN ORIGINALES (ADAPTADAS) ===
 
 @admin.register(TipoAusencia)
 class TipoAusenciaAdmin(admin.ModelAdmin):
@@ -50,7 +46,6 @@ class TipoAusenciaAdmin(admin.ModelAdmin):
 
 @admin.register(SolicitudAusencia)
 class SolicitudAusenciaAdmin(admin.ModelAdmin):
-    # En list_display cambiamos el botón de descarga única por un contador de archivos
     list_display = (
         "empleado",
         "ausencia",
@@ -58,18 +53,17 @@ class SolicitudAusenciaAdmin(admin.ModelAdmin):
         "fecha_fin",
         "dias_habiles",
         "estado",
-        "total_adjuntos", # <--- Nueva columna
+        "total_adjuntos",
         "fecha_creacion",
     )
     
-    # Agregamos los archivos como lista dentro de la solicitud
+
     inlines = [AdjuntoSolicitudInline]
 
     fieldsets = (
         (None, {"fields": ("empresa", "empleado", "ausencia")}),
         (_("Periodo y Días"), {"fields": ("fecha_inicio", "fecha_fin", "dias_habiles")}),
         (_("Detalles y Estado"), {"fields": ("motivo", "estado")}),
-        # Eliminamos 'archivo_adjunto' y 'descargar_documento' de aquí porque ahora están en el Inline
     )
     
     list_filter = ("empresa", "estado", "ausencia", "fecha_inicio")
@@ -83,7 +77,7 @@ class SolicitudAusenciaAdmin(admin.ModelAdmin):
     date_hierarchy = "fecha_creacion"
     list_editable = ("estado",)
 
-    # Función para mostrar en la lista principal cuántos archivos tiene
+    # visualizacion de archivos tipo lista
     def total_adjuntos(self, obj):
         count = obj.adjuntos.count()
         if count > 0:

@@ -10,9 +10,7 @@ from django.http import JsonResponse
 from empleados.models import Empleado
 from .models import JornadaCalculada, EventoAsistencia
 
-# ==============================================================================
-# 1. VISTA SEMÁFORO (Dispatcher)
-# ==============================================================================
+# redirección inicial según el rol del usuario
 @login_required
 def asistencia_home_view(request):
     usuario = request.user
@@ -26,16 +24,11 @@ def asistencia_home_view(request):
     else:
         return redirect('asistencia:zona_marcaje')
 
-# ==============================================================================
-# 2. VISTA ZONA DE MARCAJE (Solo Botones)
-# ==============================================================================
 @login_required
 def zona_marcaje_view(request):
     return render(request, 'asistencia/registro_entradasalida.html')
 
-# ==============================================================================
-# 3. VISTA REGISTRAR MARCA (Lógica Estricta)
-# ==============================================================================
+# procesamiento de la marcación de asistencia
 @login_required
 @require_POST
 def registrar_marca_view(request):
@@ -60,7 +53,6 @@ def registrar_marca_view(request):
         messages.error(request, "Acción no válida.")
         return redirect('asistencia:zona_marcaje')
 
-    # 1. Guardar Historial Crudo
     EventoAsistencia.objects.create(
         empleado=empleado,
         tipo=tipo_map[accion],
@@ -69,7 +61,7 @@ def registrar_marca_view(request):
         ip_address=request.META.get('REMOTE_ADDR')
     )
 
-    # 2. Obtener o Crear Jornada
+    # obtención o creación de la jornada del día
     jornada, created = JornadaCalculada.objects.get_or_create(
         empleado=empleado,
         fecha=hoy
@@ -83,6 +75,7 @@ def registrar_marca_view(request):
             hora_teorica_aware = timezone.make_aware(hora_teorica_naive, timezone.get_current_timezone())
             margen = timedelta(minutes=0) 
 
+            # cálculo de atrasos
             if ahora > (hora_teorica_aware + margen):
                 diferencia = ahora - hora_teorica_aware
                 minutos_tarde = int(diferencia.total_seconds() / 60)
@@ -98,6 +91,8 @@ def registrar_marca_view(request):
 
     elif accion == 'salida':
         jornada.hora_ultima_salida = ahora
+        
+        # cálculo de tiempo trabajado
         if jornada.hora_primera_entrada:
             tiempo_trabajado = ahora - jornada.hora_primera_entrada
             jornada.minutos_trabajados = int(tiempo_trabajado.total_seconds() / 60)
@@ -111,10 +106,11 @@ def registrar_marca_view(request):
         duracion_teorica = fin_teorico - inicio_teorico
         minutos_objetivo = int(duracion_teorica.total_seconds() / 60)
 
+        # validación de cumplimiento de jornada
         if jornada.minutos_trabajados < (minutos_objetivo - 1):
             jornada.estado = JornadaCalculada.EstadoJornada.FALTA
             faltan = minutos_objetivo - jornada.minutos_trabajados
-            messages.error(request, f"⚠️ JORNADA INCOMPLETA (Faltaron {faltan} min).")
+            messages.error(request, f"JORNADA INCOMPLETA (Faltaron {faltan} min).")
         elif jornada.minutos_tardanza > 0:
             jornada.estado = JornadaCalculada.EstadoJornada.ATRASO
             messages.warning(request, "Horas cumplidas, pero mantienes el atraso de entrada.")
@@ -130,9 +126,7 @@ def registrar_marca_view(request):
     jornada.save()
     return redirect('asistencia:zona_marcaje')
 
-# ==============================================================================
-# 4. VISTA DASHBOARD (Calendario)
-# ==============================================================================
+# panel de control y calendario de asistencia
 @login_required
 def dashboard_asistencia_view(request):
     usuario = request.user
@@ -142,21 +136,18 @@ def dashboard_asistencia_view(request):
         getattr(usuario, 'es_superadmin_negocio', False)
     )
 
-    # [MULTI-EMPRESA] 1. Recuperar la empresa actual del middleware
     empresa_actual = getattr(request, 'empresa_actual', None)
 
     target_empleado = None
-    
-    # [MULTI-EMPRESA] 2. Filtramos la lista de empleados seleccionables
     lista_empleados = None
+    
     if es_jefe and empresa_actual:
         lista_empleados = Empleado.objects.filter(empresa=empresa_actual, estado='Activo')
     
-    # Lógica de selección de empleado
+    # selección del empleado a visualizar
     if es_jefe:
         empleado_id = request.GET.get('empleado_id')
         if empleado_id:
-            # [MULTI-EMPRESA] Aseguramos que el empleado sea de la empresa actual
             target_empleado = get_object_or_404(Empleado, pk=empleado_id, empresa=empresa_actual)
     else:
         if hasattr(usuario, 'empleado'):
@@ -176,7 +167,7 @@ def dashboard_asistencia_view(request):
     fecha_actual_obj = date(anio, mes, 1)
     semanas_datos = []
 
-    # Solo calculamos si tenemos un empleado objetivo válido
+    # generación de datos del calendario
     if target_empleado:
         cal = calendar.Calendar(firstweekday=6)
         matriz_mes = cal.monthdayscalendar(anio, mes)
@@ -208,6 +199,7 @@ def dashboard_asistencia_view(request):
                     })
             semanas_datos.append(semana_lista)
 
+    # navegación entre meses
     mes_anterior = fecha_actual_obj - timedelta(days=1)
     mes_siguiente = (fecha_actual_obj + timedelta(days=32)).replace(day=1)
     
@@ -223,22 +215,14 @@ def dashboard_asistencia_view(request):
         'calendario': semanas_datos,
         'link_anterior': f"?mes={mes_anterior.month}&anio={mes_anterior.year}{param_empleado}",
         'link_siguiente': f"?mes={mes_siguiente.month}&anio={mes_siguiente.year}{param_empleado}",
-        # [MULTI-EMPRESA] Pasamos la lista filtrada
         'empleados_list': lista_empleados, 
         'empresa_actual': empresa_actual
     }
     
     return render(request, 'asistencia/dashboard_asistencia.html', context)
 
-# ==============================================================================
-# 5. API: DETALLE DEL DÍA (Para el Modal)
-# ==============================================================================
 @login_required
 def obtener_detalle_dia_view(request):
-    """
-    Retorna JSON con la lista de eventos.
-    [MULTI-EMPRESA] Valida que el empleado pertenezca a la empresa actual.
-    """
     empleado_id = request.GET.get('empleado_id')
     fecha_str = request.GET.get('fecha')
     
@@ -247,11 +231,10 @@ def obtener_detalle_dia_view(request):
     
     empresa_actual = getattr(request, 'empresa_actual', None)
     
-    # [MULTI-EMPRESA] Filtro de seguridad:
-    # Solo mostramos eventos si el empleado es de la empresa que estamos viendo
+    # consulta de eventos asegurando el filtro por empresa
     eventos = EventoAsistencia.objects.filter(
         empleado_id=empleado_id,
-        empleado__empresa=empresa_actual, # <--- FILTRO CLAVE
+        empleado__empresa=empresa_actual,
         registrado_el__date=fecha_str
     ).order_by('registrado_el')
     
