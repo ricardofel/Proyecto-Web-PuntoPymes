@@ -14,21 +14,44 @@ User = get_user_model()
 @solo_superusuario_o_admin_rrhh
 def listar_usuarios(request):
     """
-    Lista usuarios del sistema, con búsqueda y paginación.
+    Lista usuarios del sistema aplicando reglas de visibilidad jerárquica:
+    1. Superusuarios: Ven TODOS los usuarios (Global), sin importar la empresa seleccionada.
+    2. Admin RRHH: Ven SOLO los usuarios que pertenecen a su empresa actual.
     """
+    empresa_actual = getattr(request, 'empresa_actual', None)
     query = request.GET.get('q', '').strip()
 
-    # Listado base ordenado por fecha de creación del usuario (campo del modelo)
-    usuarios_list = User.objects.all().prefetch_related('groups').order_by('-fecha_creacion')
+    # 1. Consulta Base Optimizada (Traemos todo inicialmente)
+    usuarios_list = User.objects.select_related(
+        'empleado', 
+        'empleado__empresa', 
+        'empleado__puesto'
+    ).prefetch_related('roles_asignados').order_by('-fecha_creacion')
 
+    # 2. Aplicación de Reglas de Visibilidad
+    if request.user.is_superuser:
+        # REGLA 1: El Superusuario tiene visión global absoluta.
+        pass
+    
+    elif empresa_actual:
+        # REGLA 2: El Admin RRHH está restringido a su empresa.
+        usuarios_list = usuarios_list.filter(empleado__empresa=empresa_actual)
+    
+    else:
+        # REGLA 3: Seguridad por defecto.
+        # Si no es superusuario y no tiene contexto de empresa, no ve nada.
+        usuarios_list = usuarios_list.none()
+
+    # 3. Búsqueda por texto (Email, Nombres, Apellidos, Cédula)
     if query:
-        # Búsqueda por email y por datos del empleado vinculado (si existe)
         usuarios_list = usuarios_list.filter(
             Q(email__icontains=query) |
             Q(empleado__nombres__icontains=query) |
-            Q(empleado__apellidos__icontains=query)
+            Q(empleado__apellidos__icontains=query) |
+            Q(empleado__cedula__icontains=query)
         )
 
+    # 4. Paginación (10 items por página)
     paginator = Paginator(usuarios_list, 10)
     page_number = request.GET.get('page')
     usuarios = paginator.get_page(page_number)
