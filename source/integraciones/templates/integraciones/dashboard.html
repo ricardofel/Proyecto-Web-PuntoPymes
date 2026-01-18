@@ -5,50 +5,49 @@
 
 {% block page_content %}
 
-<script src="https://unpkg.com/htmx.org@1.9.10"></script>
-
 <div class="max-w-6xl mx-auto space-y-8">
-
     <div>
         <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+            </svg>
             Sistemas ERP Conectados
         </h3>
-        
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             {% for erp in erps %}
             <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-full group hover:border-blue-300 transition-colors">
-                
                 <div class="flex justify-between items-start mb-4">
                     <div>
                         <div class="flex items-center gap-2">
                             <h4 class="font-bold text-slate-900">{{ erp.nombre }}</h4>
-                            
+
                             {% if erp.estado_sincronizacion == 'ok' %}
                                 <span class="w-2 h-2 rounded-full bg-green-500" title="Sincronizado"></span>
                             {% elif erp.estado_sincronizacion == 'error' %}
                                 <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse" title="Error de conexión"></span>
                             {% endif %}
                         </div>
-                        
+
                         <p class="text-xs text-slate-500 font-mono mt-1 truncate max-w-[200px] bg-slate-50 px-2 py-1 rounded border border-slate-100">
                             {{ erp.url_api }}
                         </p>
                     </div>
-                    
-                    <a href="{% url 'integraciones:erp_cambiar_estado' erp.id %}" 
-                       title="Permitir o Pausar esta integración"
-                       class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide transition-all border shadow-sm hover:scale-105
-                       {% if erp.activo %}
-                           bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200
-                       {% else %}
-                           bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200
-                       {% endif %}">
-                        
+
+                    <a
+                        href="{% url 'integraciones:erp_cambiar_estado' erp.id %}"
+                        title="Permitir o Pausar esta integración"
+                        class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide transition-all border shadow-sm hover:scale-105
                         {% if erp.activo %}
-                            ✓ Habilitado
+                            bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200
                         {% else %}
-                            ✕ Pausado
+                            bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200
+                        {% endif %}"
+                    >
+                        {% if erp.activo %}
+                            Habilitado
+                        {% else %}
+                            Pausado
                         {% endif %}
                     </a>
                 </div>
@@ -60,14 +59,14 @@
                             {{ erp.fecha_ultima_sincronizacion|date:"d M Y H:i:s"|default:"Nunca" }}
                         </p>
                     </div>
-                    
-                    <a href="{% url 'integraciones:erp_probar' erp.id %}" 
-                    class="group/boton flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-full shadow-sm transition-all duration-300 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 hover:shadow-md hover:-translate-y-0.5">
-                        
+
+                    <a
+                        href="{% url 'integraciones:erp_probar' erp.id %}"
+                        class="group/boton flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-full shadow-sm transition-all duration-300 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 hover:shadow-md hover:-translate-y-0.5"
+                    >
                         <svg class="transition-transform duration-500 group-hover/boton:rotate-180 text-slate-400 group-hover/boton:text-blue-500" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
                         </svg>
-                        
                         Test Conexión
                     </a>
                 </div>
@@ -82,9 +81,12 @@
 
     <div>
         <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-            Webhooks Activos (Eventos)
+            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            Webhooks Activos
         </h3>
+
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             {% for hook in webhooks %}
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between h-full">
@@ -97,13 +99,19 @@
                             <div class="w-2 h-2 rounded-full bg-red-400" title="Detenido"></div>
                         {% endif %}
                     </div>
+
                     <h4 class="font-bold text-slate-800 text-sm mb-1">{{ hook.nombre }}</h4>
                     <code class="text-[10px] bg-slate-100 px-1 py-0.5 rounded text-purple-600 block mb-2 truncate">{{ hook.evento }}</code>
                     <p class="text-[10px] text-slate-400 truncate mb-3" title="{{ hook.url_destino }}">{{ hook.url_destino }}</p>
                 </div>
 
-                <a href="{% url 'integraciones:webhook_probar' hook.id %}" class="btn btn-sm w-full bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-100 flex items-center justify-center gap-2 text-xs font-bold transition">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+                <a
+                    href="{% url 'integraciones:webhook_probar' hook.id %}"
+                    class="btn btn-sm w-full bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-100 flex items-center justify-center gap-2 text-xs font-bold transition"
+                >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                    </svg>
                     Disparar Evento
                 </a>
             </div>
@@ -120,16 +128,15 @@
             <h3 class="text-white font-mono text-sm font-bold">Terminal Output / Logs Recientes</h3>
             <span class="text-xs text-slate-400">Últimas transacciones</span>
         </div>
-        
-        <div class="p-5 font-mono text-xs space-y-2 h-64 overflow-y-auto"
-             hx-get="{% url 'integraciones:htmx_logs' %}" 
-             hx-trigger="load, every 2s" 
-             hx-swap="innerHTML">
-            
+
+        <div
+            class="p-5 font-mono text-xs space-y-2 h-64 overflow-y-auto"
+            hx-get="{% url 'integraciones:htmx_logs' %}"
+            hx-trigger="load, every 2s"
+            hx-swap="innerHTML"
+        >
             {% include "integraciones/partials/logs_partial.html" %}
-            
         </div>
     </div>
-
 </div>
 {% endblock %}

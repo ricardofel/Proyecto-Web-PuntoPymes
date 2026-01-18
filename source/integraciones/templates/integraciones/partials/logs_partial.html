@@ -1,10 +1,26 @@
 {% for log in logs %}
-<div class="flex gap-4 animate-pulse"> <span class="text-slate-500 w-32 shrink-0">{{ log.fecha|date:"H:i:s" }}</span>
-    <span class="{% if log.codigo_respuesta >= 200 and log.codigo_respuesta < 300 %}text-green-400{% else %}text-red-400{% endif %} w-12 shrink-0">
+<div class="flex gap-4">
+    <span class="text-slate-500 w-32 shrink-0">
+        {{ log.fecha|date:"H:i:s" }}
+    </span>
+
+    <span
+        class="w-12 shrink-0
+        {% if log.codigo_respuesta >= 200 and log.codigo_respuesta < 300 %}
+            text-green-400
+        {% else %}
+            text-red-400
+        {% endif %}"
+    >
         {{ log.codigo_respuesta }}
     </span>
-    <span class="text-slate-300 truncate">{{ log.endpoint }}</span>
+
+    <span class="text-slate-300 truncate">
+        {{ log.endpoint }}
+    </span>
 </div>
 {% empty %}
-<div class="text-slate-500 italic">Esperando tráfico de red...</div>
+<div class="text-slate-500 italic">
+    Esperando tráfico de red...
+</div>
 {% endfor %}
