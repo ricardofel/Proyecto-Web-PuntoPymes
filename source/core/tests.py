@@ -2,145 +2,154 @@ from django.test import TestCase, RequestFactory
 from django.contrib.auth import get_user_model
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.views.generic import ListView
-from unittest.mock import MagicMock
 
-# Importamos tus componentes del core
 from core.models import Empresa, UnidadOrganizacional
 from core.middleware import EmpresaContextMiddleware
 from core.mixins import FiltradoEmpresaMixin
 
 User = get_user_model()
 
+
 class CoreMiddlewareWhiteBoxTests(TestCase):
     """
     [Caja Blanca] Tests para EmpresaContextMiddleware.
-    Objetivo: Validar la lógica de prioridad (URL > Sesión) para Superadmins.
+
+    Objetivo:
+    - Validar la prioridad de selección de empresa para superusuarios.
+    - Regla esperada: el parámetro de URL tiene prioridad sobre la sesión (URL > Sesión).
     """
 
     def setUp(self):
-        # 1. Creamos infraestructura básica
+        # Infraestructura base para pruebas de middleware.
         self.factory = RequestFactory()
         self.middleware = EmpresaContextMiddleware(get_response=lambda r: None)
-        
-        # 2. Creamos un Super Admin (Dios del sistema)
-        # Nota: Usamos solo email/password como aprendimos antes
+
+        # Usuario superadmin para poder cambiar de empresa.
+        # Nota: se crea con email/password y el flag is_superuser.
         self.superadmin = User.objects.create_user(
-            email='admin@core.com', 
-            password='123',
-            is_superuser=True
+            email="admin@core.com",
+            password="123",
+            is_superuser=True,
         )
 
-        # 3. Creamos dos empresas para probar el "viaje" entre ellas
+        # Dos empresas para validar cambio de contexto (A -> B).
         self.empresa_A = Empresa.objects.create(nombre_comercial="Empresa A", ruc="111", razon_social="A SA")
         self.empresa_B = Empresa.objects.create(nombre_comercial="Empresa B", ruc="222", razon_social="B SA")
 
     def _preparar_request(self, url_params={}):
-        """Helper para armar un request con sesión y usuario"""
-        request = self.factory.get('/', url_params)
+        """
+        Helper: arma un request con sesión y usuario autenticado.
+
+        - url_params se envía como querystring (RequestFactory.get).
+        - Se inyecta SessionMiddleware para habilitar request.session.
+        """
+        request = self.factory.get("/", url_params)
         request.user = self.superadmin
-        
-        # Truco: Agregamos soporte de sesión al request mockeado
+
+        # Inyectar soporte de sesión en el request creado por RequestFactory.
         middleware_session = SessionMiddleware(lambda r: None)
         middleware_session.process_request(request)
         request.session.save()
         return request
 
     def test_middleware_logica_prioridad_url_vs_session(self):
-        print("\n🧠 [TEST] Iniciando: test_middleware_logica_prioridad_url_vs_session")
-        print("   ↳ Objetivo: Validar que el parámetro ?empresa_id=X mata a la sesión guardada.")
+        print("\n[TEST] Iniciando: test_middleware_logica_prioridad_url_vs_session")
+        print("   Objetivo: Validar que 'empresa_id' en la URL tiene prioridad sobre la sesión.")
 
-        # PASO 1: Establecer contexto inicial (El admin está trabajando en Empresa A)
+        # Paso 1: contexto inicial vía sesión (sin parámetro en URL).
         request_1 = self._preparar_request()
-        request_1.session['empresa_actual_id'] = self.empresa_A.id # Simulamos sesión previa
-        
-        # Ejecutamos middleware (sin param URL)
-        self.middleware.process_request(request_1)
-        
-        # Validación Rama 1: Debe respetar la sesión si no hay URL
-        self.assertEqual(request_1.empresa_actual, self.empresa_A)
-        print("   ↳ Paso 1: El middleware respetó la empresa A desde la sesión.")
+        request_1.session["empresa_actual_id"] = self.empresa_A.id  # Simula sesión previa.
 
-        # PASO 2: El cambio de contexto (El admin hace clic en Empresa B en el selector)
-        # Esto envía ?empresa_id=ID_B en la URL
-        request_2 = self._preparar_request({'empresa_id': self.empresa_B.id})
-        request_2.session['empresa_actual_id'] = self.empresa_A.id # La sesión vieja decía A
-        
-        # Ejecutamos middleware
+        # Ejecutar middleware (sin empresa_id en URL).
+        self.middleware.process_request(request_1)
+
+        # Validación: sin URL, debe respetar el valor de sesión.
+        self.assertEqual(request_1.empresa_actual, self.empresa_A)
+        print("   Paso 1: el middleware respetó la empresa desde la sesión.")
+
+        # Paso 2: cambio de contexto mediante querystring ?empresa_id=<B>.
+        request_2 = self._preparar_request({"empresa_id": self.empresa_B.id})
+        request_2.session["empresa_actual_id"] = self.empresa_A.id  # Sesión anterior todavía en A.
+
+        # Ejecutar middleware.
         self.middleware.process_request(request_2)
 
-        # Validación Rama 2: La URL debe sobreescribir la sesión y actualizarla
+        # Validación: URL debe sobrescribir y actualizar sesión.
         self.assertEqual(request_2.empresa_actual, self.empresa_B, "La URL no tuvo prioridad sobre la sesión")
-        self.assertEqual(request_2.session['empresa_actual_id'], self.empresa_B.id, "La sesión no se actualizó con el nuevo ID")
-        print("     ✅ Éxito: La lógica de cambio de empresa (URL Override) funciona correctamente.")
+        self.assertEqual(
+            request_2.session["empresa_actual_id"],
+            self.empresa_B.id,
+            "La sesión no se actualizó con el nuevo ID",
+        )
+        print("   Exito: la prioridad URL > Sesión funciona correctamente.")
 
 
 class CoreMixinWhiteBoxTests(TestCase):
     """
     [Caja Blanca] Tests para FiltradoEmpresaMixin.
-    Objetivo: Asegurar que las vistas filtren datos (Multitenencia) o se bloqueen defensivamente.
+
+    Objetivo:
+    - Asegurar multitenencia: las vistas deben filtrar por empresa_actual.
+    - Comportamiento defensivo: si no hay empresa_actual, retornar QuerySet vacío.
     """
 
     class VistaDummy(FiltradoEmpresaMixin, ListView):
-        """Vista falsa para probar el Mixin aisladamente"""
+        """Vista mínima para probar el mixin de forma aislada."""
         model = UnidadOrganizacional
-        object_list = [] # Necesario para ListView mockeado
+        object_list = []  # Requerido por ListView en algunos flujos internos.
 
     def setUp(self):
-        self.user = User.objects.create_user(email='user@core.com', password='123')
+        self.user = User.objects.create_user(email="user@core.com", password="123")
         self.empresa_X = Empresa.objects.create(nombre_comercial="Empresa X", ruc="888", razon_social="X Corp")
         self.empresa_Y = Empresa.objects.create(nombre_comercial="Empresa Y", ruc="999", razon_social="Y Corp")
 
-        # Datos: Creamos unidades en ambas empresas
+        # Datos: unidades en empresas distintas.
         self.unidad_X = UnidadOrganizacional.objects.create(nombre="Unidad X", empresa=self.empresa_X)
         self.unidad_Y = UnidadOrganizacional.objects.create(nombre="Unidad Y", empresa=self.empresa_Y)
 
     def test_get_queryset_aislamiento_datos(self):
-        print("\n🛡️ [TEST] Iniciando: test_get_queryset_aislamiento_datos")
-        print("   ↳ Objetivo: Verificar que el Mixin inyecta el .filter(empresa=...) automáticamente.")
+        print("\n[TEST] Iniciando: test_get_queryset_aislamiento_datos")
+        print("   Objetivo: verificar que el mixin aplica filter(empresa=empresa_actual).")
 
-        # Preparar Request simulando que el Middleware ya hizo su trabajo
-        request = RequestFactory().get('/')
+        # Simular request donde el middleware ya asignó empresa_actual.
+        request = RequestFactory().get("/")
         request.user = self.user
-        request.empresa_actual = self.empresa_X # <-- El usuario está en Empresa X
+        request.empresa_actual = self.empresa_X
 
-        # Instanciar la vista dummy
         vista = self.VistaDummy()
         vista.request = request
         vista.kwargs = {}
 
-        # Ejecución (Caja Blanca: llamamos directo a get_queryset)
+        # Ejecución directa del método (caja blanca).
         queryset_resultado = vista.get_queryset()
 
-        # Verificación
-        print(f"   ↳ Total en DB: {UnidadOrganizacional.objects.count()}")
-        print(f"   ↳ Total filtrado por Mixin: {queryset_resultado.count()}")
+        # Verificación de aislamiento de datos.
+        print(f"   Total en DB: {UnidadOrganizacional.objects.count()}")
+        print(f"   Total filtrado por mixin: {queryset_resultado.count()}")
 
-        # Debe traer la unidad de X, pero NO la de Y
         self.assertIn(self.unidad_X, queryset_resultado)
         self.assertNotIn(self.unidad_Y, queryset_resultado)
         self.assertEqual(queryset_resultado.count(), 1)
-        
-        # Inspección profunda: Verificar que el SQL generado contiene el filtro
+
+        # Verificación adicional: el SQL debe incluir el filtro por empresa_id.
         sql_query = str(queryset_resultado.query)
-        self.assertIn('empresa_id', sql_query, "El QuerySet no contiene la cláusula WHERE empresa_id")
-        print("     ✅ Éxito: El Mixin aplicó el filtro de seguridad correctamente.")
+        self.assertIn("empresa_id", sql_query, "El QuerySet no contiene la cláusula WHERE empresa_id")
+        print("   Exito: el mixin aplicó el filtro correctamente.")
 
     def test_get_queryset_defensivo_sin_empresa(self):
-        print("\n🛡️ [TEST] Iniciando: test_get_queryset_defensivo_sin_empresa")
-        print("   ↳ Objetivo: Verificar el 'retorno seguro' (qs.none) si falla la detección de empresa.")
+        print("\n[TEST] Iniciando: test_get_queryset_defensivo_sin_empresa")
+        print("   Objetivo: si no existe empresa_actual, retornar QuerySet vacío (qs.none).")
 
-        # Request SIN atributo empresa_actual (simulando error de middleware o sesión caducada)
-        request = RequestFactory().get('/')
+        # Request sin empresa_actual (simula falla del middleware o sesión caducada).
+        request = RequestFactory().get("/")
         request.user = self.user
-        # NO seteamos request.empresa_actual (será None o inexistente)
 
         vista = self.VistaDummy()
         vista.request = request
         vista.kwargs = {}
 
-        # Ejecución
         queryset_resultado = vista.get_queryset()
 
-        # Verificación: Debe retornar vacío, no explotar ni traer todo
+        # Debe retornar vacío, no explotar ni traer todos los registros.
         self.assertEqual(queryset_resultado.count(), 0, "Debería retornar QuerySet vacío por seguridad")
-        print("     ✅ Éxito: El mecanismo de defensa (Circuit Breaker) funcionó.")
+        print("   Exito: el comportamiento defensivo funciona.")

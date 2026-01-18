@@ -1,27 +1,29 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import PermissionDenied
 
 class FiltradoEmpresaMixin(LoginRequiredMixin):
     """
-    Mixin mágico: 
-    1. Filtra automáticamente cualquier QuerySet por la empresa actual.
-    2. Inyecta la variable {{ empresa_actual }} en todas las plantillas.
+    Mixin de filtrado por empresa.
+
+    Responsabilidades:
+    1. Filtrar automáticamente el QuerySet por la empresa actual.
+    2. Exponer la variable `empresa_actual` al contexto de la plantilla.
     """
-    
+
     def get_queryset(self):
-        # 1. Obtenemos la consulta original de la vista (ej: Empleado.objects.all())
+        # Obtener el QuerySet base definido por la vista.
         qs = super().get_queryset()
-        
-        # 2. Si por alguna razón no hay empresa (ej: error raro), devolvemos lista vacía por seguridad
-        if not getattr(self.request, 'empresa_actual', None):
+
+        # Comportamiento defensivo:
+        # si no existe empresa_actual en el request, retornar QuerySet vacío.
+        if not getattr(self.request, "empresa_actual", None):
             return qs.none()
-            
-        # 3. FILTRO MAESTRO: Filtramos por el campo 'empresa'
-        # Esto asume que tus modelos (Empleado, Unidad, etc.) tienen un campo llamado 'empresa'
+
+        # Filtrado principal por empresa.
+        # Se asume que el modelo posee un campo ForeignKey llamado `empresa`.
         return qs.filter(empresa=self.request.empresa_actual)
 
     def get_context_data(self, **kwargs):
-        # Esto hace que {{ empresa_actual }} esté disponible en el HTML automáticamente
+        # Inyectar empresa_actual en el contexto para uso en plantillas.
         context = super().get_context_data(**kwargs)
-        context['empresa_actual'] = getattr(self.request, 'empresa_actual', None)
+        context["empresa_actual"] = getattr(self.request, "empresa_actual", None)
         return context

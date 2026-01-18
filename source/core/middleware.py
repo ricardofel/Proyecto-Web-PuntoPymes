@@ -1,50 +1,63 @@
 from django.utils.deprecation import MiddlewareMixin
 from core.models import Empresa
 
+
 class EmpresaContextMiddleware(MiddlewareMixin):
     def process_request(self, request):
         """
-        Define `request.empresa_actual` globalmente basándose en el rol y la sesión.
+        Define `request.empresa_actual` para todo el ciclo de la petición.
+
+        La empresa activa se determina según:
+        - Rol del usuario (superadmin vs usuario estándar).
+        - Parámetro en la URL (?empresa_id=).
+        - Valor persistido en la sesión.
         """
-        request.empresa_actual = None # Por defecto arrancamos sin empresa
-        
+
+        # Valor por defecto: sin empresa asignada.
+        request.empresa_actual = None
+
+        # Si el usuario no está autenticado, no se define contexto de empresa.
         if not request.user.is_authenticated:
             return
 
-        # Intentamos obtener el perfil de empleado del usuario
-        # (Asumiendo que tienes una relación OneToOne o similar, o usas related_name='empleado')
-        # Si tu relación es distinta, ajusta esta línea.
-        empleado = getattr(request.user, 'empleado', None)
-        
-        # --- LÓGICA DE ROLES ---
-        
-        # CASO A: SuperAdmin (Puede "viajar" entre empresas)
-        # Verificamos si es superuser de Django O si tiene el rol de negocio de SuperAdmin
-        es_superadmin = request.user.is_superuser or getattr(request.user, "es_superadmin_negocio", False)
+        # Obtener el perfil de empleado asociado al usuario (si existe).
+        empleado = getattr(request.user, "empleado", None)
 
+        # Determinar si el usuario tiene privilegios de superadministrador.
+        # Se consideran tanto el superuser de Django como un flag de negocio.
+        es_superadmin = request.user.is_superuser or getattr(
+            request.user, "es_superadmin_negocio", False
+        )
+
+        # Caso A: Superadmin (puede cambiar libremente de empresa).
         if es_superadmin:
-            # 1. ¿Viene el ID en la URL? (ej: ?empresa_id=5) -> Prioridad Máxima
-            empresa_id_url = request.GET.get('empresa_id')
-            
+            # Prioridad 1: empresa indicada explícitamente en la URL.
+            empresa_id_url = request.GET.get("empresa_id")
+
             if empresa_id_url:
                 try:
-                    # Buscamos la empresa y la guardamos en el request
-                    request.empresa_actual = Empresa.objects.get(id=empresa_id_url, estado=True)
-                    # La guardamos también en la sesión del navegador para recordarla en el siguiente clic
-                    request.session['empresa_actual_id'] = request.empresa_actual.id
+                    request.empresa_actual = Empresa.objects.get(
+                        id=empresa_id_url,
+                        estado=True,
+                    )
+                    # Persistir selección en sesión para futuras peticiones.
+                    request.session["empresa_actual_id"] = request.empresa_actual.id
                 except Empresa.DoesNotExist:
+                    # Si el ID no es válido, se ignora silenciosamente.
                     pass
-            
-            # 2. Si no viene en URL, ¿la tenemos guardada de antes en la sesión?
-            elif 'empresa_actual_id' in request.session:
-                try:
-                    request.empresa_actual = Empresa.objects.get(id=request.session['empresa_actual_id'], estado=True)
-                except Empresa.DoesNotExist:
-                    # Si la empresa fue borrada pero el ID seguía en sesión, limpiamos.
-                    del request.session['empresa_actual_id'] 
 
-        # CASO B: Mortales (Admin RRHH, Empleado, Manager) -> Atados a su empresa
-        # Si tiene perfil de empleado y ese empleado tiene empresa asignada...
+            # Prioridad 2: empresa almacenada previamente en la sesión.
+            elif "empresa_actual_id" in request.session:
+                try:
+                    request.empresa_actual = Empresa.objects.get(
+                        id=request.session["empresa_actual_id"],
+                        estado=True,
+                    )
+                except Empresa.DoesNotExist:
+                    # Limpiar sesión si la empresa ya no existe.
+                    del request.session["empresa_actual_id"]
+
+        # Caso B: Usuarios estándar (empresa fija).
         elif empleado and empleado.empresa:
-            # Forzamos su empresa real. No pueden salir de ahí.
+            # El usuario queda restringido a la empresa asociada a su perfil.
             request.empresa_actual = empleado.empresa

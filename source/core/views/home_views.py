@@ -2,58 +2,62 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.apps import apps
 
-# 1. IMPORTAMOS LOS MODELOS QUE VAMOS A CONTAR
 from empleados.models import Empleado
 from core.models import UnidadOrganizacional
+
 
 @login_required
 def dashboard_view(request):
     """
-    Vista del Dashboard Principal.
-    Muestra resumen filtrado por la empresa seleccionada (si aplica).
-    """
-    Notificacion = apps.get_model('notificaciones', 'Notificacion')
-    
-    # --- A. LÓGICA ORIGINAL (Notificaciones y Usuario) ---
-    
-    # 1. Notificaciones
-    ultimas_notif = Notificacion.objects.filter(usuario=request.user).order_by('-fecha_creacion')[:5]
+    Dashboard principal.
 
-    # 2. Roles reales de la base de datos (relación UsuarioRol)
+    Muestra información del usuario, notificaciones recientes y
+    contadores filtrados por la empresa seleccionada a nivel global.
+    """
+
+    # Modelo cargado dinámicamente para evitar dependencias circulares.
+    Notificacion = apps.get_model("notificaciones", "Notificacion")
+
+    # Notificaciones recientes del usuario.
+    ultimas_notif = (
+        Notificacion.objects
+        .filter(usuario=request.user)
+        .order_by("-fecha_creacion")[:5]
+    )
+
+    # Roles asociados al usuario (relación UsuarioRol -> Rol).
     mis_roles = [ur.rol.nombre for ur in request.user.usuariorol_set.all()]
 
-    # 3. Nombre para mostrar (Empleado o Email)
+    # Nombre a mostrar: perfil de empleado o, en su defecto, email.
     try:
-        # Intenta obtener datos del perfil de empleado
         nombre_display = f"{request.user.empleado.nombres} {request.user.empleado.apellidos}"
     except AttributeError:
-        # Si es superuser o no tiene perfil, usa el email
         nombre_display = request.user.email
 
-    # --- B. NUEVA LÓGICA (Contadores por Empresa) ---
-    
-    # 4. Obtenemos la empresa del Middleware (o del selector global)
-    empresa = getattr(request, 'empresa_actual', None)
-    
+    # Empresa activa definida por el middleware.
+    empresa = getattr(request, "empresa_actual", None)
+
     total_empleados = 0
     total_unidades = 0
 
+    # Contadores filtrados por empresa (si existe contexto).
     if empresa:
-        # Si hay una empresa seleccionada, filtramos los datos
-        # Nota: Ajusta 'estado' según tus modelos ('Activo' para empleados, True para unidades)
-        total_empleados = Empleado.objects.filter(empresa=empresa, estado='Activo').count()
-        total_unidades = UnidadOrganizacional.objects.filter(empresa=empresa, estado=True).count()
+        total_empleados = Empleado.objects.filter(
+            empresa=empresa,
+            estado="Activo",
+        ).count()
+        total_unidades = UnidadOrganizacional.objects.filter(
+            empresa=empresa,
+            estado=True,
+        ).count()
 
-    # --- C. CONTEXTO FINAL ---
     context = {
-        'notificaciones_recientes': ultimas_notif,
-        'mis_roles': mis_roles,
-        'nombre_display': nombre_display,
-        
-        # Variables nuevas para el Dashboard
-        'total_empleados': total_empleados,
-        'total_unidades': total_unidades,
-        'empresa_actual': empresa, 
+        "notificaciones_recientes": ultimas_notif,
+        "mis_roles": mis_roles,
+        "nombre_display": nombre_display,
+        "total_empleados": total_empleados,
+        "total_unidades": total_unidades,
+        "empresa_actual": empresa,
     }
-    
+
     return render(request, "core/dashboard.html", context)
