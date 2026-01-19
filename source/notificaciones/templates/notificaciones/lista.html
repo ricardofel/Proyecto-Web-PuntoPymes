@@ -48,12 +48,6 @@
                     <p class="text-sm text-slate-600 mt-1">{{ notif.mensaje }}</p>
                     
                     <div class="flex gap-3 mt-3 items-center">
-                        {% if notif.url_destino %}
-                        <a href="{{ notif.url_destino }}" class="text-xs font-bold text-blue-600 hover:text-blue-800 border border-blue-200 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors">
-                            Ir a acción &rarr;
-                        </a>
-                        {% endif %}
-
                         <a href="{% url 'notificaciones:detalle' notif.id %}" class="text-xs font-medium text-slate-400 hover:text-blue-600 underline decoration-slate-300 hover:decoration-blue-400 underline-offset-2 transition-colors">
                             Ver ficha técnica
                         </a>
