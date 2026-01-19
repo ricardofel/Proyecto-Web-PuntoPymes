@@ -1,59 +1,113 @@
-# 🟠 PuntoPymes – Sistema de Control de Personal
 
-PuntoPymes es una plataforma web modular para la gestión integral del talento humano en pequeñas y medianas empresas. Centraliza la información del personal, estructura organizacional, asistencia, permisos y planificación anual. Incluye una API REST que permite integrar el sistema con aplicaciones móviles o sistemas externos.
+# 🟠 PuntoPymes
 
-Desarrollado con **Django**, **Django REST Framework**, **HTMX**, **Tailwind CSS** y **PostgreSQL** como parte del **Reto PuntoPymes – UTPL**.
+### Plataforma Web Modular para la Gestión del Talento Humano en PYMES
+
+**PuntoPymes** es una plataforma web desarrollada en **Django** orientada a la gestión integral del talento humano en pequeñas y medianas empresas.
+El sistema centraliza información organizacional, control básico de asistencia, solicitudes internas y planificación anual, bajo una **arquitectura modular, escalable y mantenible**.
+
+El proyecto forma parte del **Reto PuntoPymes – UTPL** y está diseñado siguiendo buenas prácticas de ingeniería de software, separación de responsabilidades y extensibilidad futura mediante una **API REST**.
+
+---
+
+## 🎯 Objetivo del proyecto
+
+Diseñar e implementar una solución web que permita a las PYMES:
+
+- Organizar su estructura empresarial y su personal.
+- Registrar y consultar eventos básicos de asistencia.
+- Gestionar solicitudes internas (permisos, vacaciones, ausencias).
+- Definir indicadores (KPIs) y planes operativos anuales (POA).
+- Mantener trazabilidad de acciones mediante auditoría.
+- Exponer datos a sistemas externos a través de una API REST.
+
+---
+
+## ⚙️ Tecnologías utilizadas
+
+- **Backend:** Django, Django REST Framework
+- **Frontend:** HTMX, Tailwind CSS
+- **Base de datos:** PostgreSQL
+- **Arquitectura:** Modular por aplicaciones Django
+- **Control de versiones:** Git
 
 ---
 
 ## ⭐ Características principales
 
-- Gestión de empleados, contratos y estructura organizacional.
-- Registro de asistencia web y móvil con validación por **GPS**.
+- Gestión de empresas y estructura organizacional.
+- Administración de usuarios, roles y permisos.
+- Fichas laborales de empleados.
+- Registro web de eventos de asistencia.
 - Solicitudes de permisos, vacaciones y ausencias.
-- Generación de jornadas y control básico de horas trabajadas.
-- Administración de roles y permisos internos.
-- API REST completa para integraciones externas.
-- Arquitectura modular, escalable y organizada.
+- Definición y cálculo de KPIs.
+- Plan Operativo Anual (POA) por objetivos y actividades.
+- Sistema de auditoría de acciones.
+- API REST para integraciones externas.
+- Arquitectura limpia y escalable.
 
 ---
 
-## 🧩 Módulos incluidos
+## 🧩 Módulos del sistema
 
-- **Core:** empresas, unidades organizacionales, puestos, turnos.
-- **Usuarios:** credenciales, roles y asignación de permisos.
-- **Empleados:** ficha laboral, contratos, documentos.
-- **Asistencia:** marcaciones, geocercas, jornadas.
-- **Solicitudes:** permisos, vacaciones, aprobaciones.
-- **KPI:** definición y resultados de indicadores.
-- **POA:** objetivos, metas y actividades por empleado.
-- **Notificaciones:** alertas internas y externas.
-- **Integraciones:** webhooks, ERP, exportación de nómina.
-- **Auditoría:** registro de acciones del sistema.
+| Módulo                  | Descripción                                          |
+| ------------------------ | ----------------------------------------------------- |
+| **core**           | Empresas, unidades organizacionales, puestos y turnos |
+| **usuarios**       | Autenticación, roles y permisos                      |
+| **empleados**      | Ficha laboral y estado                                |
+| **asistencia**     | Registro de eventos de asistencia                     |
+| **solicitudes**    | Permisos, vacaciones y ausencias                      |
+| **kpi**            | Indicadores de gestión                               |
+| **poa**            | Objetivos, metas y actividades                        |
+| **notificaciones** | Alertas internas                                      |
+| **integraciones**  | Webhooks e integraciones externas                     |
+| **auditoria**      | Registro de acciones del sistema                      |
 
 ---
 
-# 🗄️ Crear la base de datos en PostgreSQL
+## 🗂️ Estructura del proyecto
 
-Antes de ejecutar las migraciones, debes crear la base de datos manualmente.
+```
+source/
+├── core/
+├── usuarios/
+├── empleados/
+├── asistencia/
+├── solicitudes/
+├── kpi/
+├── poa/
+├── notificaciones/
+├── integraciones/
+├── auditoria/
+├── talenttrack/
+├── manage.py
+├── requirements.txt
+└── venv/
+```
 
-1. Abrir PostgreSQL (psql, PgAdmin o similar).
-2. Ejecutar:
+Cada app contiene:
+
+```
+api/
+views/
+services/
+templates/
+models.py
+urls.py
+tests/
+```
+
+---
+
+## 🗄️ Base de datos (PostgreSQL)
 
 ```sql
 CREATE DATABASE puntopymes;
 ```
 
-Opcionalmente, crear el usuario:
+Variables de entorno:
 
-```sql
-CREATE USER puntopymes_user WITH PASSWORD 'tu_contraseña';
-GRANT ALL PRIVILEGES ON DATABASE puntopymes TO puntopymes_user;
-```
-
-3. Configurar `.env`:
-
-```
+```env
 DB_NAME=puntopymes
 DB_USER=puntopymes_user
 DB_PASSWORD=tu_contraseña
@@ -61,132 +115,33 @@ DB_HOST=localhost
 DB_PORT=5432
 ```
 
-4. Ejecutar migraciones:
-
-```bash
-python manage.py migrate
-```
-
 ---
 
-# 🚀 Cómo ejecutar el proyecto (desarrollo)
-
-### 1. Clonar el repositorio
+## 🚀 Ejecución en desarrollo
 
 ```bash
-git clone <url-del-repo>
+git clone <url-del-repositorio>
 cd Proyecto-Web-PuntoPymes/source
-```
-
----
-
-### 2. Crear y activar el entorno virtual
-
-```bash
 python -m venv venv
-.env\Scriptsctivate   # Windows
-# o
-source venv/bin/activate  # Linux/Mac
-```
-
----
-
-### 3. Instalar dependencias
-
-```bash
+source venv/bin/activate
 pip install -r requirements.txt
-```
-
----
-
-### 4. Crear archivo `.env`
-
-```bash
-cp .env.example .env
-```
-
-Completar valores en `.env`.
-
----
-
-### 5. Aplicar migraciones
-
-```bash
-python manage.py makemigrations
 python manage.py migrate
-```
-
----
-
-### 6. Ejecutar servidor
-
-```bash
 python manage.py runserver
 ```
 
 ---
 
-# 🏗️ Estructura del proyecto
+## 📘 Documentación técnica
 
-```
-source/
-    core/
-    empleados/
-    usuarios/
-    asistencia/
-    solicitudes/
-    notificaciones/
-    integraciones/
-    kpi/
-    poa/
-    auditoria/
-    talenttrack/
-    venv/
-    manage.py
-    requirements.txt
-```
-
-Cada app contiene:
-
-```
-api/          → serializers y viewsets
-views/        → vistas web (HTMX)
-services/     → lógica de negocio
-templates/    → plantillas HTML
-tests/        → pruebas unitarias
-models.py     → modelos del módulo
-urls.py       → rutas del módulo
-```
-
----
-
-# 📘 Documentación técnica
-
-La documentación completa del proyecto se encuentra en:
+Consultar:
 
 ```
 docs/Arquitectura_Estructura_TalentTrack.md
 ```
 
-Incluye:
-
-- Arquitectura MVC extendida
-- Estructura interna por app
-- Contratos mínimos por módulo
-- Relación con el diccionario de datos
-
 ---
 
-# 🛠️ Flujo de trabajo (equipo)
+## 📌 Estado del proyecto
 
-1. Crear ramas por módulo:
-
-```
-feature/empleados-modelos
-feature/asistencia-api
-feature/solicitudes-vistas
-```
-
-2. Cada desarrollador trabaja dentro de su app.
-3. Crear Pull Requests hacia `main`.
-4. Código limpio, consistente y revisado.
+🔧 En desarrollo
+🎓 Proyecto académico – UTPL
