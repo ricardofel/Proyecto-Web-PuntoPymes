@@ -1,11 +1,14 @@
 import logging
 from django.contrib.auth.signals import user_logged_in, user_login_failed
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.contrib.auth import get_user_model
 from empleados.models import Empleado
-from .models import Rol, UsuarioRol
+from .models import Rol, UsuarioRol, Usuario
 from .constants import NombresRoles 
+
+from notificaciones.services.notificacion_service import NotificacionService
+from notificaciones.constants import TiposNotificacion
 
 logger = logging.getLogger("auth")
 User = get_user_model()
@@ -56,3 +59,45 @@ def sync_superuser_role(sender, instance, created, **kwargs):
     )
     if not UsuarioRol.objects.filter(usuario=instance, rol=rol_super).exists():
         UsuarioRol.objects.create(usuario=instance, rol=rol_super)
+
+
+@receiver(post_save, sender=Usuario)
+def notificar_nuevo_usuario(sender, instance, created, **kwargs):
+    """Bienvenida al sistema tras crear el usuario."""
+    if created:
+        NotificacionService.crear_notificacion(
+            usuario=instance,
+            titulo="¡Bienvenido a PuntoPymes!",
+            mensaje="Tu cuenta ha sido creada exitosamente. Configura tu perfil para comenzar.",
+            tipo=TiposNotificacion.EXITO,
+            url="/usuarios/perfil/"
+        )
+
+@receiver(pre_save, sender=Usuario)
+def notificar_cambio_password(sender, instance, **kwargs):
+    """Alerta de seguridad si cambia la contraseña."""
+    if instance.pk:
+        try:
+            old_user = Usuario.objects.get(pk=instance.pk)
+            if instance.password != old_user.password:
+                NotificacionService.crear_notificacion(
+                    usuario=instance,
+                    titulo="Seguridad: Cambio de Contraseña",
+                    mensaje="Tu contraseña ha sido actualizada. Si no fuiste tú, contacta a soporte inmediatamente.",
+                    tipo=TiposNotificacion.ALERTA,
+                    url="/usuarios/perfil/"
+                )
+        except Usuario.DoesNotExist:
+            pass
+
+@receiver(post_save, sender=UsuarioRol)
+def notificar_asignacion_rol(sender, instance, created, **kwargs):
+    """Notifica cambios en los permisos (Roles)."""
+    if created:
+        NotificacionService.crear_notificacion(
+            usuario=instance.usuario,
+            titulo="Nuevos Permisos",
+            mensaje=f"Se te ha asignado el rol de: {instance.rol.nombre}.",
+            tipo=TiposNotificacion.INFO,
+            url="/core/dashboard/"
+        )

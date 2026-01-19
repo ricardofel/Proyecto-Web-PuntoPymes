@@ -1,42 +1,87 @@
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
+from django.db.models import Q
 from usuarios.models import Usuario
+from empleados.models import Empleado, Contrato
+from notificaciones.services.notificacion_service import NotificacionService
+from notificaciones.constants import TiposNotificacion
+from auditoria.middleware import get_current_user 
 
-@receiver(post_save, sender="empleados.Empleado")
+# --- 1. LÓGICA DE SINCRONIZACIÓN ---
+@receiver(post_save, sender=Empleado)
 def sync_empleado_con_usuario(sender, instance, created, **kwargs):
-    """
-    sincroniza automáticamente la cuenta de usuario cuando se modifica un empleado.
-    - vincula el registro de usuario por email.
-    - actualiza el acceso al sistema (user.estado) según el estado laboral.
-    """
+    """Sincroniza cuenta de usuario al guardar un empleado."""
     email = (instance.email or "").strip().lower()
-    
-    # validación: sin email no es posible vincular usuario
-    if not email:
-        return
+    if not email: return
 
-    # 1. gestión de cuenta de usuario asociada (buscar o crear)
-    user, user_created = Usuario.objects.get_or_create(
+    user, _ = Usuario.objects.get_or_create(
         email=email,
-        defaults={
-            "empleado": instance,
-            "estado": True, # valor inicial por defecto, se valida en el paso 3
-        },
+        defaults={"empleado": instance, "estado": True},
     )
 
-    # 2. vinculación forzada de la relación fk
     if user.empleado_id != instance.id:
         user.empleado = instance
 
-    # 3. sincronización de permisos de acceso
-    # lógica de negocio: solo el estado 'activo' permite el inicio de sesión
     estado_empleado = (instance.estado or "").strip().lower()
-
-    if estado_empleado == "activo":
-        user.estado = True
-    else:
-        # estados como 'inactivo', 'licencia' o 'suspendido' revocan el acceso
-        user.estado = False
-
-    # persistencia optimizada de cambios
+    user.estado = (estado_empleado == "activo")
     user.save(update_fields=["empleado", "estado"])
+
+# --- 2. LÓGICA DE NOTIFICACIONES ---
+
+@receiver(post_save, sender=Empleado)
+def notificaciones_creacion_empleado(sender, instance, created, **kwargs):
+    """Gestiona las alertas cuando nace un nuevo registro de empleado."""
+    if created:
+        creador = get_current_user()
+        
+        if creador and creador.is_authenticated:
+            NotificacionService.crear_notificacion(
+                usuario=creador,
+                titulo="Registro Exitoso",
+                mensaje=f"Has registrado correctamente al empleado {instance.nombres} {instance.apellidos}.",
+                tipo=TiposNotificacion.EXITO,
+                url="/empleados/lista/"
+            )
+
+        admins_rrhh = Usuario.objects.filter(
+            Q(is_superuser=True) | Q(is_staff=True)
+        ).exclude(id=creador.id if creador else None)
+
+        for admin in admins_rrhh:
+            NotificacionService.crear_notificacion(
+                usuario=admin,
+                titulo="Nuevo Ingreso",
+                mensaje=f"Se ha incorporado {instance.nombres} {instance.apellidos} al equipo.",
+                tipo=TiposNotificacion.INFO,
+                url=f"/empleados/editar/{instance.id}/"
+            )
+
+@receiver(post_save, sender=Contrato)
+def notificar_nuevo_contrato(sender, instance, created, **kwargs):
+    """Avisa al empleado cuando tiene un nuevo contrato."""
+    if created and instance.empleado.usuario:
+        NotificacionService.crear_notificacion(
+            usuario=instance.empleado.usuario,
+            titulo="Nuevo Documento Legal",
+            mensaje=f"Se ha cargado un contrato '{instance.tipo}' en tu perfil.",
+            tipo=TiposNotificacion.INFO,
+            url=f"/empleados/lista-contratos/{instance.empleado.id}/"
+        )
+
+@receiver(pre_save, sender=Empleado)
+def notificar_cambio_puesto(sender, instance, **kwargs):
+    """Detecta y celebra los ascensos o cambios de puesto."""
+    if instance.pk and instance.usuario:
+        try:
+            old = Empleado.objects.get(pk=instance.pk)
+            if instance.puesto != old.puesto:
+                nuevo = instance.puesto.nombre if instance.puesto else "Sin Asignar"
+                NotificacionService.crear_notificacion(
+                    usuario=instance.usuario,
+                    titulo="Actualización Laboral",
+                    mensaje=f"Tu cargo ha sido actualizado a: {nuevo}.",
+                    tipo=TiposNotificacion.EXITO,
+                    url="/usuarios/perfil/"
+                )
+        except Empleado.DoesNotExist:
+            pass
