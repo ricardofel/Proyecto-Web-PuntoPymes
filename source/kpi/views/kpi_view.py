@@ -6,33 +6,32 @@ from django.utils import timezone
 
 from kpi.models import KPI, KPIResultado
 from kpi.forms import KPIForm
-from kpi.services.kpi_service import KPIService
-from kpi.calculators import calcular_valor_automatico
 from kpi.constants import CodigosKPI
-
-def _empresa_actual(request):
-    """Helper para obtener la empresa del usuario actual."""
-    return getattr(request.user, "empresa", None)
 
 @login_required
 def dashboard_view(request):
     """
-    Vista principal del Dashboard de KPIs.
-    Calcula automáticamente los valores del mes si faltan y muestra semáforos.
+    Vista principal. Usa 'request.empresa_actual' proporcionado por el Middleware
+    para respetar la empresa seleccionada en la sesión.
     """
-    empresa = request.empresa_actual 
+    # IMPORTACIÓN TARDÍA
+    from kpi.services.kpi_service import KPIService
+
+    # CAMBIO CLAVE: Usamos la empresa de la sesión (Middleware), no la del usuario fijo.
+    empresa = getattr(request, 'empresa_actual', None)
     
     if not empresa:
-        messages.warning(request, "Por favor seleccione una empresa para ver el Dashboard.")
-        return redirect("dashboard")
+        messages.warning(request, "No hay una empresa seleccionada en esta sesión.")
+        # Redirigir a home o selector de empresa si existe
+        return redirect("core:home") 
     
-    # 1. Aseguramos que existan los KPIs base (Headcount, Ausentismo, etc.)
+    # 1. Asegurar Defaults (Crea Cargos, Nómina, etc. si no existen)
     KPIService.asegurar_defaults(empresa)
     
-    # 2. GARANTIZAR CÁLCULOS: Revisa si falta algún cálculo de ESTE mes y lo genera.
+    # 2. Garantizar cálculos del mes actual
     KPIService.garantizar_resultados_actuales(empresa)
     
-    # 3. Consulta Optimizada: Traemos los KPIs con su último valor registrado
+    # 3. Consulta de semáforos
     ultimo_valor_sq = KPIResultado.objects.filter(
         kpi=OuterRef('pk')
     ).order_by('-periodo').values('valor')[:1]
@@ -41,15 +40,14 @@ def dashboard_view(request):
         ultimo_valor=Subquery(ultimo_valor_sq)
     )
 
-    # 4. Lógica de colores (Semáforo) en memoria
     for k in kpis:
         k.color = "gray"
         val = k.ultimo_valor
         meta = k.meta_default
         
         if val is not None and meta is not None:
-            # Lógica inversa para KPIs donde "menos es mejor"
-            es_kpi_inverso = k.codigo in [CodigosKPI.ROTACION, CodigosKPI.AUSENTISMO]
+            # Lógica inversa (ej: Ausentismo, mientras menos mejor)
+            es_kpi_inverso = k.codigo in [CodigosKPI.AUSENTISMO]
             
             if es_kpi_inverso:
                 k.color = "green" if val <= meta else "red"
@@ -63,33 +61,42 @@ def dashboard_view(request):
 
 @login_required
 def kpi_recalcular_global_view(request):
-    """Botón 'Recalcular Todo': Fuerza actualización de todos los KPIs del mes."""
-    empresa = _empresa_actual(request)
+    from kpi.services.kpi_service import KPIService
+    
+    empresa = getattr(request, 'empresa_actual', None)
+    if not empresa:
+        return redirect("kpi:dashboard")
+
     n = KPIService.recalcular_todo(empresa)
-    messages.success(request, f"Se actualizaron {n} indicadores.")
+    messages.success(request, f"Se actualizaron {n} indicadores para {empresa.nombre_comercial}.")
     return redirect("kpi:dashboard")
 
 @login_required
 def kpi_generar_default_view(request):
-    """Fuerza la generación de los KPIs por defecto si fueron borrados."""
-    empresa = _empresa_actual(request)
+    from kpi.services.kpi_service import KPIService
+    
+    empresa = getattr(request, 'empresa_actual', None)
+    if not empresa:
+        return redirect("kpi:dashboard")
+
     n = KPIService.asegurar_defaults(empresa)
     if n > 0:
         messages.success(request, f"Se crearon {n} KPIs por defecto.")
     else:
-        messages.info(request, "Los KPIs por defecto ya existen.")
+        messages.info(request, "Los KPIs ya están configurados.")
     return redirect("kpi:dashboard")
 
 @login_required
 def kpi_recalcular_view(request, pk):
-    """Recalcula UN solo KPI específico."""
-    kpi = get_object_or_404(KPI, pk=pk, empresa=_empresa_actual(request))
+    from kpi.calculators import calcular_valor_automatico
     
-    # Calculamos el valor al instante
+    empresa = getattr(request, 'empresa_actual', None)
+    # Seguridad: Solo permitimos recalcular KPIs de la empresa en sesión
+    kpi = get_object_or_404(KPI, pk=pk, empresa=empresa)
+    
     valor = calcular_valor_automatico(kpi)
     periodo = timezone.now().strftime("%Y-%m")
     
-    # Guardamos o actualizamos
     KPIResultado.objects.update_or_create(
         kpi=kpi,
         periodo=periodo,
@@ -99,25 +106,26 @@ def kpi_recalcular_view(request, pk):
             "fecha_creacion": timezone.now()
         }
     )
-    messages.success(request, f"Indicador '{kpi.nombre}' actualizado: {valor} {kpi.unidad_medida}")
+    messages.success(request, f"Actualizado: {kpi.nombre}")
     return redirect("kpi:dashboard")
 
+# Las vistas de detalle, editar y eliminar siguen el mismo patrón de seguridad
 @login_required
 def kpi_detalle_view(request, pk):
-    """Ver historial y detalle de un KPI."""
-    kpi = get_object_or_404(KPI, pk=pk, empresa=_empresa_actual(request))
+    empresa = getattr(request, 'empresa_actual', None)
+    kpi = get_object_or_404(KPI, pk=pk, empresa=empresa)
     resultados = kpi.resultados.all().order_by('-periodo')
     return render(request, "kpi/kpi_detalle.html", {"kpi": kpi, "resultados": resultados})
 
 @login_required
 def kpi_editar_view(request, pk):
-    """Editar configuración de un KPI (meta, nombre, etc)."""
-    kpi = get_object_or_404(KPI, pk=pk, empresa=_empresa_actual(request))
+    empresa = getattr(request, 'empresa_actual', None)
+    kpi = get_object_or_404(KPI, pk=pk, empresa=empresa)
     if request.method == 'POST':
         form = KPIForm(request.POST, instance=kpi)
         if form.is_valid():
             form.save()
-            messages.success(request, "KPI actualizado correctamente.")
+            messages.success(request, "KPI actualizado.")
             return redirect("kpi:dashboard")
     else:
         form = KPIForm(instance=kpi)
@@ -125,11 +133,11 @@ def kpi_editar_view(request, pk):
 
 @login_required
 def kpi_eliminar_view(request, pk):
-    """Soft-delete de un KPI."""
-    kpi = get_object_or_404(KPI, pk=pk, empresa=_empresa_actual(request))
+    empresa = getattr(request, 'empresa_actual', None)
+    kpi = get_object_or_404(KPI, pk=pk, empresa=empresa)
     if request.method == 'POST':
-        kpi.estado = False # Soft delete
+        kpi.estado = False
         kpi.save()
-        messages.success(request, "KPI eliminado correctamente.")
+        messages.success(request, "KPI eliminado.")
         return redirect("kpi:dashboard")
     return render(request, "kpi/confirmar_eliminar.html", {"obj": kpi})

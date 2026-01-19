@@ -1,14 +1,11 @@
 from django.utils import timezone
-from django.db import transaction
 from kpi.models import KPI, KPIResultado
 from kpi.constants import CodigosKPI
-from kpi.calculators import calcular_valor_automatico
 
 class KPIService:
     
     @staticmethod
     def asegurar_defaults(empresa):
-        # definición de kpis base del sistema
         defaults = [
             {
                 "codigo": CodigosKPI.HEADCOUNT,
@@ -27,14 +24,6 @@ class KPIService:
                 "descripcion": "Porcentaje de ausencias respecto a días laborales."
             },
             {
-                "codigo": CodigosKPI.ROTACION,
-                "nombre": "Rotación de Personal",
-                "unidad_medida": "%",
-                "frecuencia": "mensual",
-                "meta_default": 2.0,
-                "descripcion": "Tasa de salida de empleados."
-            },
-            {
                 "codigo": CodigosKPI.PUNTUALIDAD,
                 "nombre": "Puntualidad",
                 "unidad_medida": "%",
@@ -50,11 +39,35 @@ class KPIService:
                 "meta_default": 0,
                 "descripcion": "Promedio de salarios brutos activos."
             },
+            {
+                "codigo": CodigosKPI.COSTO_NOMINA,
+                "nombre": "Costo Nómina Total",
+                "unidad_medida": "USD",
+                "frecuencia": "mensual",
+                "meta_default": 0,
+                "descripcion": "Suma total de salarios brutos (Contratos activos)."
+            },
+            {
+                "codigo": CodigosKPI.SOLICITUDES_PEND,
+                "nombre": "Solicitudes Pendientes",
+                "unidad_medida": "Tickets",
+                "frecuencia": "mensual",
+                "meta_default": 0,
+                "descripcion": "Número de solicitudes de ausencia sin procesar."
+            },
+            # --- NUEVO DEFAULT SEGURO ---
+            {
+                "codigo": CodigosKPI.TOTAL_CARGOS,
+                "nombre": "Cargos Definidos",
+                "unidad_medida": "Puestos",
+                "frecuencia": "mensual",
+                "meta_default": 0, 
+                "descripcion": "Cantidad de puestos de trabajo configurados."
+            },
         ]
         
         creados = 0
         for data in defaults:
-            # creación o actualización de definiciones de kpi
             obj, created = KPI.objects.update_or_create(
                 empresa=empresa,
                 codigo=data["codigo"], 
@@ -71,45 +84,31 @@ class KPIService:
 
     @staticmethod
     def garantizar_resultados_actuales(empresa):
-        # generación de resultados faltantes para el mes actual
+        from kpi.calculators import calcular_valor_automatico
         periodo = timezone.now().strftime("%Y-%m")
-        
         kpis = KPI.objects.filter(empresa=empresa, estado=True).exclude(codigo=CodigosKPI.MANUAL)
-        
         calculados = 0
         for kpi in kpis:
-            existe = KPIResultado.objects.filter(kpi=kpi, periodo=periodo).exists()
-            
-            if not existe:
+            if not KPIResultado.objects.filter(kpi=kpi, periodo=periodo).exists():
                 valor = calcular_valor_automatico(kpi)
                 KPIResultado.objects.create(
-                    kpi=kpi,
-                    periodo=periodo,
-                    valor=valor,
-                    calculado_automatico=True,
-                    fecha_creacion=timezone.now()
+                    kpi=kpi, periodo=periodo, valor=valor,
+                    calculado_automatico=True, fecha_creacion=timezone.now()
                 )
                 calculados += 1
         return calculados
 
     @staticmethod
     def recalcular_todo(empresa):
-        # actualización forzada de todos los kpis automáticos
+        from kpi.calculators import calcular_valor_automatico
         periodo = timezone.now().strftime("%Y-%m")
         kpis = KPI.objects.filter(empresa=empresa, estado=True).exclude(codigo=CodigosKPI.MANUAL)
-        
         actualizados = 0
         for kpi in kpis:
             valor = calcular_valor_automatico(kpi)
-            
             KPIResultado.objects.update_or_create(
-                kpi=kpi,
-                periodo=periodo,
-                defaults={
-                    "valor": valor,
-                    "calculado_automatico": True,
-                    "fecha_creacion": timezone.now()
-                }
+                kpi=kpi, periodo=periodo,
+                defaults={"valor": valor, "calculado_automatico": True, "fecha_creacion": timezone.now()}
             )
             actualizados += 1
         return actualizados
