@@ -141,37 +141,27 @@ def editar_empleado_view(request, pk):
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    # 1. Actualizar datos del empleado
+                    # 1. Guardar cambios del empleado
                     empleado = form.save()
 
-                    # 2. Gestión del Usuario de Sistema
-                    email = form.cleaned_data.get('email')
-                    if email:
-                        User = get_user_model()
-                        user = getattr(empleado, 'usuario', None)
-                        
-                        # Si no tiene usuario vinculado, buscamos si existe uno suelto por email
-                        if not user:
-                            user = User.objects.filter(email=email).first()
-                        
-                        if user:
-                            # Actualizar email si cambió
-                            if user.email != email:
-                                user.email = email
-                                user.save()
-                            
-                            # Asegurar vinculación (OneToOne)
-                            if not hasattr(user, 'empleado'):
-                                user.empleado = empleado
-                                user.save()
-
-                            # 3. Actualizar Rol (Usando UsuarioRol explícito)
-                            if rol_id:
-                                rol_obj = Rol.objects.filter(id=rol_id).first()
-                                if rol_obj:
-                                    # Borramos roles viejos y ponemos el nuevo
-                                    UsuarioRol.objects.filter(usuario=user).delete()
-                                    UsuarioRol.objects.create(usuario=user, rol=rol_obj)
+                    # 2. Sincronizar correo con el Usuario vinculado
+                    nuevo_email = form.cleaned_data.get('email')
+                    
+                    # Obtenemos el usuario de forma segura
+                    usuario = getattr(empleado, 'usuario', None)
+                    
+                    if usuario:
+                        # Si tiene usuario y el correo cambió, actualizamos el Usuario
+                        if usuario.email != nuevo_email:
+                            usuario.email = nuevo_email
+                            usuario.save()
+                    
+                    # 3. Actualizar Roles (si aplica)
+                    if usuario and rol_id:
+                        rol_obj = Rol.objects.filter(id=rol_id).first()
+                        if rol_obj:
+                            UsuarioRol.objects.filter(usuario=usuario).delete()
+                            UsuarioRol.objects.create(usuario=usuario, rol=rol_obj)
 
                     messages.success(request, "Empleado actualizado correctamente.")
                     return redirect('empleados:lista_empleados')
@@ -182,17 +172,18 @@ def editar_empleado_view(request, pk):
             messages.error(request, "Verifique los errores en el formulario.")
     
     else:
-        # GET
         form = EmpleadoForm(instance=empleado, empresa_actual=empresa_actual)
 
     roles_disponibles = Rol.objects.filter(estado=True)
     
-    # Pre-selección del rol actual en el HTML
     rol_actual_id = None
-    if hasattr(empleado, 'usuario') and empleado.usuario:
-        usuario_rol = UsuarioRol.objects.filter(usuario=empleado.usuario).first()
-        if usuario_rol:
-            rol_actual_id = usuario_rol.rol.id
+    try:
+        if hasattr(empleado, 'usuario') and empleado.usuario:
+            usuario_rol = UsuarioRol.objects.filter(usuario=empleado.usuario).first()
+            if usuario_rol:
+                rol_actual_id = usuario_rol.rol.id
+    except Exception:
+        pass
 
     return render(request, 'empleados/editar_empleado.html', {
         'form': form,
@@ -200,7 +191,6 @@ def editar_empleado_view(request, pk):
         'roles_disponibles': roles_disponibles,
         'rol_actual_id': rol_actual_id
     })
-
 
 # --- gestión de contratos y utilidades ---
 
